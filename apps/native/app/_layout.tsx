@@ -1,21 +1,37 @@
 import "@/polyfills";
 import "@/global.css";
-import { Stack } from "expo-router";
+import { Redirect, Stack } from "expo-router";
 import { HeroUINativeProvider } from "heroui-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 
 import { AppThemeProvider } from "@/contexts/app-theme-context";
+import { authClient } from "@/lib/auth-client";
 
-export const unstable_settings = {
-  initialRouteName: "(drawer)",
-};
+function AuthenticatedLayout() {
+  const { data: session, isPending } = authClient.useSession();
 
-function StackLayout() {
+  // Show nothing while checking auth status
+  if (isPending) {
+    return null;
+  }
+
+  // Redirect to auth if not logged in
+  if (!session?.user) {
+    return <Redirect href="/(auth)" />;
+  }
+
+  // Redirect to tabs if logged in
+  return <Redirect href="/(tabs)" />;
+}
+
+function RootNavigator() {
   return (
-    <Stack screenOptions={{}}>
-      <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
-      <Stack.Screen name="modal" options={{ title: "Modal", presentation: "modal" }} />
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="modal" options={{ presentation: "modal" }} />
     </Stack>
   );
 }
@@ -26,7 +42,7 @@ export default function Layout() {
       <KeyboardProvider>
         <AppThemeProvider>
           <HeroUINativeProvider>
-            <StackLayout />
+            <RootNavigator />
           </HeroUINativeProvider>
         </AppThemeProvider>
       </KeyboardProvider>

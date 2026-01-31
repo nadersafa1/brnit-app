@@ -1,0 +1,579 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "meta": {
+    "name": "Burn App — Pastel Soft UI Design System",
+    "purpose": "High-level creative-direction design guidelines + component recipes so an AI can reliably replicate the look across this repo (web + native).",
+    "platforms": [
+      "mobile-first",
+      "web",
+      "native"
+    ],
+    "aestheticSummary": [
+      "Soft, airy, pastel UI with high-contrast black typography and a vivid orange accent.",
+      "Rounded, friendly shapes (large radii, pills, capsules).",
+      "Subtle depth via soft shadows; no harsh borders.",
+      "Generous whitespace, clear hierarchy, and tactile, thumb-friendly controls."
+    ]
+  },
+  "designPrinciples": {
+    "visualPersonality": [
+      "Warm",
+      "Friendly",
+      "Optimistic",
+      "Calm",
+      "Modern",
+      "Approachable"
+    ],
+    "coreRules": [
+      "Prioritize whitespace: let components breathe; avoid cramped layouts.",
+      "Use orange only as a purposeful accent (primary action, current tab, key highlights).",
+      "Keep typography crisp and confident: black/dark text on very light backgrounds.",
+      "Round everything: corners, chips, nav, cards; sharp edges are the exception.",
+      "Depth is soft: shadows are blurred, low-opacity; avoid hard outlines.",
+      "Default surfaces are off-white / blush; use subtle contrast changes for grouping."
+    ],
+    "composition": {
+      "hierarchy": [
+        "Large greeting / screen title",
+        "Primary feature card",
+        "Secondary metrics / lists",
+        "Persistent bottom navigation"
+      ],
+      "alignment": "Left-aligned content blocks with consistent margins; icons and chevrons align to a strict vertical rhythm.",
+      "density": "Comfortable / relaxed (mobile-friendly); prefer fewer items per screen with clear grouping."
+    }
+  },
+  "layout": {
+    "grid": {
+      "type": "mobile",
+      "columns": 4,
+      "marginPx": 16,
+      "gutterPx": 16,
+      "notes": "Use a 4-col grid for mobile layouts; cards and lists typically span full width within margins."
+    },
+    "globalSpacing": {
+      "unitPx": 4,
+      "scalePx": [
+        0,
+        4,
+        8,
+        12,
+        16,
+        20,
+        24,
+        28,
+        32,
+        40,
+        48,
+        56,
+        64
+      ],
+      "sectionGaps": {
+        "betweenSectionsPx": 24,
+        "betweenCardsPx": 16,
+        "betweenListItemsPx": 12
+      },
+      "componentPadding": {
+        "cardPaddingPx": 16,
+        "pillPaddingX_Px": 14,
+        "pillPaddingY_Px": 10,
+        "bottomNavPaddingPx": 8
+      }
+    },
+    "safeAreas": {
+      "top": "Respect OS safe area; header content sits below status bar with additional breathing room.",
+      "bottom": "Bottom navigation floats above the home indicator with extra padding."
+    }
+  },
+  "color": {
+    "tokens": {
+      "brand": {
+        "accentOrange": "#FD6E20",
+        "pastelPurple": "#C9BEFA"
+      },
+      "neutral": {
+        "black": "#010409",
+        "ink": "#111111",
+        "gray900": "#1A1A1A",
+        "gray700": "#3A3A3A",
+        "gray500": "#6B6B6B",
+        "gray300": "#CFCFCF",
+        "gray200": "#E8E8E8",
+        "gray100": "#F2F2F2",
+        "white": "#FFFFFF",
+        "offWhite": "#F7F7F7"
+      },
+      "surface": {
+        "appBackground": "#FCE9E7",
+        "card": "#FFFFFF",
+        "cardAlt": "#F7F7F7",
+        "navPill": "#0B0B0B",
+        "navPillMuted": "#1A1A1A"
+      },
+      "semantic": {
+        "success": "#35C48B",
+        "warning": "#FFB020",
+        "danger": "#FF4D4F",
+        "info": "#2F80ED"
+      },
+      "overlay": {
+        "shadowColor": "rgba(1, 4, 9, 0.12)",
+        "scrim": "rgba(1, 4, 9, 0.35)"
+      }
+    },
+    "usageGuidelines": {
+      "backgrounds": [
+        "Default screen background is warm blush (`surface.appBackground`).",
+        "Cards are white with soft shadow; avoid borders unless necessary (use low-contrast separators)."
+      ],
+      "accentRules": [
+        "Orange indicates active state, primary action, or key progress fill.",
+        "Purple is decorative (corner blob) and should not compete with orange for action emphasis."
+      ],
+      "contrast": "Maintain strong contrast for text/icons on light surfaces. Use white icons/text on the dark bottom navigation container."
+    },
+    "decorativeMotif": {
+      "cornerBlob": {
+        "shape": "Large rounded organic blob in the top-right of many screens.",
+        "color": "brand.pastelPurple",
+        "opacity": 1,
+        "placement": "Anchored to top-right, partially off-canvas; never overlaps critical text."
+      }
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "primary": "General Sans",
+      "fallback": [
+        "system-ui",
+        "-apple-system",
+        "Segoe UI",
+        "Roboto"
+      ]
+    },
+    "weights": {
+      "regular": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700
+    },
+    "typeScale": {
+      "display": {
+        "sizePx": 32,
+        "lineHeightPx": 38,
+        "weight": 700,
+        "tracking": -0.2
+      },
+      "h1": {
+        "sizePx": 24,
+        "lineHeightPx": 30,
+        "weight": 700,
+        "tracking": -0.1
+      },
+      "h2": {
+        "sizePx": 20,
+        "lineHeightPx": 26,
+        "weight": 700,
+        "tracking": -0.1
+      },
+      "h3": {
+        "sizePx": 18,
+        "lineHeightPx": 24,
+        "weight": 600,
+        "tracking": 0
+      },
+      "body": {
+        "sizePx": 14,
+        "lineHeightPx": 20,
+        "weight": 500,
+        "tracking": 0
+      },
+      "bodyMuted": {
+        "sizePx": 13,
+        "lineHeightPx": 18,
+        "weight": 500,
+        "tracking": 0
+      },
+      "caption": {
+        "sizePx": 12,
+        "lineHeightPx": 16,
+        "weight": 500,
+        "tracking": 0.2
+      }
+    },
+    "textColors": {
+      "primary": "neutral.black",
+      "secondary": "neutral.gray700",
+      "muted": "neutral.gray500",
+      "inverse": "neutral.white"
+    },
+    "guidelines": [
+      "Use bold/semibold for titles and key numbers; keep body copy medium for clarity.",
+      "Prefer sentence-case labels; avoid all-caps except tiny micro-labels.",
+      "Numbers (percentages, stats) should feel prominent (semibold/bold) with tight spacing."
+    ]
+  },
+  "shape": {
+    "radius": {
+      "xs": 8,
+      "sm": 12,
+      "md": 16,
+      "lg": 20,
+      "xl": 28,
+      "pill": 999
+    },
+    "stroke": {
+      "default": "none",
+      "hairlinePx": 1,
+      "separatorColor": "neutral.gray200"
+    }
+  },
+  "elevation": {
+    "shadows": {
+      "none": "none",
+      "sm": {
+        "shadowColor": "overlay.shadowColor",
+        "shadowOffset": {
+          "x": 0,
+          "y": 6
+        },
+        "shadowBlur": 18,
+        "shadowSpread": 0
+      },
+      "md": {
+        "shadowColor": "overlay.shadowColor",
+        "shadowOffset": {
+          "x": 0,
+          "y": 10
+        },
+        "shadowBlur": 28,
+        "shadowSpread": 0
+      }
+    },
+    "guidelines": [
+      "Cards float subtly above the blush background (sm or md depending on importance).",
+      "Avoid heavy shadows or inner borders; rely on elevation and spacing for grouping."
+    ]
+  },
+  "iconography": {
+    "style": [
+      "Simple, rounded icons with consistent stroke width.",
+      "Use filled circles/rounded squares behind icons for settings rows and analytics chips."
+    ],
+    "sizesPx": {
+      "sm": 16,
+      "md": 20,
+      "lg": 24
+    },
+    "containers": {
+      "settingsIconTile": {
+        "sizePx": 36,
+        "radiusPx": 12,
+        "background": "neutral.gray100"
+      }
+    }
+  },
+  "motion": {
+    "timingMs": {
+      "fast": 120,
+      "base": 180,
+      "slow": 260
+    },
+    "easing": {
+      "standard": "cubic-bezier(0.2, 0.8, 0.2, 1)",
+      "emphasized": "cubic-bezier(0.2, 0.9, 0.2, 1)"
+    },
+    "guidelines": [
+      "Interactions feel soft and springy; micro-animations are subtle (scale 0.98 on press, fade/slide for transitions).",
+      "Avoid flashy motion; keep focus on calm productivity."
+    ]
+  },
+  "components": {
+    "AppShell": {
+      "background": "surface.appBackground",
+      "decorativeCornerBlob": "color.decorativeMotif.cornerBlob",
+      "defaultHorizontalPaddingPx": 16,
+      "defaultVerticalPaddingPx": 16
+    },
+    "TopHeader": {
+      "structure": [
+        "Left: avatar + greeting stack",
+        "Right: circular icon button (search/menu/back)"
+      ],
+      "avatar": {
+        "sizePx": 40,
+        "radiusPx": 20,
+        "border": "none"
+      },
+      "titleStyles": {
+        "greeting": "typography.typeScale.body",
+        "name": "typography.typeScale.h3"
+      },
+      "iconButton": {
+        "sizePx": 40,
+        "radiusPx": 20,
+        "background": "surface.card",
+        "iconSizePx": 20,
+        "elevation": "elevation.shadows.sm"
+      }
+    },
+    "Card": {
+      "base": {
+        "background": "surface.card",
+        "radiusPx": 20,
+        "paddingPx": 16,
+        "elevation": "elevation.shadows.sm"
+      },
+      "variants": {
+        "feature": {
+          "radiusPx": 24,
+          "media": "Illustration or image with rounded corners; no harsh cropping.",
+          "contentDensity": "Spacious; large title + short supporting line."
+        },
+        "analytics": {
+          "radiusPx": 24,
+          "usesPills": true,
+          "usesProgressBars": true
+        },
+        "settingsRow": {
+          "radiusPx": 16,
+          "heightPx": 56,
+          "layout": "Icon tile + label + chevron",
+          "background": "surface.card"
+        }
+      }
+    },
+    "Chip": {
+      "base": {
+        "radiusPx": 999,
+        "paddingX_Px": 14,
+        "paddingY_Px": 10,
+        "font": "typography.typeScale.caption"
+      },
+      "states": {
+        "default": {
+          "background": "surface.card",
+          "textColor": "neutral.black",
+          "elevation": "none"
+        },
+        "selected": {
+          "background": "neutral.black",
+          "textColor": "neutral.white",
+          "elevation": "elevation.shadows.sm"
+        },
+        "muted": {
+          "background": "neutral.gray100",
+          "textColor": "neutral.gray700"
+        }
+      },
+      "usage": [
+        "Segmented availability hours (Morning / Mid-day / Afternoon).",
+        "Time range selector (This Week) appears as a chip with chevron."
+      ]
+    },
+    "CalendarPillStrip": {
+      "layout": "Row of small day pills; selected day highlighted; completed days show small check mark.",
+      "pill": {
+        "sizePx": 34,
+        "radiusPx": 17,
+        "backgroundDefault": "neutral.gray100",
+        "backgroundSelected": "brand.accentOrange",
+        "textColorDefault": "neutral.gray700",
+        "textColorSelected": "neutral.white"
+      },
+      "status": {
+        "completedIcon": {
+          "sizePx": 14,
+          "color": "semantic.success"
+        }
+      }
+    },
+    "PrimaryButton": {
+      "shape": "pill",
+      "heightPx": 44,
+      "paddingX_Px": 18,
+      "background": "brand.accentOrange",
+      "textColor": "neutral.white",
+      "font": "typography.typeScale.body",
+      "states": {
+        "pressed": {
+          "transform": "scale(0.98)",
+          "opacity": 0.95
+        },
+        "disabled": {
+          "opacity": 0.5
+        }
+      }
+    },
+    "SecondaryButton": {
+      "shape": "pill",
+      "heightPx": 44,
+      "paddingX_Px": 18,
+      "background": "surface.card",
+      "textColor": "neutral.black",
+      "elevation": "elevation.shadows.sm",
+      "states": {
+        "pressed": {
+          "transform": "scale(0.98)",
+          "opacity": 0.95
+        }
+      }
+    },
+    "IconButton": {
+      "shape": "circle",
+      "sizePx": 40,
+      "radiusPx": 20,
+      "background": "surface.card",
+      "elevation": "elevation.shadows.sm",
+      "iconSizePx": 20,
+      "iconColor": "neutral.black",
+      "states": {
+        "pressed": {
+          "transform": "scale(0.97)",
+          "opacity": 0.9
+        }
+      }
+    },
+    "BottomNavigation": {
+      "container": {
+        "heightPx": 60,
+        "radiusPx": 999,
+        "background": "surface.navPill",
+        "paddingPx": 8,
+        "elevation": "elevation.shadows.md",
+        "positioning": "Floating above bottom safe area; centered; full width minus margins."
+      },
+      "item": {
+        "layout": "Icon-only by default; active item becomes a pill with label.",
+        "iconSizePx": 22,
+        "iconColorDefault": "neutral.white",
+        "iconColorActive": "neutral.white",
+        "activePill": {
+          "heightPx": 40,
+          "radiusPx": 999,
+          "background": "brand.accentOrange",
+          "paddingX_Px": 14,
+          "gapPx": 8,
+          "labelFont": "typography.typeScale.caption",
+          "labelColor": "neutral.white"
+        }
+      }
+    },
+    "ProgressPillChart": {
+      "description": "Rounded vertical capsules used for weekly completion and per-person progress.",
+      "capsule": {
+        "widthPx": 38,
+        "heightPx": 140,
+        "radiusPx": 24,
+        "background": "neutral.gray100",
+        "fill": {
+          "radiusPx": 24,
+          "color": "brand.accentOrange"
+        }
+      },
+      "avatarBadge": {
+        "sizePx": 28,
+        "radiusPx": 14,
+        "border": {
+          "widthPx": 2,
+          "color": "surface.card"
+        }
+      },
+      "label": {
+        "percentFont": "typography.typeScale.caption",
+        "percentColor": "neutral.white"
+      }
+    },
+    "ProgressBarRow": {
+      "structure": [
+        "Left icon tile",
+        "Title",
+        "Right aligned percentage",
+        "Progress bar below or inline depending on density"
+      ],
+      "bar": {
+        "heightPx": 8,
+        "radiusPx": 999,
+        "trackColor": "neutral.gray200",
+        "fillColors": {
+          "reading": "#35C48B",
+          "assignment": "brand.accentOrange",
+          "practice": "#2F80ED"
+        }
+      }
+    },
+    "ListRow": {
+      "forSettings": {
+        "heightPx": 56,
+        "radiusPx": 16,
+        "background": "surface.card",
+        "paddingX_Px": 14,
+        "paddingY_Px": 12,
+        "leadingIconTile": "iconography.containers.settingsIconTile",
+        "labelFont": "typography.typeScale.body",
+        "chevronColor": "neutral.gray500"
+      }
+    },
+    "PromoBanner": {
+      "background": "surface.card",
+      "radiusPx": 20,
+      "paddingPx": 16,
+      "elevation": "elevation.shadows.sm",
+      "layout": "Left icon + text stack; right CTA button; optional close icon.",
+      "cta": {
+        "style": "SecondaryButton",
+        "compact": true
+      }
+    },
+    "SearchField": {
+      "shape": "pill",
+      "heightPx": 44,
+      "background": "surface.card",
+      "elevation": "elevation.shadows.sm",
+      "paddingX_Px": 14,
+      "iconSizePx": 18,
+      "placeholderColor": "neutral.gray500",
+      "textColor": "neutral.black"
+    }
+  },
+  "imagery": {
+    "illustrations": {
+      "style": [
+        "Warm, story-like illustrations with oranges/browns and soft gradients.",
+        "Rounded corners and gentle lighting; no sharp, high-contrast photo realism."
+      ],
+      "placement": "Used inside feature cards; keep ample padding and avoid edge-to-edge cropping."
+    },
+    "avatars": {
+      "treatment": "Circular, slightly elevated; often grouped as small overlapping circles to indicate community/participants.",
+      "overlapPx": 8
+    }
+  },
+  "accessibility": {
+    "minimumTouchTargetPx": 44,
+    "textContrast": [
+      "Primary text must meet strong contrast (black/dark on off-white/blush).",
+      "On dark nav pill, icons/text are white; active pill uses orange + white text."
+    ],
+    "states": {
+      "focus": "Use subtle ring (2px) with orange at low opacity or a soft shadow; avoid harsh blue defaults.",
+      "disabled": "Reduce opacity; keep readability; avoid relying on color alone."
+    }
+  },
+  "implementationNotesForAI": {
+    "whatMakesThisLookWork": [
+      "Big radii + pill shapes everywhere",
+      "Warm blush background + white cards",
+      "Vivid orange as a controlled accent",
+      "Heavy emphasis on spacing + soft elevation",
+      "Large, confident titles with General Sans"
+    ],
+    "commonMistakesToAvoid": [
+      "Overusing orange (it should feel special, not noisy).",
+      "Adding visible borders around everything (use shadow + spacing instead).",
+      "Tight spacing; small touch targets; thin, low-contrast text.",
+      "Square corners or sharp icon styles."
+    ]
+  }
+}
+

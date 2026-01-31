@@ -3,3 +3,39 @@
 @import "heroui-native/styles";
 
 @source './node_modules/heroui-native/lib';
+
+/* Burn App - Pastel Soft UI Design System */
+@theme {
+  /* Brand Colors */
+  --color-accent: #FD6E20;
+  --color-accent-light: #FF8F50;
+  --color-pastel-purple: #C9BEFA;
+  
+  /* Neutral Colors */
+  --color-ink: #111111;
+  --color-muted: #6B6B6B;
+  --color-subtle: #3A3A3A;
+  --color-border: #E8E8E8;
+  --color-surface-alt: #F2F2F2;
+  --color-off-white: #F7F7F7;
+  
+  /* Surface Colors */
+  --color-app-bg: #FCE9E7;
+  --color-card: #FFFFFF;
+  --color-nav-pill: #0B0B0B;
+  
+  /* Semantic Colors */
+  --color-success: #35C48B;
+  --color-warning: #FFB020;
+  --color-danger: #FF4D4F;
+  --color-info: #2F80ED;
+  
+  /* Border Radius */
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --radius-2xl: 28px;
+  --radius-pill: 9999px;
+}
