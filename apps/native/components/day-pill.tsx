@@ -1,16 +1,20 @@
+import dayjs from "dayjs";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
 
 interface DayPillProps {
   day: string;
-  date: number;
+  date: Date;
   isSelected?: boolean;
   isCompleted?: boolean;
+  onPress?: () => void;
 }
 
-export function DayPill({ day, date, isSelected, isCompleted }: DayPillProps) {
+export function DayPill({ day, date, isSelected, onPress }: DayPillProps) {
+  const dateNumber = dayjs(date).date();
+
   return (
-    <Pressable className="items-center mx-1">
+    <Pressable className="items-center" onPress={onPress} style={{ flex: 1 }}>
       <Text
         className={`text-xs font-medium mb-1 ${isSelected ? "text-accent" : "text-muted"}`}
       >
@@ -21,17 +25,13 @@ export function DayPill({ day, date, isSelected, isCompleted }: DayPillProps) {
           isSelected ? "bg-accent" : "bg-surface-alt"
         }`}
       >
-        {isCompleted && !isSelected ? (
-          <Ionicons name="checkmark" size={16} color="#35C48B" />
-        ) : (
-          <Text
-            className={`text-sm font-semibold ${
-              isSelected ? "text-white" : "text-subtle"
-            }`}
-          >
-            {date}
-          </Text>
-        )}
+        <Text
+          className={`text-sm font-semibold ${
+            isSelected ? "text-white" : "text-subtle"
+          }`}
+        >
+          {dateNumber}
+        </Text>
       </View>
     </Pressable>
   );

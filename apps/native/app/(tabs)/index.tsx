@@ -1,10 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Image, Pressable, ScrollView, Text, View } from "react-native";
+import dayjs from "dayjs";
+import { useState } from "react";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BottomNav } from "@/components/bottom-nav";
 import { CalorieRing } from "@/components/calorie-ring";
-import { DayPill } from "@/components/day-pill";
+import { CalendarStrip } from "@/components/calendar-strip";
 import { MacroBar } from "@/components/macro-bar";
 import { MealCard } from "@/components/meal-card";
 import { authClient } from "@/lib/auth-client";
@@ -34,16 +36,6 @@ const meals = [
   },
 ];
 
-const weekDays = [
-  { day: "Mon", date: 27, isCompleted: true },
-  { day: "Tue", date: 28, isCompleted: true },
-  { day: "Wed", date: 29, isCompleted: true },
-  { day: "Thu", date: 30, isCompleted: false },
-  { day: "Fri", date: 31, isSelected: true },
-  { day: "Sat", date: 1, isCompleted: false },
-  { day: "Sun", date: 2, isCompleted: false },
-];
-
 const caloriesConsumed = 1450;
 const caloriesGoal = 2000;
 const macros = {
@@ -55,9 +47,12 @@ const macros = {
 export default function Home() {
   const insets = useSafeAreaInsets();
   const { data: session } = authClient.useSession();
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
   const remainingCalories = caloriesGoal - caloriesConsumed;
 
   const userName = session?.user?.name?.split(" ")[0] || "there";
+
+  const isToday = dayjs(selectedDate).isSame(dayjs(), "day");
 
   return (
     <View className="flex-1 bg-app-bg">
@@ -92,17 +87,15 @@ export default function Home() {
           </Pressable>
         </View>
 
-        {/* Week Calendar Strip */}
-        <View className="flex-row justify-between mb-6 px-2">
-          {weekDays.map((item, index) => (
-            <DayPill key={index} {...item} />
-          ))}
-        </View>
+        {/* Calendar Strip */}
+        <CalendarStrip selectedDate={selectedDate} onDateSelect={setSelectedDate} />
 
         {/* Main Calorie Card */}
         <View className="rounded-xl p-5 mb-4 bg-card shadow-md">
           <View className="flex-row items-center justify-between mb-4">
-            <Text className="text-xl font-bold text-ink">Today&apos;s Progress</Text>
+            <Text className="text-xl font-bold text-ink">
+              {isToday ? "Today's Progress" : dayjs(selectedDate).format("MMMM D")}
+            </Text>
             <View className="px-3 py-1.5 rounded-full flex-row items-center bg-surface-alt">
               <Text className="text-xs font-semibold text-subtle">This Week</Text>
               <Ionicons name="chevron-down" size={14} color="#6B6B6B" style={{ marginLeft: 4 }} />
@@ -151,7 +144,9 @@ export default function Home() {
 
         {/* Meals Section */}
         <View className="flex-row items-center justify-between mb-3">
-          <Text className="text-lg font-bold text-ink">Today&apos;s Meals</Text>
+          <Text className="text-lg font-bold text-ink">
+            {isToday ? "Today's Meals" : dayjs(selectedDate).format("MMMM D") + " Meals"}
+          </Text>
           <Pressable className="flex-row items-center">
             <Text className="text-sm font-semibold text-accent">Add Meal</Text>
             <View className="w-6 h-6 rounded-full items-center justify-center ml-2 bg-accent">
