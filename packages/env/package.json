@@ -9,10 +9,7 @@
     "./native": "./src/native.ts"
   },
   "dependencies": {
-    "@t3-oss/env-core": "^0.13.1",
-    "@t3-oss/env-nextjs": "^0.13.1",
-    "dotenv": "^17.2.2",
-    "zod": "^4.1.13"
+    "dotenv": "^17.2.2"
   },
   "devDependencies": {
     "@burn-app/config": "*",
