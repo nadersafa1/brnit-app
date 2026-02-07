@@ -8,40 +8,46 @@ const brandColors = {
   textSecondary: "#6b7280",
   border: "#e5e7eb",
   background: "#ffffff",
+  wrapperBg: "#f9fafb",
 };
 
 const emailStyles = {
   wrapper:
-    "font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f9fafb; padding: 40px 20px; line-height: 1.6; color: " +
+    "font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: " +
+    brandColors.wrapperBg +
+    "; padding: 40px 20px; line-height: 1.6; color: " +
     brandColors.text +
     ";",
   container:
     "max-width: 600px; margin: 0 auto; background-color: " +
     brandColors.background +
-    "; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);",
+    "; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);",
   header:
-    "background: linear-gradient(135deg, " +
-    brandColors.primary +
-    " 0%, " +
-    brandColors.primaryHover +
-    " 100%); padding: 32px 40px; text-align: center;",
-  logo: "font-size: 24px; font-weight: 700; color: #ffffff; margin: 0; letter-spacing: -0.5px;",
+    "padding: 32px 40px 28px; text-align: center; background-color: " +
+    brandColors.background +
+    "; border-bottom: 1px solid " +
+    brandColors.border +
+    ";",
+  logoImg:
+    "display: block; margin: 0 auto; height: 36px; width: auto; max-width: 140px; border: 0; outline: none;",
   content: "padding: 40px;",
   heading:
-    "font-size: 24px; font-weight: 600; color: " +
+    "font-size: 22px; font-weight: 600; color: " +
     brandColors.text +
-    "; margin: 0 0 16px 0; line-height: 1.3;",
+    "; margin: 0 0 12px 0; line-height: 1.35;",
   paragraph:
-    "font-size: 16px; color: " +
+    "font-size: 15px; color: " +
     brandColors.text +
-    "; margin: 0 0 24px 0; line-height: 1.6;",
-  buttonContainer: "text-align: center; margin: 32px 0;",
+    "; margin: 0 0 28px 0; line-height: 1.6;",
+  buttonContainer: "text-align: center; margin: 28px 0;",
   button:
-    "display: inline-block; padding: 14px 32px; background-color: " +
+    "display: inline-block; padding: 14px 28px; background-color: " +
     brandColors.primary +
-    "; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;",
+    "; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;",
   footer:
-    "padding: 24px 40px; background-color: #f9fafb; border-top: 1px solid " +
+    "padding: 24px 40px; background-color: " +
+    brandColors.wrapperBg +
+    "; border-top: 1px solid " +
     brandColors.border +
     "; text-align: center;",
   footerText: "font-size: 12px; color: " + brandColors.textSecondary + "; margin: 0; line-height: 1.5;",
@@ -72,6 +78,7 @@ export async function sendEmail({
 }): Promise<{ success: boolean }> {
   assertEmailConfig();
   const baseUrl = env.BETTER_AUTH_URL || "http://localhost:3000";
+  const logoUrl = `${baseUrl.replace(/\/$/, "")}/Brnit-Logo.png`;
 
   const mailOptions = {
     from: env.NODEMAILER_USER,
@@ -88,7 +95,7 @@ export async function sendEmail({
     <body style="${emailStyles.wrapper}">
       <div style="${emailStyles.container}">
         <div style="${emailStyles.header}">
-          <h1 style="${emailStyles.logo}">Brnit</h1>
+          <img src="${logoUrl}" alt="Brnit" style="${emailStyles.logoImg}" width="112" height="36" />
         </div>
         <div style="${emailStyles.content}">
           <h2 style="${emailStyles.heading}">${subject}</h2>

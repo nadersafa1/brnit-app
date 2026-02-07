@@ -1,3 +1,4 @@
+export { AuthSuccessScreen } from "./auth";
 export { BottomNav } from "./bottom-nav";
 export { CalorieRing } from "./calorie-ring";
 export { CalendarStrip } from "./calendar-strip";
@@ -6,5 +7,6 @@ export { DayPill } from "./day-pill";
 export { MacroBar } from "./macro-bar";
 export { MealCard } from "./meal-card";
 export { PasswordInput } from "./password-input";
+export { PrimaryButton } from "./ui";
 export { TextInput } from "./text-input";
 export { ThemeToggle } from "./theme-toggle";

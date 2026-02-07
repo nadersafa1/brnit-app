@@ -1,14 +1,13 @@
-import { Button, ErrorView, Spinner } from 'heroui-native'
+import { ErrorView } from 'heroui-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Link, Redirect } from 'expo-router'
 import { useState } from 'react'
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { TextInput } from '@/components'
+import { AuthSuccessScreen, PrimaryButton, TextInput } from '@/components'
+import { DEEP_LINKS } from '@/constants/deep-links'
 import { authClient } from '@/lib/auth-client'
-
-const RESET_DEEP_LINK = 'burn-app://reset-password'
 
 export default function ForgotPasswordScreen() {
   const insets = useSafeAreaInsets()
@@ -36,7 +35,7 @@ export default function ForgotPasswordScreen() {
 
     const { error: err } = await authClient.requestPasswordReset({
       email: email.trim(),
-      redirectTo: RESET_DEEP_LINK,
+      redirectTo: DEEP_LINKS.resetPassword,
     })
 
     setIsLoading(false)
@@ -49,42 +48,18 @@ export default function ForgotPasswordScreen() {
 
   if (sent) {
     return (
-      <ScrollView
-        className='flex-1 bg-app-bg'
+      <AuthSuccessScreen
+        icon='mail-open-outline'
+        title='Check your email'
+        description="If an account exists for that email, we've sent a link to reset your password."
+        backHref='/(auth)/login'
+        backLabel='Back to sign in'
         contentContainerStyle={{
           paddingTop: insets.top + 20,
           paddingBottom: insets.bottom + 20,
-          paddingHorizontal: 24,
-          minHeight: '100%',
           justifyContent: 'center',
         }}
-      >
-        <View className='items-center mb-8'>
-          <View className='w-24 h-24 rounded-full bg-pastel-purple items-center justify-center'>
-            <Ionicons name='mail-open-outline' size={48} color='#FFFFFF' />
-          </View>
-        </View>
-        <View
-          className='bg-card rounded-lg p-6'
-          style={{
-            shadowColor: 'rgba(1, 4, 9, 0.12)',
-            shadowOffset: { width: 0, height: 6 },
-            shadowOpacity: 1,
-            shadowRadius: 18,
-            elevation: 8,
-          }}
-        >
-          <Text className='text-ink text-2xl font-bold mb-2'>Check your email</Text>
-          <Text className='text-muted text-sm mb-6'>
-            If an account exists for that email, we've sent a link to reset your password.
-          </Text>
-          <Link href='/(auth)/login' asChild>
-            <TouchableOpacity>
-              <Text className='text-accent font-medium text-sm text-center'>Back to sign in</Text>
-            </TouchableOpacity>
-          </Link>
-        </View>
-      </ScrollView>
+      />
     )
   }
 
@@ -134,13 +109,13 @@ export default function ForgotPasswordScreen() {
             autoComplete='email'
           />
 
-          <Button onPress={handleSendResetLink} isDisabled={isLoading} className='rounded-full h-11 bg-accent mt-2'>
-            {isLoading ? (
-              <Spinner size='sm' color='default' />
-            ) : (
-              <Button.Label className='text-white font-medium'>Send reset link</Button.Label>
-            )}
-          </Button>
+          <PrimaryButton
+            onPress={handleSendResetLink}
+            isLoading={isLoading}
+            className='mt-2'
+          >
+            Send reset link
+          </PrimaryButton>
 
           <View className='flex-row justify-center items-center mt-4'>
             <Link href='/(auth)/login' asChild>

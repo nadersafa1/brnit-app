@@ -1,13 +1,13 @@
 {
   "expo": {
-    "scheme": "burn-app",
+    "scheme": "brnit",
     "userInterfaceStyle": "automatic",
     "orientation": "default",
     "web": {
       "bundler": "metro"
     },
-    "name": "burn-app",
-    "slug": "burn-app",
+    "name": "brnit",
+    "slug": "brnit",
     "plugins": [
       "expo-font"
     ],
@@ -20,7 +20,7 @@
         "projectId": "814381d3-7237-4daf-aa3b-9688cfc504ab"
       }
     },
-    "owner": "burn-app",
+    "owner": "brnit",
     "runtimeVersion": {
       "policy": "appVersion"
     },

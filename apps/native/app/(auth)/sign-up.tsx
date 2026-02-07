@@ -1,11 +1,12 @@
-import { Button, ErrorView, Spinner } from "heroui-native";
+import { ErrorView } from "heroui-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, Redirect } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { PasswordInput, TextInput } from "@/components";
+import { AuthSuccessScreen, PasswordInput, PrimaryButton, TextInput } from "@/components";
+import { DEEP_LINKS } from "@/constants/deep-links";
 import { authClient } from "@/lib/auth-client";
 
 interface PasswordRequirement {
@@ -22,6 +23,7 @@ export default function SignUpScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
 
   // Show loading while checking auth
   if (isPending) {
@@ -79,6 +81,7 @@ export default function SignUpScreen() {
         name,
         email,
         password,
+        callbackURL: DEEP_LINKS.root,
       },
       {
         onError(error) {
@@ -90,6 +93,7 @@ export default function SignUpScreen() {
           setEmail("");
           setPassword("");
           setConfirmPassword("");
+          setSent(true);
         },
         onFinished() {
           setIsLoading(false);
@@ -106,6 +110,22 @@ export default function SignUpScreen() {
   function handleAppleLogin() {
     console.log("Apple login pressed");
     // TODO: Implement Apple OAuth
+  }
+
+  if (sent) {
+    return (
+      <AuthSuccessScreen
+        icon="mail-open-outline"
+        title="Check your email"
+        description="We've sent a verification link to your email."
+        backHref="/(auth)/login"
+        backLabel="Back to sign in"
+        contentContainerStyle={{
+          paddingTop: insets.top + 20,
+          paddingBottom: insets.bottom + 20,
+        }}
+      />
+    );
   }
 
   return (
@@ -234,19 +254,13 @@ export default function SignUpScreen() {
 
             {/* Primary Sign Up Button */}
             <View className="mt-2">
-              <Button
+              <PrimaryButton
                 onPress={handleSignUp}
-                isDisabled={isLoading || !allRequirementsMet || !passwordsMatch}
-                className={`rounded-full h-11 ${
-                  allRequirementsMet && passwordsMatch ? "bg-accent" : "bg-surface-alt opacity-50"
-                }`}
+                isLoading={isLoading}
+                isDisabled={!allRequirementsMet || !passwordsMatch}
               >
-                {isLoading ? (
-                  <Spinner size="sm" color="default" />
-                ) : (
-                  <Button.Label className="text-white font-medium">Create Account</Button.Label>
-                )}
-              </Button>
+                Create Account
+              </PrimaryButton>
             </View>
 
             {/* Navigation Link */}

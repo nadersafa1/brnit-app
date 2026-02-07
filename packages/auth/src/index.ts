@@ -16,7 +16,7 @@ export const auth = betterAuth({
     provider: "pg",
     schema: schema,
   }),
-  trustedOrigins: [env.CORS_ORIGIN, "mybettertapp://", "exp://", "burn-app://"],
+  trustedOrigins: [env.CORS_ORIGIN, "mybettertapp://", "exp://", "brnit://"],
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,

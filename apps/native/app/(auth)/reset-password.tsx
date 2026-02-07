@@ -1,11 +1,11 @@
-import { Button, ErrorView, Spinner } from "heroui-native";
+import { ErrorView } from "heroui-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, Redirect, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { PasswordInput } from "@/components";
+import { PasswordInput, PrimaryButton } from "@/components";
 import { authClient } from "@/lib/auth-client";
 
 export default function ResetPasswordScreen() {
@@ -141,17 +141,13 @@ export default function ResetPasswordScreen() {
             autoComplete="new-password"
           />
 
-          <Button
+          <PrimaryButton
             onPress={handleResetPassword}
-            isDisabled={isLoading}
-            className="rounded-full h-11 bg-accent mt-2"
+            isLoading={isLoading}
+            className="mt-2"
           >
-            {isLoading ? (
-              <Spinner size="sm" color="default" />
-            ) : (
-              <Button.Label className="text-white font-medium">Reset password</Button.Label>
-            )}
-          </Button>
+            Reset password
+          </PrimaryButton>
 
           <View className="flex-row justify-center items-center mt-4">
             <Link href="/(auth)/login" asChild>

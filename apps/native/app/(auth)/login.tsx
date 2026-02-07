@@ -1,11 +1,11 @@
-import { Button, ErrorView, Spinner } from "heroui-native";
+import { ErrorView } from "heroui-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, Redirect } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { PasswordInput, TextInput } from "@/components";
+import { PasswordInput, PrimaryButton, TextInput } from "@/components";
 import { authClient } from "@/lib/auth-client";
 
 export default function LoginScreen() {
@@ -162,17 +162,9 @@ export default function LoginScreen() {
 
             {/* Primary Sign In Button */}
             <View className="mt-2">
-              <Button
-                onPress={handleLogin}
-                isDisabled={isLoading}
-                className="rounded-full h-11 bg-accent"
-              >
-                {isLoading ? (
-                  <Spinner size="sm" color="default" />
-                ) : (
-                  <Button.Label className="text-white font-medium">Sign In</Button.Label>
-                )}
-              </Button>
+              <PrimaryButton onPress={handleLogin} isLoading={isLoading}>
+                Sign In
+              </PrimaryButton>
             </View>
 
             {/* Navigation Link */}

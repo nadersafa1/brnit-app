@@ -1,5 +1,5 @@
 {
-  "name": "burn-app",
+  "name": "brnit",
   "private": true,
   "workspaces": [
     "apps/*",
