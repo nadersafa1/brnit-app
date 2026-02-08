@@ -8,6 +8,13 @@
       "when": 1769850924707,
       "tag": "0000_superb_multiple_man",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1770557788128,
+      "tag": "0001_loud_sugar_man",
+      "breakpoints": true
     }
   ]
 }

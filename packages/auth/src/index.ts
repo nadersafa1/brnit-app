@@ -5,6 +5,7 @@ import { env } from "@burn-app/env/server";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
+import { admin } from "better-auth/plugins";
 
 import { sendPasswordResetEmail } from "./emails/send-password-reset-email";
 import { sendVerificationEmail } from "./emails/send-verification-email";
@@ -38,5 +39,5 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24, // 24 hours
     autoSignInAfterVerification: true,
   },
-  plugins: [nextCookies(), expo()],
+  plugins: [nextCookies(), admin({ defaultRole: "user" }), expo()],
 });
