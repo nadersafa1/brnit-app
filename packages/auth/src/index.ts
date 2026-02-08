@@ -17,6 +17,16 @@ export const auth = betterAuth({
     schema: schema,
   }),
   trustedOrigins: [env.CORS_ORIGIN, "mybettertapp://", "exp://", "brnit://"],
+  socialProviders:
+    env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+      ? {
+          google: {
+            enabled: true,
+            clientId: env.GOOGLE_CLIENT_ID,
+            clientSecret: env.GOOGLE_CLIENT_SECRET,
+          },
+        }
+      : {},
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,

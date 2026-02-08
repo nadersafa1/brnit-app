@@ -10,4 +10,6 @@ export const env = {
   NODEMAILER_USER: process.env.NODEMAILER_USER || "",
   NODEMAILER_APP_PASSWORD: process.env.NODEMAILER_APP_PASSWORD || "",
   NODEMAILER_PORT: process.env.NODEMAILER_PORT ? Number(process.env.NODEMAILER_PORT) : 465,
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
+  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || "",
 };

@@ -102,9 +102,27 @@ export default function SignUpScreen() {
     );
   }
 
-  function handleGoogleLogin() {
-    console.log("Google login pressed");
-    // TODO: Implement Google OAuth
+  async function handleGoogleLogin() {
+    setIsLoading(true);
+    setError(null);
+    await authClient.signIn.social(
+      {
+        provider: "google",
+        callbackURL: "/(tabs)",
+      },
+      {
+        onError(err) {
+          setError(err.error?.message || "Google sign-in failed");
+          setIsLoading(false);
+        },
+        onSuccess() {
+          setError(null);
+        },
+        onFinished() {
+          setIsLoading(false);
+        },
+      }
+    );
   }
 
   function handleAppleLogin() {
@@ -225,6 +243,7 @@ export default function SignUpScreen() {
             <View className="flex-row gap-3 mt-2">
               <TouchableOpacity
                 onPress={handleGoogleLogin}
+                disabled={isLoading}
                 className="bg-card rounded-full h-11 flex-1 flex-row items-center justify-center px-4"
                 style={{
                   shadowColor: "rgba(1, 4, 9, 0.12)",
