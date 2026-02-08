@@ -17,7 +17,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "814381d3-7237-4daf-aa3b-9688cfc504ab"
+        "projectId": "eb226ae4-16cf-4326-bdba-08518b4ae2a3"
       }
     },
     "owner": "brnit",
@@ -25,7 +25,7 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/814381d3-7237-4daf-aa3b-9688cfc504ab"
+      "url": "https://u.expo.dev/eb226ae4-16cf-4326-bdba-08518b4ae2a3"
     },
     "android": {},
     "ios": {}
