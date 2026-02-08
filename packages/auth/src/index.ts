@@ -5,9 +5,10 @@ import { env } from "@burn-app/env/server";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
-import { admin } from "better-auth/plugins";
+import { admin, organization } from "better-auth/plugins";
 
 import { sendPasswordResetEmail } from "./emails/send-password-reset-email";
+import { ac, owner, admin as adminRole, member } from "./permissions";
 import { sendVerificationEmail } from "./emails/send-verification-email";
 
 export const auth = betterAuth({
@@ -39,5 +40,15 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24, // 24 hours
     autoSignInAfterVerification: true,
   },
-  plugins: [nextCookies(), admin({ defaultRole: "user" }), expo()],
+  plugins: [
+    nextCookies(),
+    admin({ defaultRole: "user" }),
+    organization({
+      ac,
+      roles: { owner, admin: adminRole, member },
+      creatorRole: "owner",
+      allowUserToCreateOrganization: () => true,
+    }),
+    expo(),
+  ],
 });
