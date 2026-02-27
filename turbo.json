@@ -30,6 +30,9 @@
     },
     "db:generate": {
       "cache": false
+    },
+    "seed": {
+      "cache": false
     }
   }
 }

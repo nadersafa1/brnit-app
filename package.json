@@ -16,6 +16,7 @@
     "db:studio": "turbo -F @burn-app/db db:studio",
     "db:generate": "turbo -F @burn-app/db db:generate",
 "db:migrate": "turbo -F @burn-app/db db:migrate",
+    "db:seed": "turbo -F @burn-app/db seed",
     "auth:generate-schema": "npx @better-auth/cli@latest generate --config ./packages/auth/src/index.ts --output ./packages/db/src/schema/auth-better-auth-generated.ts --yes"
   },
   "dependencies": {
