@@ -3,6 +3,7 @@
 import { useState } from 'react'
 
 import { authClient } from '@/lib/auth-client'
+import { useOrganizationPermissions } from '@/hooks/authorization'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -13,26 +14,18 @@ import { useOrgMembers } from './use-org-members'
 import type { Member } from 'better-auth/plugins'
 import type { User } from 'better-auth/types'
 
-const CAN_MANAGE_MEMBERS_ROLES = new Set(['owner', 'client_admin'])
-
 const roleLabel = (role: string) =>
   role === 'owner' ? 'Owner' : (ORG_INVITE_ROLES.find(r => r.value === role)?.label ?? role)
 
-const MembersList = ({
-  organizationId,
-  currentUserRole,
-}: {
-  organizationId: string
-  currentUserRole: string | null
-}) => {
+const MembersList = ({ organizationId }: { organizationId: string }) => {
+  const { canManageMembers } = useOrganizationPermissions()
   const { data: session } = authClient.useSession()
   const currentUserId = session?.user?.id
   const { members, loading, error, refetch } = useOrgMembers(organizationId)
   const [removeMember, setRemoveMember] = useState<(Member & { user: User }) | null>(null)
   const [roleMember, setRoleMember] = useState<(Member & { user: User }) | null>(null)
 
-  const normalizedRole = currentUserRole?.toLowerCase() ?? ''
-  const canManage = CAN_MANAGE_MEMBERS_ROLES.has(normalizedRole) || session?.user?.role === 'admin'
+  const canManage = canManageMembers
 
   if (loading) return null
   if (error) {

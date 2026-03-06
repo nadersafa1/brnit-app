@@ -1,11 +1,12 @@
 'use client'
 
-import { Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { authClient } from '@/lib/auth-client'
+import { organizationContextKeys } from '@/lib/queries/organization-context'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import Loader from '@/components/loader'
@@ -13,6 +14,7 @@ import Loader from '@/components/loader'
 const AcceptInvitationContent = () => {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const queryClient = useQueryClient()
   const invitationId = searchParams.get('invitationId')
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
 
@@ -45,6 +47,7 @@ const AcceptInvitationContent = () => {
           ).setActiveOrganization
           if (setActive) await setActive({ organizationId })
         }
+        await queryClient.invalidateQueries({ queryKey: organizationContextKeys.all })
         toast.success('You joined the organization')
         setStatus('done')
         router.replace('/dashboard')
@@ -53,7 +56,7 @@ const AcceptInvitationContent = () => {
         toast.error('Failed to accept invitation')
         setStatus('error')
       })
-  }, [session, sessionPending, invitationId, router, status])
+  }, [session, sessionPending, invitationId, router, status, queryClient])
 
   if (!invitationId) {
     return (
