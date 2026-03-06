@@ -2,24 +2,23 @@ import { expo } from '@better-auth/expo'
 import { db } from '@burn-app/db'
 import * as schema from '@burn-app/db/schema/auth'
 import { env } from '@burn-app/env/server'
-import { APIError } from 'better-auth/api'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { APIError } from 'better-auth/api'
 import { nextCookies } from 'better-auth/next-js'
-import { admin, organization } from 'better-auth/plugins'
-
+import { admin, organization, openAPI } from 'better-auth/plugins'
+import { sendOrganizationInvitation } from './emails/send-organization-invitation'
 import { sendPasswordResetEmail } from './emails/send-password-reset-email'
+import { sendVerificationEmail } from './emails/send-verification-email'
 import {
   ac,
-  owner,
   client_admin,
-  direct_admin,
-  nutritionist,
   coach,
+  direct_admin,
   member,
+  nutritionist,
+  owner,
 } from './permissions'
-import { sendVerificationEmail } from './emails/send-verification-email'
-import { sendOrganizationInvitation } from './emails/send-organization-invitation'
 
 export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
@@ -52,6 +51,8 @@ export const auth = betterAuth({
   },
   plugins: [
     nextCookies(),
+    openAPI(),
+
     admin({ defaultRole: 'user' }),
     organization({
       ac,

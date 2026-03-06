@@ -1,0 +1,1 @@
+ALTER TABLE "diet_plan_meal" ADD CONSTRAINT "diet_plan_meal_meal_id_meal_id_fk" FOREIGN KEY ("meal_id") REFERENCES "public"."meal"("id") ON DELETE restrict ON UPDATE no action;

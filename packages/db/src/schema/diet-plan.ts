@@ -1,5 +1,12 @@
 import { relations } from 'drizzle-orm'
-import { pgTable, text, timestamp, date, integer, index } from 'drizzle-orm/pg-core'
+import {
+  pgTable,
+  text,
+  timestamp,
+  date,
+  integer,
+  index,
+} from 'drizzle-orm/pg-core'
 import { meal } from './meal'
 
 export const dietPlan = pgTable('diet_plan', {
@@ -26,7 +33,9 @@ export const dietPlanMeal = pgTable(
     dietPlanId: text('diet_plan_id')
       .notNull()
       .references(() => dietPlan.id, { onDelete: 'cascade' }),
-    mealId: text('meal_id').notNull(),
+    mealId: text('meal_id')
+      .notNull()
+      .references(() => meal.id, { onDelete: 'restrict' }),
     dayNumber: integer('day_number').notNull(),
     mealType: text('meal_type').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),

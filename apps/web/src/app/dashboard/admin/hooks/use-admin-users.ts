@@ -1,5 +1,6 @@
 'use client'
 
+import { authClient } from '@/lib/auth-client'
 import { useCallback, useEffect, useState } from 'react'
 import type { AdminUsersFilters, AdminUsersResponse } from '../types'
 
@@ -7,7 +8,7 @@ const defaultFilters: AdminUsersFilters = {
   q: '',
   role: '',
   page: 1,
-  limit: 25,
+  perPage: 25,
   sortBy: 'createdAt',
   sortOrder: 'desc',
 }
@@ -22,20 +23,46 @@ export function useAdminUsers() {
     setIsLoading(true)
     setError(null)
     try {
-      const params = new URLSearchParams()
-      params.set('page', String(f.page))
-      params.set('limit', String(f.limit))
-      params.set('sortBy', f.sortBy)
-      params.set('sortOrder', f.sortOrder)
-      if (f.q) params.set('q', f.q)
-      if (f.role) params.set('role', f.role)
-      const res = await fetch(`/api/admin/users?${params}`)
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error ?? 'Failed to fetch users')
+      const { data: result, error: listError } = await authClient.admin.listUsers({
+        query: {
+          limit: f.perPage,
+          offset: (f.page - 1) * f.perPage,
+          sortBy: f.sortBy,
+          sortDirection: f.sortOrder,
+          ...(f.q && {
+            searchValue: f.q,
+            searchField: 'email',
+            searchOperator: 'contains',
+          }),
+          ...(f.role && {
+            filterField: 'role',
+            filterValue: f.role,
+            filterOperator: 'eq',
+          }),
+        },
+      })
+
+      if (listError) {
+        throw new Error(listError.message ?? 'Failed to fetch users')
       }
-      const json: AdminUsersResponse = await res.json()
-      setData(json)
+
+      const rawUsers = result?.users ?? []
+      const users = rawUsers.map((u) => ({
+        ...u,
+        role: u.role ?? null,
+      })) as AdminUsersResponse['users']
+      const total = result?.total ?? 0
+      const totalPages = Math.ceil(total / f.perPage)
+
+      setData({
+        users,
+        pagination: {
+          page: f.page,
+          perPage: f.perPage,
+          totalItems: total,
+          totalPages,
+        },
+      })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to fetch users')
     } finally {
@@ -55,12 +82,19 @@ export function useAdminUsers() {
 
   return {
     users: data?.users ?? [],
-    pagination: data?.pagination ?? {
-      page: 1,
-      limit: filters.limit,
-      totalItems: 0,
-      totalPages: 1,
-    },
+    pagination: data?.pagination
+      ? {
+          page: data.pagination.page,
+          limit: data.pagination.perPage,
+          totalItems: data.pagination.totalItems,
+          totalPages: data.pagination.totalPages,
+        }
+      : {
+          page: 1,
+          limit: filters.perPage,
+          totalItems: 0,
+          totalPages: 1,
+        },
     filters,
     setFilters: setFiltersAndFetch,
     isLoading,

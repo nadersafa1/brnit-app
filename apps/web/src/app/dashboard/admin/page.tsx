@@ -97,22 +97,25 @@ const AdminPage = () => {
 
   const handleChangeRole = useCallback((user: AdminUser) => setRoleUser(user), [])
   const handleChangeRoleConfirm = useCallback(
-    async (userId: string, role: string) => {
-      const res = await fetch(`/api/admin/users/${userId}/role`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role }),
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        const message = data.error ?? 'Failed to update role'
-        toast.error(message)
-        throw new Error(message)
-      }
-      toast.success('Role updated')
-      setRoleUser(null)
-      refetch()
-    },
+    (userId: string, role: string) =>
+      new Promise<void>((resolve, reject) => {
+        authClient.admin.setRole(
+          { userId, role: role } as { userId: string; role: 'admin' | 'user' },
+          {
+            onSuccess: () => {
+              toast.success('Role updated')
+              setRoleUser(null)
+              refetch()
+              resolve()
+            },
+            onError: (ctx) => {
+              const message = String(ctx.error?.message ?? 'Failed to update role')
+              toast.error(message)
+              reject(new Error(message))
+            },
+          }
+        )
+      }),
     [refetch]
   )
 
@@ -161,7 +164,7 @@ const AdminPage = () => {
             users={users}
             pagination={pagination}
             onPageChange={(page) => setFilters({ ...filters, page })}
-            onPageSizeChange={(limit) => setFilters({ ...filters, limit, page: 1 })}
+            onPageSizeChange={(perPage) => setFilters({ ...filters, perPage, page: 1 })}
             onSearchChange={(q) => setFilters({ ...filters, q, page: 1 })}
             searchValue={filters.q}
             role={filters.role}
