@@ -1,0 +1,15 @@
+export const API_ENDPOINTS = {
+  users: {
+    organizationContext: '/api/users/me/organization-context',
+  },
+  admin: {
+    foodItems: '/api/admin/food-items',
+    foodItem: (id: string) => `/api/admin/food-items/${id}`,
+    meals: '/api/admin/meals',
+    meal: (id: string) => `/api/admin/meals/${id}`,
+    dietPlans: '/api/admin/diet-plans',
+    dietPlan: (id: string) => `/api/admin/diet-plans/${id}`,
+    foodCategories: '/api/admin/food-categories',
+    foodCategory: (id: string) => `/api/admin/food-categories/${id}`,
+  },
+} as const

@@ -1,25 +1,26 @@
 import { expo } from '@better-auth/expo'
 import { db } from '@burn-app/db'
 import * as schema from '@burn-app/db/schema/auth'
+import { and, eq } from 'drizzle-orm'
+import { canInviteWithAnyRole } from './authorization'
 import { env } from '@burn-app/env/server'
-import { APIError } from 'better-auth/api'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { APIError } from 'better-auth/api'
 import { nextCookies } from 'better-auth/next-js'
-import { admin, organization } from 'better-auth/plugins'
-
+import { admin, organization, openAPI } from 'better-auth/plugins'
+import { sendOrganizationInvitation } from './emails/send-organization-invitation'
 import { sendPasswordResetEmail } from './emails/send-password-reset-email'
+import { sendVerificationEmail } from './emails/send-verification-email'
 import {
   ac,
-  owner,
   client_admin,
-  direct_admin,
-  nutritionist,
   coach,
+  direct_admin,
   member,
+  nutritionist,
+  owner,
 } from './permissions'
-import { sendVerificationEmail } from './emails/send-verification-email'
-import { sendOrganizationInvitation } from './emails/send-organization-invitation'
 
 export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
@@ -52,6 +53,8 @@ export const auth = betterAuth({
   },
   plugins: [
     nextCookies(),
+    openAPI(),
+
     admin({ defaultRole: 'user' }),
     organization({
       ac,
@@ -84,10 +87,24 @@ export const auth = betterAuth({
       },
       organizationHooks: {
         beforeCreateInvitation: async ({ invitation, inviter }) => {
+          // App admin can invite with any role
+          if (inviter.role === 'admin') {
+            const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+            return { data: { ...invitation, expiresAt } }
+          }
+          // For non-member roles, check org role: owner or client_admin
           if (invitation.role !== 'member') {
-            if (!['org_admin', 'owner'].includes(inviter.role)) {
+            const membership = await db.query.member.findFirst({
+              where: and(
+                eq(schema.member.userId, inviter.id),
+                eq(schema.member.organizationId, invitation.organizationId)
+              ),
+              columns: { role: true },
+            })
+            if (!canInviteWithAnyRole({ appRole: null, orgRole: membership?.role ?? null })) {
               throw new APIError('BAD_REQUEST', {
-                message: 'You can only invite members with member role',
+                message:
+                  'Only org owners, client admins, or app admins can invite with non-member roles',
               })
             }
           }

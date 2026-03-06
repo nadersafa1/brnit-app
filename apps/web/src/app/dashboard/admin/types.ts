@@ -21,7 +21,7 @@ export interface AdminUsersFilters {
   q: string
   role: string
   page: number
-  limit: number
+  perPage: number
   sortBy: AdminUsersSortBy
   sortOrder: SortOrder
 }
@@ -30,7 +30,7 @@ export interface AdminUsersResponse {
   users: AdminUser[]
   pagination: {
     page: number
-    limit: number
+    perPage: number
     totalItems: number
     totalPages: number
   }
