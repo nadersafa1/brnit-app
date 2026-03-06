@@ -40,7 +40,7 @@ export function NavMain({
           <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip={item.title}>
-                <Link href={item.url as "/dashboard" | "/dashboard/organizations" | "/dashboard/admin"}>
+                <Link href={item.url as "/dashboard" | "/dashboard/organizations" | "/dashboard/admin" | "/dashboard/admin/categories" | "/dashboard/admin/food-items"}>
                   <item.icon />
                   <span>{item.title}</span>
                 </Link>
@@ -58,7 +58,7 @@ export function NavMain({
                       {item.items?.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild>
-                            <Link href={subItem.url as "/dashboard" | "/dashboard/organizations"}>
+                            <Link href={subItem.url as "/dashboard" | "/dashboard/organizations" | "/dashboard/admin" | "/dashboard/admin/categories" | "/dashboard/admin/food-items"}>
                               <span>{subItem.title}</span>
                             </Link>
                           </SidebarMenuSubButton>

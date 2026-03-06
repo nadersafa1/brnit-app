@@ -37,7 +37,12 @@ const adminNavItem = {
   title: 'Admin',
   url: '/dashboard/admin',
   icon: UserCog,
-  items: [],
+  isActive: true,
+  items: [
+    { title: 'Users', url: '/dashboard/admin' },
+    { title: 'Categories', url: '/dashboard/admin/categories' },
+    { title: 'Food Items', url: '/dashboard/admin/food-items' },
+  ],
 }
 
 export const AppSidebar = (props: React.ComponentProps<typeof Sidebar>) => {
