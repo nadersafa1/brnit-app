@@ -1,12 +1,13 @@
 import { queryOptions } from '@tanstack/react-query'
 import type { OrganizationContext } from '@/types/organization'
+import { API_ENDPOINTS } from '@/lib/api/endpoints'
 
 export const organizationContextKeys = {
   all: ['organization-context'] as const,
 }
 
 export function fetchOrganizationContext(): Promise<OrganizationContext> {
-  return fetch('/api/users/me/organization-context').then(res => {
+  return fetch(API_ENDPOINTS.users.organizationContext).then(res => {
     if (!res.ok) throw new Error('Failed to fetch organization context')
     return res.json()
   })
