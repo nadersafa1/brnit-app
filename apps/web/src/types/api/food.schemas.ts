@@ -14,7 +14,10 @@ export const foodItemsQuerySchema = z.object({
 })
 
 export const foodCategoriesQuerySchema = z.object({
+  ...standardPaginationSchema.shape,
   ...standardTextSearchSchema.shape,
+  ...standardSortSchema.shape,
+  sortBy: z.enum(['name', 'createdAt']).optional(),
 })
 
 export const createFoodCategorySchema = z.object({

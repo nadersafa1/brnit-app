@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@burn-app/db'
 import { foodCategory } from '@burn-app/db/schema'
-import { asc, ilike } from 'drizzle-orm'
+import { count, asc, desc, ilike } from 'drizzle-orm'
 import { requireAdmin } from '@/lib/api-helpers/admin-auth'
+import { calculateOffset, combineConditions } from '@/lib/api-helpers/query-builders'
+import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
 import {
   createFoodCategorySchema,
   foodCategoriesQuerySchema,
@@ -16,7 +18,11 @@ export const GET = async (request: NextRequest) => {
 
   const { searchParams } = new URL(request.url)
   const parseResult = foodCategoriesQuerySchema.safeParse({
+    page: searchParams.get('page') ?? undefined,
+    perPage: searchParams.get('perPage') ?? searchParams.get('limit') ?? undefined,
     q: searchParams.get('q') ?? undefined,
+    sortBy: searchParams.get('sortBy') ?? undefined,
+    sortOrder: searchParams.get('sortOrder') ?? undefined,
   })
 
   if (!parseResult.success) {
@@ -26,15 +32,36 @@ export const GET = async (request: NextRequest) => {
     )
   }
 
-  const { q } = parseResult.data
+  const { page, perPage, q, sortBy, sortOrder } = parseResult.data
+  const offset = calculateOffset(page, perPage)
 
-  const categories = await db
-    .select()
-    .from(foodCategory)
-    .where(q ? ilike(foodCategory.name, `%${q}%`) : undefined)
-    .orderBy(asc(foodCategory.name))
+  const conditions = []
+  if (q) {
+    conditions.push(ilike(foodCategory.name, `%${q}%`))
+  }
+  const where = combineConditions(conditions)
 
-  return NextResponse.json({ data: categories })
+  const sortFieldMap = {
+    name: foodCategory.name,
+    createdAt: foodCategory.createdAt,
+  } as const
+  const sortColumn = sortFieldMap[sortBy ?? 'name'] ?? foodCategory.name
+  const sortDir = sortOrder === 'asc' ? asc : desc
+
+  const [countResult, categories] = await Promise.all([
+    db.select({ count: count() }).from(foodCategory).where(where),
+    db
+      .select()
+      .from(foodCategory)
+      .where(where)
+      .orderBy(sortDir(sortColumn))
+      .limit(perPage)
+      .offset(offset),
+  ])
+
+  const totalItems = countResult[0]?.count ?? 0
+
+  return NextResponse.json(createPaginatedResponse(categories, page, perPage, totalItems))
 }
 
 export const POST = async (request: NextRequest) => {
