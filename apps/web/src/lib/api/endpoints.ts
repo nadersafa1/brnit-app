@@ -1,4 +1,9 @@
 export const API_ENDPOINTS = {
+  directAdmin: {
+    bodyCompositionAssessments: '/api/direct-admin/body-composition-assessments',
+    bodyCompositionAssessment: (id: string) =>
+      `/api/direct-admin/body-composition-assessments/${id}`,
+  },
   users: {
     organizationContext: '/api/users/me/organization-context',
   },
