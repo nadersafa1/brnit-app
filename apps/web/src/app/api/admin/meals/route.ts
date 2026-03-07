@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@burn-app/db'
-import { meal, mealItem } from '@burn-app/db/schema'
-import { count, asc, desc, ilike } from 'drizzle-orm'
 import { requireAdmin } from '@/lib/api-helpers/admin-auth'
-import { calculateOffset, combineConditions } from '@/lib/api-helpers/query-builders'
 import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
+import { createMeal, listMeals } from '@/lib/services/meals'
 import { mealsQuerySchema, createMealSchema } from '@/types/api/meal.schemas'
 
 export const dynamic = 'force-dynamic'
@@ -29,40 +26,8 @@ export const GET = async (request: NextRequest) => {
     )
   }
 
-  const { page, perPage, q, sortBy, sortOrder } = parseResult.data
-  const offset = calculateOffset(page, perPage)
-
-  const conditions = []
-  if (q) {
-    conditions.push(ilike(meal.name, `%${q}%`))
-  }
-  const where = combineConditions(conditions)
-
-  const sortFieldMap = {
-    name: meal.name,
-    createdAt: meal.createdAt,
-  } as const
-  const sortColumn = sortFieldMap[sortBy ?? 'createdAt'] ?? meal.createdAt
-  const sortDir = sortOrder === 'asc' ? asc : desc
-
-  const [countResult, items] = await Promise.all([
-    db.select({ count: count() }).from(meal).where(where),
-    db
-      .select({
-        id: meal.id,
-        name: meal.name,
-        description: meal.description,
-        createdAt: meal.createdAt,
-        updatedAt: meal.updatedAt,
-      })
-      .from(meal)
-      .where(where)
-      .orderBy(sortDir(sortColumn))
-      .limit(perPage)
-      .offset(offset),
-  ])
-
-  const totalItems = countResult[0]?.count ?? 0
+  const { page, perPage } = parseResult.data
+  const { items, totalItems } = await listMeals(parseResult.data)
 
   return NextResponse.json(createPaginatedResponse(items, page, perPage, totalItems))
 }
@@ -81,25 +46,10 @@ export const POST = async (request: NextRequest) => {
     )
   }
 
-  const { name, description, mealItems } = parseResult.data
-
-  const [newMeal] = await db
-    .insert(meal)
-    .values({ name, description })
-    .returning()
+  const newMeal = await createMeal(parseResult.data)
 
   if (!newMeal) {
     return NextResponse.json({ error: 'Failed to create meal' }, { status: 500 })
-  }
-
-  if (mealItems.length > 0) {
-    await db.insert(mealItem).values(
-      mealItems.map((item) => ({
-        mealId: newMeal.id,
-        foodItemId: item.foodItemId,
-        quantity: item.quantity.toString(),
-      }))
-    )
   }
 
   return NextResponse.json({ data: newMeal }, { status: 201 })

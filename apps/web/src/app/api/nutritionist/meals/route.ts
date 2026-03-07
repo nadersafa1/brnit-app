@@ -1,23 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/api-helpers/admin-auth'
+import { requireNutritionist } from '@/lib/api-helpers/nutritionist-auth'
 import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
-import { createFoodItem, listFoodItems } from '@/lib/services/food'
-import { foodItemsQuerySchema, createFoodItemSchema } from '@/types/api/food.schemas'
+import { createMeal, listMeals } from '@/lib/services/meals'
+import { mealsQuerySchema, createMealSchema } from '@/types/api/meal.schemas'
 
 export const dynamic = 'force-dynamic'
 
 export const GET = async (request: NextRequest) => {
-  const authResult = await requireAdmin(request.headers)
+  const authResult = await requireNutritionist(request.headers)
   if (authResult.error) return authResult.error
 
   const { searchParams } = new URL(request.url)
-  const parseResult = foodItemsQuerySchema.safeParse({
+  const parseResult = mealsQuerySchema.safeParse({
     page: searchParams.get('page') ?? undefined,
     perPage: searchParams.get('perPage') ?? searchParams.get('limit') ?? undefined,
     q: searchParams.get('q') ?? undefined,
     sortBy: searchParams.get('sortBy') ?? undefined,
     sortOrder: searchParams.get('sortOrder') ?? undefined,
-    categoryId: searchParams.get('categoryId') ?? undefined,
   })
 
   if (!parseResult.success) {
@@ -28,17 +27,17 @@ export const GET = async (request: NextRequest) => {
   }
 
   const { page, perPage } = parseResult.data
-  const { items, totalItems } = await listFoodItems(parseResult.data)
+  const { items, totalItems } = await listMeals(parseResult.data)
 
   return NextResponse.json(createPaginatedResponse(items, page, perPage, totalItems))
 }
 
 export const POST = async (request: NextRequest) => {
-  const authResult = await requireAdmin(request.headers)
+  const authResult = await requireNutritionist(request.headers)
   if (authResult.error) return authResult.error
 
   const body = await request.json()
-  const parseResult = createFoodItemSchema.safeParse(body)
+  const parseResult = createMealSchema.safeParse(body)
 
   if (!parseResult.success) {
     return NextResponse.json(
@@ -47,23 +46,11 @@ export const POST = async (request: NextRequest) => {
     )
   }
 
-  const { name, categoryId, fdcId, calories, protein, carbs, fat, servingSize } =
-    parseResult.data
+  const newMeal = await createMeal(parseResult.data)
 
-  const newItem = await createFoodItem({
-    name,
-    categoryId,
-    fdcId,
-    calories,
-    protein,
-    carbs,
-    fat,
-    servingSize,
-  })
-
-  if (!newItem) {
-    return NextResponse.json({ error: 'Failed to create food item' }, { status: 500 })
+  if (!newMeal) {
+    return NextResponse.json({ error: 'Failed to create meal' }, { status: 500 })
   }
 
-  return NextResponse.json({ data: newItem }, { status: 201 })
+  return NextResponse.json({ data: newMeal }, { status: 201 })
 }

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/api-helpers/admin-auth'
+import { requireNutritionist } from '@/lib/api-helpers/nutritionist-auth'
 import { getMealById, updateMeal, deleteMeal } from '@/lib/services/meals'
 import { updateMealSchema } from '@/types/api/meal.schemas'
 
 type Params = { params: Promise<{ id: string }> }
 
 export const GET = async (request: NextRequest, { params }: Params) => {
-  const authResult = await requireAdmin(request.headers)
+  const authResult = await requireNutritionist(request.headers)
   if (authResult.error) return authResult.error
 
   const { id } = await params
@@ -20,7 +20,7 @@ export const GET = async (request: NextRequest, { params }: Params) => {
 }
 
 export const PATCH = async (request: NextRequest, { params }: Params) => {
-  const authResult = await requireAdmin(request.headers)
+  const authResult = await requireNutritionist(request.headers)
   if (authResult.error) return authResult.error
 
   const { id } = await params
@@ -47,7 +47,7 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
 }
 
 export const DELETE = async (request: NextRequest, { params }: Params) => {
-  const authResult = await requireAdmin(request.headers)
+  const authResult = await requireNutritionist(request.headers)
   if (authResult.error) return authResult.error
 
   const { id } = await params

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@burn-app/db'
-import { foodCategory } from '@burn-app/db/schema'
-import { eq } from 'drizzle-orm'
 import { requireAdmin } from '@/lib/api-helpers/admin-auth'
+import {
+  getFoodCategoryById,
+  updateFoodCategory,
+  deleteFoodCategory,
+} from '@/lib/services/food'
 import { updateFoodCategorySchema } from '@/types/api/food.schemas'
 
 type Params = { params: Promise<{ id: string }> }
@@ -12,12 +14,7 @@ export const GET = async (request: NextRequest, { params }: Params) => {
   if (authResult.error) return authResult.error
 
   const { id } = await params
-
-  const [category] = await db
-    .select()
-    .from(foodCategory)
-    .where(eq(foodCategory.id, id))
-    .limit(1)
+  const category = await getFoodCategoryById(id)
 
   if (!category) {
     return NextResponse.json({ error: 'Category not found' }, { status: 404 })
@@ -41,13 +38,7 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
     )
   }
 
-  const { name } = parseResult.data
-
-  const [updated] = await db
-    .update(foodCategory)
-    .set({ name })
-    .where(eq(foodCategory.id, id))
-    .returning()
+  const updated = await updateFoodCategory(id, parseResult.data)
 
   if (!updated) {
     return NextResponse.json({ error: 'Category not found' }, { status: 404 })
@@ -61,11 +52,7 @@ export const DELETE = async (request: NextRequest, { params }: Params) => {
   if (authResult.error) return authResult.error
 
   const { id } = await params
-
-  const [deleted] = await db
-    .delete(foodCategory)
-    .where(eq(foodCategory.id, id))
-    .returning()
+  const deleted = await deleteFoodCategory(id)
 
   if (!deleted) {
     return NextResponse.json({ error: 'Category not found' }, { status: 404 })

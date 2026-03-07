@@ -8,7 +8,7 @@ import {
 const dateStringSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD')
 
 export const dietPlanMealSchema = z.object({
-  mealId: z.string().uuid('Invalid meal ID'),
+  mealId: z.uuid('Invalid meal ID'),
   dayNumber: z.number().int().positive('Day number must be a positive integer'),
   mealType: z.string().min(1, 'Meal type is required').max(50, 'Meal type must be less than 50 characters'),
 })
@@ -28,25 +28,21 @@ export const createDietPlanSchema = z
     endDate: dateStringSchema,
     dietPlanMeals: z.array(dietPlanMealSchema).optional().default([]),
   })
-  .refine((data) => data.startDate <= data.endDate, {
+  .refine(data => data.startDate <= data.endDate, {
     message: 'Start date must be before or equal to end date',
     path: ['endDate'],
   })
 
 export const updateDietPlanSchema = z
   .object({
-    name: z
-      .string()
-      .min(1, 'Name is required')
-      .max(255, 'Name must be less than 255 characters')
-      .optional(),
+    name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters').optional(),
     description: z.string().max(500).nullable().optional(),
     startDate: dateStringSchema.optional(),
     endDate: dateStringSchema.optional(),
     dietPlanMeals: z.array(dietPlanMealSchema).optional(),
   })
   .refine(
-    (data) => {
+    data => {
       if (data.startDate && data.endDate) return data.startDate <= data.endDate
       return true
     },

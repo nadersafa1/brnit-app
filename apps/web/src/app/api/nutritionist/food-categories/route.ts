@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/api-helpers/admin-auth'
+import { requireNutritionist } from '@/lib/api-helpers/nutritionist-auth'
 import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
-import { createFoodCategory, listFoodCategories } from '@/lib/services/food'
-import {
-  createFoodCategorySchema,
-  foodCategoriesQuerySchema,
-} from '@/types/api/food.schemas'
+import { listFoodCategories } from '@/lib/services/food'
+import { foodCategoriesQuerySchema } from '@/types/api/food.schemas'
 
 export const dynamic = 'force-dynamic'
 
 export const GET = async (request: NextRequest) => {
-  const authResult = await requireAdmin(request.headers)
+  const authResult = await requireNutritionist(request.headers)
   if (authResult.error) return authResult.error
 
   const { searchParams } = new URL(request.url)
@@ -33,27 +30,4 @@ export const GET = async (request: NextRequest) => {
   const { items, totalItems } = await listFoodCategories(parseResult.data)
 
   return NextResponse.json(createPaginatedResponse(items, page, perPage, totalItems))
-}
-
-export const POST = async (request: NextRequest) => {
-  const authResult = await requireAdmin(request.headers)
-  if (authResult.error) return authResult.error
-
-  const body = await request.json()
-  const parseResult = createFoodCategorySchema.safeParse(body)
-
-  if (!parseResult.success) {
-    return NextResponse.json(
-      { error: 'Invalid request body', details: parseResult.error.flatten() },
-      { status: 400 }
-    )
-  }
-
-  const newCategory = await createFoodCategory(parseResult.data)
-
-  if (!newCategory) {
-    return NextResponse.json({ error: 'Failed to create category' }, { status: 500 })
-  }
-
-  return NextResponse.json({ data: newCategory }, { status: 201 })
 }
