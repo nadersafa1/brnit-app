@@ -66,3 +66,10 @@ export const hasOrgInvitePermission = hasOrgAdminRole
  */
 export const hasOrgMemberManagementPermission = (ctx: OrganizationContext): boolean =>
   ctx.isAppAdmin || ctx.isOwner || ctx.isDirectAdmin
+
+/**
+ * Check if user can create, update, or delete body composition assessments.
+ * App admin, org owner, or direct_admin only.
+ */
+export const hasAssessmentWritePermission = (ctx: OrganizationContext): boolean =>
+  ctx.isAppAdmin || ctx.isOwner || ctx.isDirectAdmin
