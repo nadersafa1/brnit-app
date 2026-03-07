@@ -20,6 +20,7 @@ import {
 import { Field, FieldLabel, FieldError } from '@/components/ui/field'
 import { useFoodItems } from '@/hooks/use-food-items'
 import { useFoodCategories } from '@/hooks/use-food-categories'
+import type { DataSource } from '@/lib/queries/keys'
 import type { FoodItem } from '@/lib/queries/food-items'
 
 interface AddFoodDialogProps {
@@ -27,6 +28,7 @@ interface AddFoodDialogProps {
   onOpenChange: (open: boolean) => void
   onAdd: (foodItemId: string, quantity: number) => Promise<void>
   excludeFoodIds?: string[]
+  source?: DataSource
 }
 
 export function AddFoodDialog({
@@ -34,6 +36,7 @@ export function AddFoodDialog({
   onOpenChange,
   onAdd,
   excludeFoodIds = [],
+  source = 'admin',
 }: AddFoodDialogProps) {
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -48,14 +51,17 @@ export function AddFoodDialog({
     return () => clearTimeout(t)
   }, [searchInput])
 
-  const { data: foodItems, isLoading } = useFoodItems({
-    page: 1,
-    perPage: 100,
-    q: debouncedSearch.trim() || undefined,
-    categoryId: categoryId || undefined,
-  })
+  const { data: foodItems, isLoading } = useFoodItems(
+    {
+      page: 1,
+      perPage: 100,
+      q: debouncedSearch.trim() || undefined,
+      categoryId: categoryId || undefined,
+    },
+    source
+  )
 
-  const { data: categories } = useFoodCategories({ page: 1, perPage: 100 })
+  const { data: categories } = useFoodCategories({ page: 1, perPage: 100 }, source)
 
   const filteredItems = useMemo(() => {
     return foodItems.filter((f) => !excludeFoodIds.includes(f.id))

@@ -21,6 +21,7 @@ export interface CreateMealsColumnsOptions {
   onSort?: (columnId: string) => void
   onEdit: (meal: Meal) => void
   onDelete: (meal: Meal) => void
+  readOnly?: boolean
 }
 
 export function createMealsColumns({
@@ -29,8 +30,9 @@ export function createMealsColumns({
   onSort,
   onEdit,
   onDelete,
+  readOnly = false,
 }: CreateMealsColumnsOptions): ColumnDef<Meal>[] {
-  return [
+  const columns: ColumnDef<Meal>[] = [
     {
       id: 'name',
       accessorKey: 'name',
@@ -57,7 +59,9 @@ export function createMealsColumns({
       (row) => (row.createdAt ? new Date(row.createdAt).toLocaleDateString() : '–'),
       { sortable: true, sortBy, sortOrder, onSort }
     ),
-    {
+  ]
+  if (!readOnly) {
+    columns.push({
       id: 'actions',
       header: '',
       enableHiding: false,
@@ -87,6 +91,7 @@ export function createMealsColumns({
           </DropdownMenu>
         )
       },
-    },
-  ]
+    })
+  }
+  return columns
 }

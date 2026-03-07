@@ -34,6 +34,7 @@ export interface FoodItemsTableProps {
   onRefetch: () => void
   onEdit: (item: FoodItem) => void
   onDelete: (item: FoodItem) => void
+  readOnly?: boolean
 }
 
 export function FoodItemsTable({
@@ -52,6 +53,7 @@ export function FoodItemsTable({
   isLoading,
   onEdit,
   onDelete,
+  readOnly = false,
 }: FoodItemsTableProps) {
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
     createdAt: false,
@@ -75,8 +77,9 @@ export function FoodItemsTable({
         onSort: (id) => handleSort(id as FoodItemsSortBy),
         onEdit,
         onDelete,
+        readOnly,
       }),
-    [sortBy, sortOrder, handleSort, onEdit, onDelete]
+    [sortBy, sortOrder, handleSort, onEdit, onDelete, readOnly]
   )
 
   const table = useReactTable({

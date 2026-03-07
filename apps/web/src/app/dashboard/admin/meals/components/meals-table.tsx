@@ -23,6 +23,7 @@ export interface MealsTableProps {
   onRefetch: () => void
   onEdit: (meal: Meal) => void
   onDelete: (meal: Meal) => void
+  readOnly?: boolean
 }
 
 export function MealsTable({
@@ -38,6 +39,7 @@ export function MealsTable({
   isLoading,
   onEdit,
   onDelete,
+  readOnly = false,
 }: MealsTableProps) {
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
     createdAt: false,
@@ -57,8 +59,9 @@ export function MealsTable({
         onSort: (id) => handleSort(id as MealsSortBy),
         onEdit,
         onDelete,
+        readOnly,
       }),
-    [sortBy, sortOrder, handleSort, onEdit, onDelete]
+    [sortBy, sortOrder, handleSort, onEdit, onDelete, readOnly]
   )
 
   const table = useReactTable({

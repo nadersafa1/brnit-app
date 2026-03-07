@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo } from 'react'
-import { Flame, LayoutDashboard, UserCog } from 'lucide-react'
+import { Flame, LayoutDashboard, UserCog, UtensilsCrossed } from 'lucide-react'
 
 import { NavMain } from '@/components/nav-main'
 import { NavUser } from '@/components/nav-user'
@@ -16,8 +16,19 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 import { authClient } from '@/lib/auth-client'
+import { useOrganizationContext } from '@/hooks/authorization/use-organization-context'
+import { canAccessNutritionistFeatures } from '@/lib/authorization/nutritionist-access'
+import type { LucideIcon } from 'lucide-react'
 
-const baseNavItems = [
+type NavItem = {
+  title: string
+  url: string
+  icon: LucideIcon
+  isActive?: boolean
+  items?: { title: string; url: string }[]
+}
+
+const baseNavItems: NavItem[] = [
   {
     title: 'Dashboard',
     url: '/dashboard',
@@ -33,7 +44,7 @@ const baseNavItems = [
   },
 ]
 
-const adminNavItem = {
+const adminNavItem: NavItem = {
   title: 'Admin',
   url: '/dashboard/admin',
   icon: UserCog,
@@ -46,15 +57,32 @@ const adminNavItem = {
   ],
 }
 
+const nutritionistNavItem: NavItem = {
+  title: 'Nutritionist',
+  url: '/dashboard/nutritionist/categories',
+  icon: UtensilsCrossed,
+  isActive: true,
+  items: [
+    { title: 'Categories', url: '/dashboard/nutritionist/categories' },
+    { title: 'Food Items', url: '/dashboard/nutritionist/food-items' },
+    { title: 'Meals', url: '/dashboard/nutritionist/meals' },
+  ],
+}
+
 export const AppSidebar = (props: React.ComponentProps<typeof Sidebar>) => {
   const { data: session } = authClient.useSession()
-  const navMain = useMemo(
-    () =>
-      session?.user?.role === 'admin'
-        ? [...baseNavItems, adminNavItem]
-        : baseNavItems,
-    [session?.user?.role],
-  )
+  const { context } = useOrganizationContext()
+
+  const navMain = useMemo(() => {
+    const items: NavItem[] = [...baseNavItems]
+    if (session?.user?.role === 'admin') {
+      items.push(adminNavItem)
+    }
+    if (canAccessNutritionistFeatures(session ?? null, context)) {
+      items.push(nutritionistNavItem)
+    }
+    return items
+  }, [session, context])
 
   return (
     <Sidebar variant='inset' {...props}>

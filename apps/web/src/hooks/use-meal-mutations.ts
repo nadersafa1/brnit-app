@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { API_ENDPOINTS } from '@/lib/api/endpoints'
-import { adminKeys } from '@/lib/queries/keys'
+import { getKeys, type DataSource } from '@/lib/queries/keys'
 import type { CreateMeal, UpdateMeal } from '@/types/api/meal.schemas'
 
 async function fetchWithAuth(
@@ -19,11 +19,16 @@ async function fetchWithAuth(
   return res
 }
 
-export function useCreateMeal() {
+export function useCreateMeal(source: DataSource = 'admin') {
   const qc = useQueryClient()
+  const keys = getKeys(source)
+  const url =
+    source === 'nutritionist'
+      ? API_ENDPOINTS.nutritionist.meals
+      : API_ENDPOINTS.admin.meals
   return useMutation({
     mutationFn: async (body: CreateMeal) => {
-      const res = await fetchWithAuth(API_ENDPOINTS.admin.meals, {
+      const res = await fetchWithAuth(url, {
         method: 'POST',
         body: JSON.stringify(body),
       })
@@ -34,18 +39,23 @@ export function useCreateMeal() {
       return res.json()
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'meals'] })
+      qc.invalidateQueries({ queryKey: keys.meals({}).slice(0, 2) })
       toast.success('Meal created')
     },
     onError: (e: Error) => toast.error(e.message),
   })
 }
 
-export function useUpdateMeal() {
+export function useUpdateMeal(source: DataSource = 'admin') {
   const qc = useQueryClient()
+  const keys = getKeys(source)
+  const getUrl = (id: string) =>
+    source === 'nutritionist'
+      ? API_ENDPOINTS.nutritionist.meal(id)
+      : API_ENDPOINTS.admin.meal(id)
   return useMutation({
     mutationFn: async ({ id, ...body }: UpdateMeal & { id: string }) => {
-      const res = await fetchWithAuth(API_ENDPOINTS.admin.meal(id), {
+      const res = await fetchWithAuth(getUrl(id), {
         method: 'PATCH',
         body: JSON.stringify(body),
       })
@@ -56,19 +66,24 @@ export function useUpdateMeal() {
       return res.json()
     },
     onSuccess: (_, variables) => {
-      qc.invalidateQueries({ queryKey: adminKeys.meal(variables.id) })
-      qc.invalidateQueries({ queryKey: ['admin', 'meals'] })
+      qc.invalidateQueries({ queryKey: keys.meal(variables.id) })
+      qc.invalidateQueries({ queryKey: keys.meals({}).slice(0, 2) })
       toast.success('Meal updated')
     },
     onError: (e: Error) => toast.error(e.message),
   })
 }
 
-export function useDeleteMeal() {
+export function useDeleteMeal(source: DataSource = 'admin') {
   const qc = useQueryClient()
+  const keys = getKeys(source)
+  const getUrl = (id: string) =>
+    source === 'nutritionist'
+      ? API_ENDPOINTS.nutritionist.meal(id)
+      : API_ENDPOINTS.admin.meal(id)
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetchWithAuth(API_ENDPOINTS.admin.meal(id), {
+      const res = await fetchWithAuth(getUrl(id), {
         method: 'DELETE',
       })
       if (!res.ok) {
@@ -78,7 +93,7 @@ export function useDeleteMeal() {
       return res.json()
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'meals'] })
+      qc.invalidateQueries({ queryKey: keys.meals({}).slice(0, 2) })
       toast.success('Meal deleted')
     },
     onError: (e: Error) => toast.error(e.message),

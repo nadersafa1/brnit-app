@@ -2,7 +2,7 @@
 
 import { queryOptions } from '@tanstack/react-query'
 import { API_ENDPOINTS } from '@/lib/api/endpoints'
-import { adminKeys } from './keys'
+import { getKeys, type DataSource } from './keys'
 import type { PaginationMeta } from '@/lib/api-helpers/pagination'
 
 export interface MealItem {
@@ -53,7 +53,10 @@ async function fetchWithAuth(url: string, options?: { method?: string; body?: st
   return res.json()
 }
 
-export function fetchMeals(filters: MealsFilters): Promise<MealsResponse> {
+export function fetchMeals(
+  filters: MealsFilters,
+  source: DataSource = 'admin'
+): Promise<MealsResponse> {
   const params = new URLSearchParams()
   if (filters.page != null) params.set('page', String(filters.page))
   if (filters.perPage != null) params.set('perPage', String(filters.perPage))
@@ -61,25 +64,35 @@ export function fetchMeals(filters: MealsFilters): Promise<MealsResponse> {
   if (q) params.set('q', q)
   if (filters.sortBy != null) params.set('sortBy', filters.sortBy)
   if (filters.sortOrder != null) params.set('sortOrder', filters.sortOrder)
-  const url = `${API_ENDPOINTS.admin.meals}?${params.toString()}`
+  const base =
+    source === 'nutritionist'
+      ? API_ENDPOINTS.nutritionist.meals
+      : API_ENDPOINTS.admin.meals
+  const url = `${base}?${params.toString()}`
   return fetchWithAuth(url)
 }
 
-export function fetchMeal(id: string): Promise<{ data: Meal }> {
-  return fetchWithAuth(API_ENDPOINTS.admin.meal(id))
+export function fetchMeal(id: string, source: DataSource = 'admin'): Promise<{ data: Meal }> {
+  const url =
+    source === 'nutritionist'
+      ? API_ENDPOINTS.nutritionist.meal(id)
+      : API_ENDPOINTS.admin.meal(id)
+  return fetchWithAuth(url)
 }
 
-export function mealsQueryOptions(filters: MealsFilters) {
+export function mealsQueryOptions(filters: MealsFilters, source: DataSource = 'admin') {
+  const keys = getKeys(source)
   return queryOptions({
-    queryKey: adminKeys.meals(filters),
-    queryFn: () => fetchMeals(filters),
+    queryKey: keys.meals(filters),
+    queryFn: () => fetchMeals(filters, source),
   })
 }
 
-export function mealQueryOptions(id: string) {
+export function mealQueryOptions(id: string, source: DataSource = 'admin') {
+  const keys = getKeys(source)
   return queryOptions({
-    queryKey: adminKeys.meal(id),
-    queryFn: () => fetchMeal(id).then((r) => r.data),
+    queryKey: keys.meal(id),
+    queryFn: () => fetchMeal(id, source).then((r) => r.data),
     enabled: !!id,
   })
 }

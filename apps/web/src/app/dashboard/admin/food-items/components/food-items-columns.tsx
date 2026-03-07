@@ -21,6 +21,7 @@ export interface CreateFoodItemsColumnsOptions {
   onSort?: (columnId: string) => void
   onEdit: (item: FoodItem) => void
   onDelete: (item: FoodItem) => void
+  readOnly?: boolean
 }
 
 export function createFoodItemsColumns({
@@ -29,8 +30,9 @@ export function createFoodItemsColumns({
   onSort,
   onEdit,
   onDelete,
+  readOnly = false,
 }: CreateFoodItemsColumnsOptions): ColumnDef<FoodItem>[] {
-  return [
+  const columns: ColumnDef<FoodItem>[] = [
     {
       id: 'name',
       accessorKey: 'name',
@@ -76,7 +78,9 @@ export function createFoodItemsColumns({
       (row) => (row.createdAt ? new Date(row.createdAt).toLocaleDateString() : '–'),
       { sortable: true, sortBy, sortOrder, onSort }
     ),
-    {
+  ]
+  if (!readOnly) {
+    columns.push({
       id: 'actions',
       header: '',
       enableHiding: false,
@@ -106,6 +110,7 @@ export function createFoodItemsColumns({
           </DropdownMenu>
         )
       },
-    },
-  ]
+    })
+  }
+  return columns
 }
