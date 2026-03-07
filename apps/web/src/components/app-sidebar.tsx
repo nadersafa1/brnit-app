@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo } from 'react'
-import { Flame, LayoutDashboard, UserCog, UtensilsCrossed } from 'lucide-react'
+import { Activity, Flame, LayoutDashboard, UserCog, UtensilsCrossed } from 'lucide-react'
 
 import { NavMain } from '@/components/nav-main'
 import { NavUser } from '@/components/nav-user'
@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/sidebar'
 import { authClient } from '@/lib/auth-client'
 import { useOrganizationContext } from '@/hooks/authorization/use-organization-context'
+import { canAccessDirectAdminFeatures } from '@/lib/authorization/direct-admin-access'
 import { canAccessNutritionistFeatures } from '@/lib/authorization/nutritionist-access'
 import type { LucideIcon } from 'lucide-react'
 
@@ -58,6 +59,14 @@ const adminNavItem: NavItem = {
   ],
 }
 
+const directAdminNavItem: NavItem = {
+  title: 'Direct Admin',
+  url: '/dashboard/direct-admin/members',
+  icon: Activity,
+  isActive: true,
+  items: [{ title: 'Members', url: '/dashboard/direct-admin/members' }],
+}
+
 const nutritionistNavItem: NavItem = {
   title: 'Nutritionist',
   url: '/dashboard/nutritionist/categories',
@@ -79,6 +88,9 @@ export const AppSidebar = (props: React.ComponentProps<typeof Sidebar>) => {
     const items: NavItem[] = [...baseNavItems]
     if (session?.user?.role === 'admin') {
       items.push(adminNavItem)
+    }
+    if (canAccessDirectAdminFeatures(session ?? null, context)) {
+      items.push(directAdminNavItem)
     }
     if (canAccessNutritionistFeatures(session ?? null, context)) {
       items.push({ ...nutritionistNavItem, isActive: session?.user?.role === 'nutritionist' ? true : false })
