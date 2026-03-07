@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { flattenError } from 'zod'
-import { requireAdmin } from '@/lib/api-helpers/admin-auth'
+import { requireNutritionist } from '@/lib/api-helpers/nutritionist-auth'
 import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
 import { listDietPlans, createDietPlan } from '@/lib/services/diet-plans'
 import { dietPlansQuerySchema, createDietPlanSchema } from '@/types/api/diet-plan.schemas'
@@ -8,7 +8,7 @@ import { dietPlansQuerySchema, createDietPlanSchema } from '@/types/api/diet-pla
 export const dynamic = 'force-dynamic'
 
 export const GET = async (request: NextRequest) => {
-  const authResult = await requireAdmin(request.headers)
+  const authResult = await requireNutritionist(request.headers)
   if (authResult.error) return authResult.error
 
   const { searchParams } = new URL(request.url)
@@ -34,7 +34,7 @@ export const GET = async (request: NextRequest) => {
 }
 
 export const POST = async (request: NextRequest) => {
-  const authResult = await requireAdmin(request.headers)
+  const authResult = await requireNutritionist(request.headers)
   if (authResult.error) return authResult.error
 
   const body = await request.json()

@@ -9,6 +9,8 @@ export const API_ENDPOINTS = {
     foodItem: (id: string) => `/api/nutritionist/food-items/${id}`,
     meals: '/api/nutritionist/meals',
     meal: (id: string) => `/api/nutritionist/meals/${id}`,
+    dietPlans: '/api/nutritionist/diet-plans',
+    dietPlan: (id: string) => `/api/nutritionist/diet-plans/${id}`,
   },
   admin: {
     foodItems: '/api/admin/food-items',

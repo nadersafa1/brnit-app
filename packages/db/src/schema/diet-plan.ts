@@ -38,11 +38,18 @@ export const dietPlanMeal = pgTable(
       .references(() => meal.id, { onDelete: 'restrict' }),
     dayNumber: integer('day_number').notNull(),
     mealType: text('meal_type').notNull(),
+    mealOrder: integer('meal_order').notNull().default(1),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [
     index('diet_plan_meal_plan_idx').on(table.dietPlanId),
     index('diet_plan_meal_day_idx').on(table.dietPlanId, table.dayNumber),
+    index('diet_plan_meal_slot_idx').on(
+      table.dietPlanId,
+      table.dayNumber,
+      table.mealType,
+      table.mealOrder
+    ),
   ],
 )
 

@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { flattenError } from 'zod'
-import { requireAdmin } from '@/lib/api-helpers/admin-auth'
+import { requireNutritionist } from '@/lib/api-helpers/nutritionist-auth'
 import { getDietPlanById, updateDietPlan, deleteDietPlan } from '@/lib/services/diet-plans'
 import { updateDietPlanSchema } from '@/types/api/diet-plan.schemas'
 
 type Params = { params: Promise<{ id: string }> }
 
 export const GET = async (request: NextRequest, { params }: Params) => {
-  const authResult = await requireAdmin(request.headers)
+  const authResult = await requireNutritionist(request.headers)
   if (authResult.error) return authResult.error
 
   const { id } = await params
@@ -21,7 +21,7 @@ export const GET = async (request: NextRequest, { params }: Params) => {
 }
 
 export const PATCH = async (request: NextRequest, { params }: Params) => {
-  const authResult = await requireAdmin(request.headers)
+  const authResult = await requireNutritionist(request.headers)
   if (authResult.error) return authResult.error
 
   const { id } = await params
@@ -49,7 +49,7 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
 }
 
 export const DELETE = async (request: NextRequest, { params }: Params) => {
-  const authResult = await requireAdmin(request.headers)
+  const authResult = await requireNutritionist(request.headers)
   if (authResult.error) return authResult.error
 
   const { id } = await params

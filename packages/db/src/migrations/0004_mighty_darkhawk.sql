@@ -1,0 +1,2 @@
+ALTER TABLE "diet_plan_meal" ADD COLUMN "meal_order" integer DEFAULT 1 NOT NULL;--> statement-breakpoint
+CREATE INDEX "diet_plan_meal_slot_idx" ON "diet_plan_meal" USING btree ("diet_plan_id","day_number","meal_type","meal_order");
