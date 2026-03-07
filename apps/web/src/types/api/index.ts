@@ -1,3 +1,5 @@
 export * from './food.schemas'
 export * from './meal.schemas'
 export * from './diet-plan.schemas'
+export * from './diet-plan-assignment.schemas'
+export * from './diet-plan-meal-consumption.schemas'

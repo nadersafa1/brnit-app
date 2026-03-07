@@ -5,11 +5,15 @@ import {
   standardTextSearchSchema,
 } from '@/lib/api-helpers/query-builders'
 
-const dateStringSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD')
+/** day_number: 0 = repeat on all days, >= 1 = specific day (Day 1, Day 2, ...) */
+export const dayNumberSchema = z
+  .number()
+  .int()
+  .min(0, 'Day number must be 0 (all days) or a positive integer')
 
 export const dietPlanMealSchema = z.object({
   mealId: z.uuid('Invalid meal ID'),
-  dayNumber: z.number().int().positive('Day number must be a positive integer'),
+  dayNumber: dayNumberSchema,
   mealType: z.string().min(1, 'Meal type is required').max(50, 'Meal type must be less than 50 characters'),
   mealOrder: z.number().int().positive('Meal order must be a positive integer').default(1),
 })
@@ -18,26 +22,19 @@ export const dietPlansQuerySchema = z.object({
   ...standardPaginationSchema.shape,
   ...standardTextSearchSchema.shape,
   ...standardSortSchema.shape,
-  sortBy: z.enum(['name', 'startDate', 'endDate', 'createdAt']).optional(),
+  sortBy: z.enum(['name', 'createdAt']).optional(),
 })
 
-export const createDietPlanSchema = z
-  .object({
-    name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
-    description: z.string().max(500).optional(),
-    startDate: dateStringSchema,
-    endDate: dateStringSchema,
-    dietPlanMeals: z.array(dietPlanMealSchema).optional().default([]),
-  })
-  .refine(data => data.startDate <= data.endDate, {
-    message: 'Start date must be before or equal to end date',
-    path: ['endDate'],
-  })
+export const createDietPlanSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
+  description: z.string().max(500).optional(),
+  dietPlanMeals: z.array(dietPlanMealSchema).optional().default([]),
+})
 
 // Add item input for diet plan meals
 const addDietPlanMealSchema = z.object({
   mealId: z.uuid('Invalid meal ID'),
-  dayNumber: z.number().int().positive('Day number must be a positive integer'),
+  dayNumber: dayNumberSchema,
   mealType: z.string().min(1, 'Meal type is required').max(50, 'Meal type must be less than 50 characters'),
   mealOrder: z.number().int().positive('Meal order must be a positive integer').optional().default(1),
 })
@@ -46,7 +43,7 @@ const addDietPlanMealSchema = z.object({
 const updateDietPlanMealSchema = z.object({
   dietPlanMealId: z.uuid('Invalid diet plan meal ID'),
   mealId: z.uuid('Invalid meal ID').optional(),
-  dayNumber: z.number().int().positive().optional(),
+  dayNumber: dayNumberSchema.optional(),
   mealType: z.string().min(1).max(50).optional(),
   mealOrder: z.number().int().positive().optional(),
 })
@@ -75,28 +72,17 @@ export const updateDietPlanSchema = z
   .object({
     name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters').optional(),
     description: z.string().max(500).nullable().optional(),
-    startDate: dateStringSchema.optional(),
-    endDate: dateStringSchema.optional(),
     add: addArraySchema.optional(),
     remove: removeArraySchema.optional(),
     update: updateArraySchema.optional(),
   })
   .refine(
-    data => {
-      if (data.startDate && data.endDate) return data.startDate <= data.endDate
-      return true
-    },
-    { message: 'Start date must be before or equal to end date', path: ['endDate'] }
-  )
-  .refine(
     data =>
       (data.add?.length ?? 0) + (data.remove?.length ?? 0) + (data.update?.length ?? 0) > 0 ||
       data.name !== undefined ||
-      data.description !== undefined ||
-      data.startDate !== undefined ||
-      data.endDate !== undefined,
+      data.description !== undefined,
     {
-      message: 'At least one of name, description, startDate, endDate, add, remove, or update must be provided',
+      message: 'At least one of name, description, add, remove, or update must be provided',
     }
   )
 

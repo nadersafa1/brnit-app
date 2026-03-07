@@ -54,6 +54,7 @@ const adminNavItem: NavItem = {
     { title: 'Categories', url: '/dashboard/admin/categories' },
     { title: 'Food Items', url: '/dashboard/admin/food-items' },
     { title: 'Meals', url: '/dashboard/admin/meals' },
+    { title: 'Diet Plans', url: '/dashboard/admin/diet-plans' },
   ],
 }
 
@@ -66,6 +67,7 @@ const nutritionistNavItem: NavItem = {
     { title: 'Categories', url: '/dashboard/nutritionist/categories' },
     { title: 'Food Items', url: '/dashboard/nutritionist/food-items' },
     { title: 'Meals', url: '/dashboard/nutritionist/meals' },
+    { title: 'Diet Plans', url: '/dashboard/nutritionist/diet-plans' },
   ],
 }
 
@@ -79,7 +81,7 @@ export const AppSidebar = (props: React.ComponentProps<typeof Sidebar>) => {
       items.push(adminNavItem)
     }
     if (canAccessNutritionistFeatures(session ?? null, context)) {
-      items.push(nutritionistNavItem)
+      items.push({ ...nutritionistNavItem, isActive: session?.user?.role === 'nutritionist' ? true : false })
     }
     return items
   }, [session, context])

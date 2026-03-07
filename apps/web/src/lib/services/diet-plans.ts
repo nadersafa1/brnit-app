@@ -1,5 +1,5 @@
 import { db } from '@burn-app/db'
-import { dietPlan, dietPlanMeal, meal } from '@burn-app/db/schema'
+import { dietPlan, dietPlanMeal, meal, mealItem, foodItem } from '@burn-app/db/schema'
 import { count, asc, desc, ilike, eq, and, inArray } from 'drizzle-orm'
 import { calculateOffset, combineConditions } from '@/lib/api-helpers/query-builders'
 import type { DietPlansQuery, CreateDietPlan, UpdateDietPlan } from '@/types/api/diet-plan.schemas'
@@ -16,8 +16,6 @@ export async function listDietPlans(query: DietPlansQuery) {
 
   const sortFieldMap = {
     name: dietPlan.name,
-    startDate: dietPlan.startDate,
-    endDate: dietPlan.endDate,
     createdAt: dietPlan.createdAt,
   } as const
   const sortColumn = sortFieldMap[sortBy ?? 'createdAt'] ?? dietPlan.createdAt
@@ -30,31 +28,32 @@ export async function listDietPlans(query: DietPlansQuery) {
         id: dietPlan.id,
         name: dietPlan.name,
         description: dietPlan.description,
-        startDate: dietPlan.startDate,
-        endDate: dietPlan.endDate,
         createdAt: dietPlan.createdAt,
         updatedAt: dietPlan.updatedAt,
+        slotCount: count(dietPlanMeal.id),
       })
       .from(dietPlan)
+      .leftJoin(dietPlanMeal, eq(dietPlan.id, dietPlanMeal.dietPlanId))
       .where(where)
+      .groupBy(dietPlan.id, dietPlan.name, dietPlan.description, dietPlan.createdAt, dietPlan.updatedAt)
       .orderBy(sortDir(sortColumn))
       .limit(perPage)
       .offset(offset),
   ])
 
   return {
-    items,
+    items: items.map(({ slotCount, ...rest }) => ({
+      ...rest,
+      slotCount: Number(slotCount) ?? 0,
+    })),
     totalItems: countResult[0]?.count ?? 0,
   }
 }
 
 export async function createDietPlan(data: CreateDietPlan) {
-  const { name, description, startDate, endDate, dietPlanMeals } = data
+  const { name, description, dietPlanMeals } = data
 
-  const [newPlan] = await db
-    .insert(dietPlan)
-    .values({ name, description, startDate, endDate })
-    .returning()
+  const [newPlan] = await db.insert(dietPlan).values({ name, description }).returning()
 
   if (!newPlan) return null
 
@@ -79,8 +78,6 @@ export async function getDietPlanById(id: string) {
       id: dietPlan.id,
       name: dietPlan.name,
       description: dietPlan.description,
-      startDate: dietPlan.startDate,
-      endDate: dietPlan.endDate,
       createdAt: dietPlan.createdAt,
       updatedAt: dietPlan.updatedAt,
     })
@@ -108,6 +105,27 @@ export async function getDietPlanById(id: string) {
       asc(dietPlanMeal.mealOrder)
     )
 
+  const mealIds = [...new Set(planMeals.map((pm) => pm.mealId))]
+  const mealItemsByMealId = new Map<string, Array<{ foodName: string; quantity: number }>>()
+
+  if (mealIds.length > 0) {
+    const items = await db
+      .select({
+        mealId: mealItem.mealId,
+        foodName: foodItem.name,
+        quantity: mealItem.quantity,
+      })
+      .from(mealItem)
+      .innerJoin(foodItem, eq(mealItem.foodItemId, foodItem.id))
+      .where(inArray(mealItem.mealId, mealIds))
+
+    for (const row of items) {
+      const list = mealItemsByMealId.get(row.mealId) ?? []
+      list.push({ foodName: row.foodName, quantity: Number(row.quantity) })
+      mealItemsByMealId.set(row.mealId, list)
+    }
+  }
+
   return {
     ...plan,
     dietPlanMeals: planMeals.map((pm) => ({
@@ -117,6 +135,7 @@ export async function getDietPlanById(id: string) {
       dayNumber: pm.dayNumber,
       mealType: pm.mealType,
       mealOrder: pm.mealOrder,
+      mealItems: mealItemsByMealId.get(pm.mealId) ?? [],
     })),
   }
 }
@@ -171,7 +190,7 @@ export async function updateDietPlan(
   id: string,
   data: UpdateDietPlan
 ): Promise<UpdateDietPlanResult> {
-  const { name, description, startDate, endDate, add, remove, update } = data
+  const { name, description, add, remove, update } = data
 
   // 1. Check plan exists
   const [planRow] = await db.select().from(dietPlan).where(eq(dietPlan.id, id)).limit(1)
@@ -229,8 +248,6 @@ export async function updateDietPlan(
   const updateData: Record<string, string | null | undefined> = {}
   if (name !== undefined) updateData.name = name
   if (description !== undefined) updateData.description = description
-  if (startDate !== undefined) updateData.startDate = startDate
-  if (endDate !== undefined) updateData.endDate = endDate
   if (Object.keys(updateData).length > 0) {
     await db.update(dietPlan).set(updateData).where(eq(dietPlan.id, id))
   }

@@ -11,6 +11,14 @@ export const API_ENDPOINTS = {
     meal: (id: string) => `/api/nutritionist/meals/${id}`,
     dietPlans: '/api/nutritionist/diet-plans',
     dietPlan: (id: string) => `/api/nutritionist/diet-plans/${id}`,
+    dietPlanAssignments: '/api/nutritionist/diet-plan-assignments',
+    dietPlanAssignment: (id: string) => `/api/nutritionist/diet-plan-assignments/${id}`,
+    dietPlanMealConsumptions: '/api/nutritionist/diet-plan-meal-consumptions',
+    dietPlanMealConsumption: (id: string) => `/api/nutritionist/diet-plan-meal-consumptions/${id}`,
+  },
+  member: {
+    dietPlanAssignments: '/api/member/me/diet-plan-assignments',
+    dietPlanMealConsumptions: '/api/member/me/diet-plan-meal-consumptions',
   },
   admin: {
     foodItems: '/api/admin/food-items',

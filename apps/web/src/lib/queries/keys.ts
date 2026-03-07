@@ -7,6 +7,8 @@ export const adminKeys = {
   foodItem: (id: string) => ['admin', 'food-items', id] as const,
   meals: (filters: object) => ['admin', 'meals', filters] as const,
   meal: (id: string) => ['admin', 'meals', id] as const,
+  dietPlans: (filters: object) => ['admin', 'diet-plans', filters] as const,
+  dietPlan: (id: string) => ['admin', 'diet-plans', id] as const,
 } as const
 
 export const nutritionistKeys = {
@@ -16,6 +18,8 @@ export const nutritionistKeys = {
   foodItem: (id: string) => ['nutritionist', 'food-items', id] as const,
   meals: (filters: object) => ['nutritionist', 'meals', filters] as const,
   meal: (id: string) => ['nutritionist', 'meals', id] as const,
+  dietPlans: (filters: object) => ['nutritionist', 'diet-plans', filters] as const,
+  dietPlan: (id: string) => ['nutritionist', 'diet-plans', id] as const,
 } as const
 
 export function getKeys(source: DataSource) {
