@@ -2,7 +2,7 @@ import { expo } from '@better-auth/expo'
 import { db } from '@burn-app/db'
 import * as schema from '@burn-app/db/schema/auth'
 import { and, eq } from 'drizzle-orm'
-import { canInviteWithAnyRole } from './authorization'
+import { canInviteWithAnyRole, canUpdateMemberRole } from './authorization'
 import { env } from '@burn-app/env/server'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
@@ -97,19 +97,46 @@ export const auth = betterAuth({
             const membership = await db.query.member.findFirst({
               where: and(
                 eq(schema.member.userId, inviter.id),
-                eq(schema.member.organizationId, invitation.organizationId)
+                eq(schema.member.organizationId, invitation.organizationId),
               ),
               columns: { role: true },
             })
-            if (!canInviteWithAnyRole({ appRole: null, orgRole: membership?.role ?? null })) {
+            if (
+              !canInviteWithAnyRole({
+                appRole: null,
+                orgRole: membership?.role ?? null,
+              })
+            ) {
               throw new APIError('BAD_REQUEST', {
                 message:
-                  'Only org owners, client admins, or app admins can invite with non-member roles',
+                  'Only org owners, direct admins, or app admins can invite with non-member roles',
               })
             }
           }
           const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
           return { data: { ...invitation, expiresAt } }
+        },
+        beforeUpdateMemberRole: async ({ user, organization }) => {
+          if (user.role === 'admin') return undefined
+          const membership = await db.query.member.findFirst({
+            where: and(
+              eq(schema.member.userId, user.id),
+              eq(schema.member.organizationId, organization.id),
+            ),
+            columns: { role: true },
+          })
+          if (
+            !canUpdateMemberRole({
+              appRole: null,
+              orgRole: membership?.role ?? null,
+            })
+          ) {
+            throw new APIError('FORBIDDEN', {
+              message:
+                'Only app admins, org owners, or direct admins can change member roles',
+            })
+          }
+          return undefined
         },
       },
     }),

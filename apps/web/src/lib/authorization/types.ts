@@ -55,11 +55,14 @@ const hasOrgAdminRole = (ctx: OrganizationContext): boolean =>
   ctx.isAppAdmin || ctx.isOwner || ctx.isClientAdmin
 
 /**
- * Check if user can invite members (app admin or org owner/client_admin)
+ * Check if user can invite members (app admin or org owner/client_admin).
+ * Client admins can only invite as member; backend enforces this.
  */
 export const hasOrgInvitePermission = hasOrgAdminRole
 
 /**
- * Check if user can manage members (app admin or org owner/client_admin)
+ * Check if user can manage members (change roles, remove) - app admin, org owner, or direct_admin only.
+ * Client admins cannot change roles or remove members.
  */
-export const hasOrgMemberManagementPermission = hasOrgAdminRole
+export const hasOrgMemberManagementPermission = (ctx: OrganizationContext): boolean =>
+  ctx.isAppAdmin || ctx.isOwner || ctx.isDirectAdmin

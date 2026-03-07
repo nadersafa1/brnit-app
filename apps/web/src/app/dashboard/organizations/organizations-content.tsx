@@ -46,7 +46,8 @@ const OrganizationsContent = () => {
 
       {activeId && !canInvite && (
         <p className='text-muted-foreground text-sm'>
-          Only owners and client admins can invite members. Your role in this organization does not allow invitations.
+          Only owners, direct admins, and client admins can invite members. Client admins can only invite as member.
+          Your role in this organization does not allow invitations.
         </p>
       )}
 

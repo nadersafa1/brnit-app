@@ -18,7 +18,7 @@ Used when inviting members and for org-scoped access control. Defined in `packag
 | Role             | Description |
 |------------------|-------------|
 | **owner**        | Creator of the org; full control (settings, members, invitations). |
-| **client_admin** | Client-side org admin (e.g. HR). Manages members and invitations. |
+| **client_admin** | Client-side org admin (e.g. HR). Can invite members (only as member). Cannot change roles or remove members. |
 | **direct_admin** | Brnit staff, assigned by app admin. Intended for weekly InBody readings (app logic separate). |
 | **nutritionist** | Intended to add nutrition plans for the org (app logic separate). |
 | **coach**        | Intended to add exercises for the org (app logic separate). |
@@ -27,11 +27,11 @@ Used when inviting members and for org-scoped access control. Defined in `packag
 ## Who can invite
 
 - **Create organization:** Only `user.role === 'admin'`.
-- **Invite to org:** Owner and client_admin can invite with any of the org roles above.
+- **Invite to org:** Owner, direct_admin, and client_admin can invite. Owner and direct_admin can invite with any role; client_admin can only invite as member.
 
 ## Who can list / remove / update members
 
-- **List members, remove member, update member role:** Owner and client_admin only. The Better Auth organization plugin enforces these permissions; the web dashboard shows these actions only for users with these roles.
+- **List members, remove member, update member role:** Owner and direct_admin only (plus app admin). Client_admin cannot change roles or remove members. The Better Auth organization plugin enforces these permissions; the web dashboard shows these actions only for users with these roles.
 
 ## Invitation roles
 

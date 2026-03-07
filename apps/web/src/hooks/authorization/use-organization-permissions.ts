@@ -23,6 +23,7 @@ export function useOrganizationPermissions() {
       context.isAppAdmin,
       context.isOwner,
       context.isClientAdmin,
+      context.isDirectAdmin,
       context.isAuthenticated,
     ]
   )
