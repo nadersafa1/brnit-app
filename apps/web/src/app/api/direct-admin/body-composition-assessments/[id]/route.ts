@@ -6,7 +6,7 @@ import {
   updateBodyCompositionAssessment,
   deleteBodyCompositionAssessment,
 } from '@/lib/services/body-composition-assessments'
-import { updateBodyCompositionAssessmentSchema } from '@/types/api/body-composition-assessment.schemas'
+import { updateBodyCompositionAssessmentFormSchema } from '@/types/api/body-composition-assessment.schemas'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -42,8 +42,30 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
 
   const organizationId = authResult.context.activeOrgId!
   const { id } = await params
-  const body = await request.json()
-  const parseResult = updateBodyCompositionAssessmentSchema.safeParse(body)
+  const formData = await request.formData()
+  const file = formData.get('file')
+  const clearImageRaw = formData.get('clearImage')
+  const parsed: Record<string, unknown> = {}
+  const formFields = [
+    'assessedAt',
+    'heightCm',
+    'bodyFatPercent',
+    'weightKg',
+    'bmi',
+    'muscleMassKg',
+    'visceralFatAreaCm2',
+    'bodyWaterL',
+  ] as const
+  for (const key of formFields) {
+    const val = formData.get(key)
+    if (val !== null && val !== undefined && String(val).trim() !== '') {
+      parsed[key] = val
+    }
+  }
+  if (clearImageRaw !== null && clearImageRaw !== undefined) {
+    parsed.clearImage = clearImageRaw
+  }
+  const parseResult = updateBodyCompositionAssessmentFormSchema.safeParse(parsed)
 
   if (!parseResult.success) {
     return NextResponse.json(
@@ -52,7 +74,20 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
     )
   }
 
-  const result = await updateBodyCompositionAssessment(id, parseResult.data, organizationId)
+  const uploadFile = file instanceof File && file.size > 0 ? file : undefined
+  const clearImage = parseResult.data.clearImage === true
+  const hasFormFields = formFields.some(k => parsed[k] !== undefined)
+  if (!hasFormFields && !uploadFile && !clearImage) {
+    return NextResponse.json(
+      { error: 'At least one field, file, or clearImage must be provided for update' },
+      { status: 400 }
+    )
+  }
+
+  const result = await updateBodyCompositionAssessment(id, parseResult.data, organizationId, {
+    file: uploadFile,
+    clearImage,
+  })
 
   if (!result.ok) {
     if (result.code === 'NOT_FOUND') {

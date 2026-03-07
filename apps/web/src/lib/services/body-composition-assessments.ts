@@ -6,9 +6,9 @@ import {
 import { count, asc, desc, eq, and } from 'drizzle-orm'
 import { calculateOffset } from '@/lib/api-helpers/query-builders'
 import {
-  extractPublicId,
-  isCloudinaryUrl,
+  buildCloudinaryUrl,
   deleteCloudinaryImage,
+  uploadFileToCloudinary,
 } from '@/lib/cloudinary-utils'
 import type {
   BodyCompositionAssessmentsQuery,
@@ -16,12 +16,18 @@ import type {
   UpdateBodyCompositionAssessment,
 } from '@/types/api/body-composition-assessment.schemas'
 
+/** API response shape: DB row with imageUrl computed from imagePublicId */
+export type AssessmentResponse = Omit<
+  (typeof bodyCompositionAssessment.$inferSelect),
+  'imagePublicId'
+> & { imageUrl: string | null }
+
 export type CreateAssessmentResult =
-  | { ok: true; data: (typeof bodyCompositionAssessment.$inferSelect) }
+  | { ok: true; data: AssessmentResponse }
   | { ok: false; error: string; code: 'NOT_FOUND' | 'WRONG_ORG' }
 
 export type UpdateAssessmentResult =
-  | { ok: true; data: (typeof bodyCompositionAssessment.$inferSelect) }
+  | { ok: true; data: AssessmentResponse }
   | { ok: false; error: string; code: 'NOT_FOUND' | 'WRONG_ORG' }
 
 export type DeleteAssessmentResult =
@@ -52,10 +58,13 @@ export async function assessmentBelongsToOrg(
   return row?.memberOrganizationId === organizationId
 }
 
+const BODY_ASSESSMENT_IMAGE_FOLDER = 'body-composition-assessments'
+
 export async function createBodyCompositionAssessment(
   data: CreateBodyCompositionAssessment,
   recordedById: string,
-  organizationId: string
+  organizationId: string,
+  options?: { file?: File }
 ): Promise<CreateAssessmentResult> {
   const memberOrgId = await getMemberOrgId(data.memberId)
   if (!memberOrgId) {
@@ -65,7 +74,11 @@ export async function createBodyCompositionAssessment(
     return { ok: false, error: 'Member does not belong to this organization', code: 'WRONG_ORG' }
   }
 
-  const imageUrl = data.imageUrl && data.imageUrl.trim() !== '' ? data.imageUrl : null
+  let imagePublicId: string | null = null
+  if (options?.file) {
+    const { publicId } = await uploadFileToCloudinary(options.file, BODY_ASSESSMENT_IMAGE_FOLDER)
+    imagePublicId = publicId
+  }
 
   const [created] = await db
     .insert(bodyCompositionAssessment)
@@ -80,12 +93,18 @@ export async function createBodyCompositionAssessment(
       muscleMassKg: String(data.muscleMassKg),
       visceralFatAreaCm2: String(data.visceralFatAreaCm2),
       bodyWaterL: String(data.bodyWaterL),
-      imageUrl,
+      imagePublicId,
     })
     .returning()
 
   if (!created) return { ok: false, error: 'Failed to create assessment', code: 'NOT_FOUND' }
-  return { ok: true, data: created }
+  return {
+    ok: true,
+    data: {
+      ...created,
+      imageUrl: created.imagePublicId ? buildCloudinaryUrl(created.imagePublicId) : null,
+    },
+  }
 }
 
 export async function listBodyCompositionAssessments(
@@ -136,7 +155,7 @@ export async function listBodyCompositionAssessments(
     muscleMassKg: a.muscleMassKg,
     visceralFatAreaCm2: a.visceralFatAreaCm2,
     bodyWaterL: a.bodyWaterL,
-    imageUrl: a.imageUrl,
+    imageUrl: a.imagePublicId ? buildCloudinaryUrl(a.imagePublicId) : null,
     createdAt: a.createdAt,
     updatedAt: a.updatedAt,
   }))
@@ -153,13 +172,18 @@ export async function getBodyCompositionAssessmentById(id: string) {
     .from(bodyCompositionAssessment)
     .where(eq(bodyCompositionAssessment.id, id))
     .limit(1)
-  return row ?? null
+  if (!row) return null
+  return {
+    ...row,
+    imageUrl: row.imagePublicId ? buildCloudinaryUrl(row.imagePublicId) : null,
+  }
 }
 
 export async function updateBodyCompositionAssessment(
   id: string,
   data: UpdateBodyCompositionAssessment,
-  organizationId: string
+  organizationId: string,
+  options?: { file?: File; clearImage?: boolean }
 ): Promise<UpdateAssessmentResult> {
   const belongs = await assessmentBelongsToOrg(id, organizationId)
   if (!belongs) {
@@ -170,18 +194,26 @@ export async function updateBodyCompositionAssessment(
     return { ok: false, error: 'Assessment does not belong to this organization', code: 'WRONG_ORG' }
   }
 
-  const existing = await getBodyCompositionAssessmentById(id)
+  const existing = await db
+    .select()
+    .from(bodyCompositionAssessment)
+    .where(eq(bodyCompositionAssessment.id, id))
+    .limit(1)
+    .then(rows => rows[0] ?? null)
   if (!existing) return { ok: false, error: 'Assessment not found', code: 'NOT_FOUND' }
 
-  if (data.imageUrl !== undefined) {
-    const newImageUrl = data.imageUrl && data.imageUrl.trim() !== '' ? data.imageUrl : null
-    const oldImageUrl = existing.imageUrl
-    if (oldImageUrl && isCloudinaryUrl(oldImageUrl) && oldImageUrl !== newImageUrl) {
-      const publicId = extractPublicId(oldImageUrl)
-      if (publicId) {
-        await deleteCloudinaryImage(publicId)
-      }
+  let newImagePublicId: string | null | undefined = undefined
+  if (options?.clearImage) {
+    if (existing.imagePublicId) {
+      await deleteCloudinaryImage(existing.imagePublicId)
     }
+    newImagePublicId = null
+  } else if (options?.file) {
+    if (existing.imagePublicId) {
+      await deleteCloudinaryImage(existing.imagePublicId)
+    }
+    const { publicId } = await uploadFileToCloudinary(options.file, BODY_ASSESSMENT_IMAGE_FOLDER)
+    newImagePublicId = publicId
   }
 
   const updateValues: Record<string, unknown> = {}
@@ -194,10 +226,7 @@ export async function updateBodyCompositionAssessment(
   if (data.visceralFatAreaCm2 !== undefined)
     updateValues.visceralFatAreaCm2 = String(data.visceralFatAreaCm2)
   if (data.bodyWaterL !== undefined) updateValues.bodyWaterL = String(data.bodyWaterL)
-  if (data.imageUrl !== undefined) {
-    updateValues.imageUrl =
-      data.imageUrl && data.imageUrl.trim() !== '' ? data.imageUrl : null
-  }
+  if (newImagePublicId !== undefined) updateValues.imagePublicId = newImagePublicId
 
   const [updated] = await db
     .update(bodyCompositionAssessment)
@@ -206,7 +235,13 @@ export async function updateBodyCompositionAssessment(
     .returning()
 
   if (!updated) return { ok: false, error: 'Failed to update assessment', code: 'NOT_FOUND' }
-  return { ok: true, data: updated }
+  return {
+    ok: true,
+    data: {
+      ...updated,
+      imageUrl: updated.imagePublicId ? buildCloudinaryUrl(updated.imagePublicId) : null,
+    },
+  }
 }
 
 export async function deleteBodyCompositionAssessment(
@@ -222,14 +257,16 @@ export async function deleteBodyCompositionAssessment(
     return { ok: false, error: 'Assessment does not belong to this organization', code: 'WRONG_ORG' }
   }
 
-  const existing = await getBodyCompositionAssessmentById(id)
+  const existing = await db
+    .select({ imagePublicId: bodyCompositionAssessment.imagePublicId })
+    .from(bodyCompositionAssessment)
+    .where(eq(bodyCompositionAssessment.id, id))
+    .limit(1)
+    .then(rows => rows[0] ?? null)
   if (!existing) return { ok: false, error: 'Assessment not found', code: 'NOT_FOUND' }
 
-  if (existing.imageUrl && isCloudinaryUrl(existing.imageUrl)) {
-    const publicId = extractPublicId(existing.imageUrl)
-    if (publicId) {
-      await deleteCloudinaryImage(publicId)
-    }
+  if (existing.imagePublicId) {
+    await deleteCloudinaryImage(existing.imagePublicId)
   }
 
   await db.delete(bodyCompositionAssessment).where(eq(bodyCompositionAssessment.id, id))

@@ -1,4 +1,44 @@
 /**
+ * Build a Cloudinary URL from a public_id
+ */
+export function buildCloudinaryUrl(publicId: string): string {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME
+  if (!cloudName) throw new Error('CLOUDINARY_CLOUD_NAME not set')
+  return `https://res.cloudinary.com/${cloudName}/image/upload/${publicId}`
+}
+
+/**
+ * Upload a file to Cloudinary (server-side)
+ * Returns publicId for DB storage
+ */
+export async function uploadFileToCloudinary(
+  file: File,
+  folder: string
+): Promise<{ publicId: string }> {
+  const { cloudinary } = await import('./cloudinary')
+  const arrayBuffer = await file.arrayBuffer()
+  const buffer = Buffer.from(arrayBuffer)
+
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder },
+      (error: Error | undefined, result: { public_id: string } | undefined) => {
+        if (error) {
+          reject(error)
+          return
+        }
+        if (!result?.public_id) {
+          reject(new Error('Cloudinary upload returned no public_id'))
+          return
+        }
+        resolve({ publicId: result.public_id })
+      }
+    )
+    uploadStream.end(buffer)
+  })
+}
+
+/**
  * Check if a URL is from Cloudinary
  */
 export const isCloudinaryUrl = (url: string | null | undefined): boolean => {

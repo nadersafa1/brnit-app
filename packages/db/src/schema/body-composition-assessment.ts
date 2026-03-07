@@ -31,7 +31,7 @@ export const bodyCompositionAssessment = pgTable(
       scale: 2,
     }).notNull(),
     bodyWaterL: numeric('body_water_l', { precision: 5, scale: 2 }).notNull(),
-    imageUrl: text('image_url'),
+    imagePublicId: text('image_public_id'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()

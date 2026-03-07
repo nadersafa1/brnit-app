@@ -7,7 +7,7 @@ import {
   listBodyCompositionAssessments,
 } from '@/lib/services/body-composition-assessments'
 import {
-  createBodyCompositionAssessmentSchema,
+  createBodyCompositionAssessmentFormSchema,
   bodyCompositionAssessmentsQuerySchema,
 } from '@/types/api/body-composition-assessment.schemas'
 
@@ -50,8 +50,20 @@ export const POST = async (request: NextRequest) => {
   const organizationId = authResult.context.activeOrgId!
   const recordedById = authResult.session.user.id
 
-  const body = await request.json()
-  const parseResult = createBodyCompositionAssessmentSchema.safeParse(body)
+  const formData = await request.formData()
+  const file = formData.get('file')
+  const parsed = {
+    memberId: formData.get('memberId') ?? '',
+    assessedAt: formData.get('assessedAt') ?? '',
+    heightCm: formData.get('heightCm') ?? '',
+    bodyFatPercent: formData.get('bodyFatPercent') ?? '',
+    weightKg: formData.get('weightKg') ?? '',
+    bmi: formData.get('bmi') ?? '',
+    muscleMassKg: formData.get('muscleMassKg') ?? '',
+    visceralFatAreaCm2: formData.get('visceralFatAreaCm2') ?? '',
+    bodyWaterL: formData.get('bodyWaterL') ?? '',
+  }
+  const parseResult = createBodyCompositionAssessmentFormSchema.safeParse(parsed)
 
   if (!parseResult.success) {
     return NextResponse.json(
@@ -60,10 +72,12 @@ export const POST = async (request: NextRequest) => {
     )
   }
 
+  const uploadFile = file instanceof File && file.size > 0 ? file : undefined
   const result = await createBodyCompositionAssessment(
     parseResult.data,
     recordedById,
-    organizationId
+    organizationId,
+    { file: uploadFile }
   )
 
   if (!result.ok) {

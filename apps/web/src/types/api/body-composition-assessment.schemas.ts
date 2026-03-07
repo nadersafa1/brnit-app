@@ -18,7 +18,6 @@ export const createBodyCompositionAssessmentSchema = z.object({
   muscleMassKg: numericMetric,
   visceralFatAreaCm2: z.number().min(0).max(9999.99),
   bodyWaterL: numericMetric,
-  imageUrl: z.url().optional().or(z.literal('')),
 })
 
 export const updateBodyCompositionAssessmentSchema = z
@@ -31,9 +30,40 @@ export const updateBodyCompositionAssessmentSchema = z
     muscleMassKg: numericMetric.optional(),
     visceralFatAreaCm2: z.number().min(0).max(9999.99).optional(),
     bodyWaterL: numericMetric.optional(),
-    imageUrl: z.url().optional().nullable(),
+    clearImage: z.boolean().optional(),
   })
   .refine(data => Object.keys(data).length > 0, { message: 'At least one field must be provided for update' })
+
+/** Coerce form-data string values into create schema */
+export const createBodyCompositionAssessmentFormSchema = z.object({
+  memberId: memberIdSchema,
+  assessedAt: z.string().min(1).transform(s => s.trim()).pipe(z.iso.datetime()),
+  heightCm: z.coerce.number().pipe(numericMetric),
+  bodyFatPercent: z.coerce.number().pipe(bodyFatPercent),
+  weightKg: z.coerce.number().pipe(numericMetric),
+  bmi: z.coerce.number().pipe(bmiMetric),
+  muscleMassKg: z.coerce.number().pipe(numericMetric),
+  visceralFatAreaCm2: z.coerce.number().pipe(z.number().min(0).max(9999.99)),
+  bodyWaterL: z.coerce.number().pipe(numericMetric),
+})
+
+/** Coerce form-data string values into update schema */
+const updateFormFields = z.object({
+  assessedAt: z.string().min(1).transform(s => s.trim()).pipe(z.iso.datetime()).optional(),
+  heightCm: z.coerce.number().pipe(numericMetric).optional(),
+  bodyFatPercent: z.coerce.number().pipe(bodyFatPercent).optional(),
+  weightKg: z.coerce.number().pipe(numericMetric).optional(),
+  bmi: z.coerce.number().pipe(bmiMetric).optional(),
+  muscleMassKg: z.coerce.number().pipe(numericMetric).optional(),
+  visceralFatAreaCm2: z.coerce.number().pipe(z.number().min(0).max(9999.99)).optional(),
+  bodyWaterL: z.coerce.number().pipe(numericMetric).optional(),
+  clearImage: z
+    .string()
+    .optional()
+    .transform(v => v === '1' || v === 'true'),
+})
+
+export const updateBodyCompositionAssessmentFormSchema = updateFormFields
 
 export const bodyCompositionAssessmentsQuerySchema = z.object({
   ...standardPaginationSchema.shape,
