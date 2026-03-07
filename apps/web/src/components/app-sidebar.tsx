@@ -42,6 +42,7 @@ const adminNavItem = {
     { title: 'Users', url: '/dashboard/admin' },
     { title: 'Categories', url: '/dashboard/admin/categories' },
     { title: 'Food Items', url: '/dashboard/admin/food-items' },
+    { title: 'Meals', url: '/dashboard/admin/meals' },
   ],
 }
 
