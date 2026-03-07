@@ -2,7 +2,7 @@
 
 import { queryOptions } from '@tanstack/react-query'
 import { API_ENDPOINTS } from '@/lib/api/endpoints'
-import { adminKeys } from './keys'
+import { getKeys, type DataSource } from './keys'
 import type { PaginationMeta } from '@/lib/api-helpers/pagination'
 
 export interface FoodItem {
@@ -43,7 +43,10 @@ async function fetchWithAuth(url: string) {
   return res.json()
 }
 
-export function fetchFoodItems(filters: FoodItemsFilters): Promise<FoodItemsResponse> {
+export function fetchFoodItems(
+  filters: FoodItemsFilters,
+  source: DataSource = 'admin'
+): Promise<FoodItemsResponse> {
   const params = new URLSearchParams()
   if (filters.page != null) params.set('page', String(filters.page))
   if (filters.perPage != null) params.set('perPage', String(filters.perPage))
@@ -51,25 +54,41 @@ export function fetchFoodItems(filters: FoodItemsFilters): Promise<FoodItemsResp
   if (filters.sortBy != null) params.set('sortBy', filters.sortBy)
   if (filters.sortOrder != null) params.set('sortOrder', filters.sortOrder)
   if (filters.categoryId != null) params.set('categoryId', filters.categoryId)
-  const url = `${API_ENDPOINTS.admin.foodItems}?${params.toString()}`
+  const base =
+    source === 'nutritionist'
+      ? API_ENDPOINTS.nutritionist.foodItems
+      : API_ENDPOINTS.admin.foodItems
+  const url = `${base}?${params.toString()}`
   return fetchWithAuth(url)
 }
 
-export function fetchFoodItem(id: string): Promise<{ data: FoodItem }> {
-  return fetchWithAuth(API_ENDPOINTS.admin.foodItem(id))
+export function fetchFoodItem(
+  id: string,
+  source: DataSource = 'admin'
+): Promise<{ data: FoodItem }> {
+  const url =
+    source === 'nutritionist'
+      ? API_ENDPOINTS.nutritionist.foodItem(id)
+      : API_ENDPOINTS.admin.foodItem(id)
+  return fetchWithAuth(url)
 }
 
-export function foodItemsQueryOptions(filters: FoodItemsFilters) {
+export function foodItemsQueryOptions(
+  filters: FoodItemsFilters,
+  source: DataSource = 'admin'
+) {
+  const keys = getKeys(source)
   return queryOptions({
-    queryKey: adminKeys.foodItems(filters),
-    queryFn: () => fetchFoodItems(filters),
+    queryKey: keys.foodItems(filters),
+    queryFn: () => fetchFoodItems(filters, source),
   })
 }
 
-export function foodItemQueryOptions(id: string) {
+export function foodItemQueryOptions(id: string, source: DataSource = 'admin') {
+  const keys = getKeys(source)
   return queryOptions({
-    queryKey: adminKeys.foodItem(id),
-    queryFn: () => fetchFoodItem(id).then((r) => r.data),
+    queryKey: keys.foodItem(id),
+    queryFn: () => fetchFoodItem(id, source).then((r) => r.data),
     enabled: !!id,
   })
 }

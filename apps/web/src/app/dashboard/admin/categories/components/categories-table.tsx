@@ -23,6 +23,7 @@ export interface CategoriesTableProps {
   onRefetch: () => void
   onEdit: (category: FoodCategory) => void
   onDelete: (category: FoodCategory) => void
+  readOnly?: boolean
 }
 
 export function CategoriesTable({
@@ -38,6 +39,7 @@ export function CategoriesTable({
   isLoading,
   onEdit,
   onDelete,
+  readOnly = false,
 }: CategoriesTableProps) {
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
     createdAt: false,
@@ -57,8 +59,9 @@ export function CategoriesTable({
         onSort: (id) => handleSort(id as CategoriesSortBy),
         onEdit,
         onDelete,
+        readOnly,
       }),
-    [sortBy, sortOrder, handleSort, onEdit, onDelete]
+    [sortBy, sortOrder, handleSort, onEdit, onDelete, readOnly]
   )
 
   const table = useReactTable({

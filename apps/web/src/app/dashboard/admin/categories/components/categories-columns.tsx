@@ -21,6 +21,7 @@ export interface CreateCategoriesColumnsOptions {
   onSort?: (columnId: string) => void
   onEdit: (category: FoodCategory) => void
   onDelete: (category: FoodCategory) => void
+  readOnly?: boolean
 }
 
 export function createCategoriesColumns({
@@ -29,8 +30,9 @@ export function createCategoriesColumns({
   onSort,
   onEdit,
   onDelete,
+  readOnly = false,
 }: CreateCategoriesColumnsOptions): ColumnDef<FoodCategory>[] {
-  return [
+  const columns: ColumnDef<FoodCategory>[] = [
     {
       id: 'name',
       accessorKey: 'name',
@@ -51,7 +53,9 @@ export function createCategoriesColumns({
       (row) => (row.createdAt ? new Date(row.createdAt).toLocaleDateString() : '–'),
       { sortable: true, sortBy, sortOrder, onSort }
     ),
-    {
+  ]
+  if (!readOnly) {
+    columns.push({
       id: 'actions',
       header: '',
       enableHiding: false,
@@ -81,6 +85,7 @@ export function createCategoriesColumns({
           </DropdownMenu>
         )
       },
-    },
-  ]
+    })
+  }
+  return columns
 }

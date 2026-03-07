@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@burn-app/db'
-import { meal, mealItem, foodItem, foodCategory } from '@burn-app/db/schema'
-import { eq } from 'drizzle-orm'
+import { flattenError } from 'zod'
 import { requireAdmin } from '@/lib/api-helpers/admin-auth'
+import { getMealById, updateMeal, deleteMeal } from '@/lib/services/meals'
 import { updateMealSchema } from '@/types/api/meal.schemas'
 
 type Params = { params: Promise<{ id: string }> }
@@ -12,56 +11,13 @@ export const GET = async (request: NextRequest, { params }: Params) => {
   if (authResult.error) return authResult.error
 
   const { id } = await params
+  const mealData = await getMealById(id)
 
-  const [mealRow] = await db
-    .select({
-      id: meal.id,
-      name: meal.name,
-      description: meal.description,
-      createdAt: meal.createdAt,
-      updatedAt: meal.updatedAt,
-    })
-    .from(meal)
-    .where(eq(meal.id, id))
-    .limit(1)
-
-  if (!mealRow) {
+  if (!mealData) {
     return NextResponse.json({ error: 'Meal not found' }, { status: 404 })
   }
 
-  const mealItems = await db
-    .select({
-      id: mealItem.id,
-      foodItemId: mealItem.foodItemId,
-      foodName: foodItem.name,
-      categoryName: foodCategory.name,
-      quantity: mealItem.quantity,
-      calories: foodItem.calories,
-      protein: foodItem.protein,
-      carbs: foodItem.carbs,
-      fat: foodItem.fat,
-    })
-    .from(mealItem)
-    .innerJoin(foodItem, eq(mealItem.foodItemId, foodItem.id))
-    .leftJoin(foodCategory, eq(foodItem.categoryId, foodCategory.id))
-    .where(eq(mealItem.mealId, id))
-
-  return NextResponse.json({
-    data: {
-      ...mealRow,
-      mealItems: mealItems.map((mi) => ({
-        id: mi.id,
-        foodItemId: mi.foodItemId,
-        foodName: mi.foodName,
-        categoryName: mi.categoryName,
-        quantity: Number(mi.quantity),
-        calories: mi.calories ? Number(mi.calories) : null,
-        protein: mi.protein ? Number(mi.protein) : null,
-        carbs: mi.carbs ? Number(mi.carbs) : null,
-        fat: mi.fat ? Number(mi.fat) : null,
-      })),
-    },
-  })
+  return NextResponse.json({ data: mealData })
 }
 
 export const PATCH = async (request: NextRequest, { params }: Params) => {
@@ -74,44 +30,21 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
 
   if (!parseResult.success) {
     return NextResponse.json(
-      { error: 'Invalid request body', details: parseResult.error.flatten() },
+      { error: 'Invalid request body', details: flattenError(parseResult.error) },
       { status: 400 }
     )
   }
 
-  const { name, description, mealItems } = parseResult.data
+  const result = await updateMeal(id, parseResult.data)
 
-  const updateData: Record<string, string | null | undefined> = {}
-  if (name !== undefined) updateData.name = name
-  if (description !== undefined) updateData.description = description
-
-  if (Object.keys(updateData).length > 0) {
-    const [updated] = await db
-      .update(meal)
-      .set(updateData)
-      .where(eq(meal.id, id))
-      .returning()
-
-    if (!updated) {
-      return NextResponse.json({ error: 'Meal not found' }, { status: 404 })
+  if (!result.ok) {
+    if (result.code === 'NOT_FOUND') {
+      return NextResponse.json({ error: result.error }, { status: 404 })
     }
+    return NextResponse.json({ error: result.error }, { status: 400 })
   }
 
-  if (mealItems !== undefined) {
-    await db.delete(mealItem).where(eq(mealItem.mealId, id))
-    if (mealItems.length > 0) {
-      await db.insert(mealItem).values(
-        mealItems.map((item) => ({
-          mealId: id,
-          foodItemId: item.foodItemId,
-          quantity: item.quantity.toString(),
-        }))
-      )
-    }
-  }
-
-  const [final] = await db.select().from(meal).where(eq(meal.id, id)).limit(1)
-  return NextResponse.json({ data: final })
+  return NextResponse.json({ data: result.data })
 }
 
 export const DELETE = async (request: NextRequest, { params }: Params) => {
@@ -119,8 +52,7 @@ export const DELETE = async (request: NextRequest, { params }: Params) => {
   if (authResult.error) return authResult.error
 
   const { id } = await params
-
-  const [deleted] = await db.delete(meal).where(eq(meal.id, id)).returning()
+  const deleted = await deleteMeal(id)
 
   if (!deleted) {
     return NextResponse.json({ error: 'Meal not found' }, { status: 404 })

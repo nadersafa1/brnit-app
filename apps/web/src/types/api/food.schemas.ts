@@ -10,7 +10,7 @@ export const foodItemsQuerySchema = z.object({
   ...standardTextSearchSchema.shape,
   ...standardSortSchema.shape,
   sortBy: z.enum(['name', 'calories', 'protein', 'carbs', 'fat', 'createdAt']).optional(),
-  categoryId: z.string().uuid().optional(),
+  categoryId: z.uuid().optional(),
 })
 
 export const foodCategoriesQuerySchema = z.object({
@@ -30,7 +30,7 @@ export const updateFoodCategorySchema = z.object({
 
 export const createFoodItemSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
-  categoryId: z.string().uuid('Invalid category ID'),
+  categoryId: z.uuid('Invalid category ID'),
   fdcId: z.number().int().optional(),
   calories: z.number().nonnegative('Calories must be non-negative').optional(),
   protein: z.number().nonnegative('Protein must be non-negative').optional(),
@@ -40,12 +40,8 @@ export const createFoodItemSchema = z.object({
 })
 
 export const updateFoodItemSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Name is required')
-    .max(255, 'Name must be less than 255 characters')
-    .optional(),
-  categoryId: z.string().uuid('Invalid category ID').optional(),
+  name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters').optional(),
+  categoryId: z.uuid('Invalid category ID').optional(),
   fdcId: z.number().int().nullable().optional(),
   calories: z.number().nonnegative('Calories must be non-negative').nullable().optional(),
   protein: z.number().nonnegative('Protein must be non-negative').nullable().optional(),
