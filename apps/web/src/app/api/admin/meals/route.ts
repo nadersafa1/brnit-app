@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { flattenError } from 'zod'
 import { requireAdmin } from '@/lib/api-helpers/admin-auth'
 import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
 import { createMeal, listMeals } from '@/lib/services/meals'
@@ -21,7 +22,7 @@ export const GET = async (request: NextRequest) => {
 
   if (!parseResult.success) {
     return NextResponse.json(
-      { error: 'Invalid query parameters', details: parseResult.error.flatten() },
+      { error: 'Invalid query parameters', details: flattenError(parseResult.error) },
       { status: 400 }
     )
   }
@@ -41,7 +42,7 @@ export const POST = async (request: NextRequest) => {
 
   if (!parseResult.success) {
     return NextResponse.json(
-      { error: 'Invalid request body', details: parseResult.error.flatten() },
+      { error: 'Invalid request body', details: flattenError(parseResult.error) },
       { status: 400 }
     )
   }

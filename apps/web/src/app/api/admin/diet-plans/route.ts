@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { flattenError } from 'zod'
 import { db } from '@burn-app/db'
 import { dietPlan, dietPlanMeal } from '@burn-app/db/schema'
 import { count, asc, desc, ilike } from 'drizzle-orm'
@@ -24,7 +25,7 @@ export const GET = async (request: NextRequest) => {
 
   if (!parseResult.success) {
     return NextResponse.json(
-      { error: 'Invalid query parameters', details: parseResult.error.flatten() },
+      { error: 'Invalid query parameters', details: flattenError(parseResult.error) },
       { status: 400 }
     )
   }
@@ -80,7 +81,7 @@ export const POST = async (request: NextRequest) => {
 
   if (!parseResult.success) {
     return NextResponse.json(
-      { error: 'Invalid request body', details: parseResult.error.flatten() },
+      { error: 'Invalid request body', details: flattenError(parseResult.error) },
       { status: 400 }
     )
   }

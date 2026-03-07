@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { flattenError } from 'zod'
 import { requireAdmin } from '@/lib/api-helpers/admin-auth'
 import {
   getFoodCategoryById,
@@ -33,7 +34,7 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
 
   if (!parseResult.success) {
     return NextResponse.json(
-      { error: 'Invalid request body', details: parseResult.error.flatten() },
+      { error: 'Invalid request body', details: flattenError(parseResult.error) },
       { status: 400 }
     )
   }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { flattenError } from 'zod'
 import { db } from '@burn-app/db'
 import { dietPlan, dietPlanMeal, meal } from '@burn-app/db/schema'
 import { eq, asc } from 'drizzle-orm'
@@ -68,7 +69,7 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
 
   if (!parseResult.success) {
     return NextResponse.json(
-      { error: 'Invalid request body', details: parseResult.error.flatten() },
+      { error: 'Invalid request body', details: flattenError(parseResult.error) },
       { status: 400 }
     )
   }
