@@ -2,7 +2,7 @@ import { auth } from '@burn-app/auth'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
-import OrganizationsContent from './organizations-content'
+import OrganizationsTable from './components/organizations-table'
 
 export default async function OrganizationsPage() {
   const session = await auth.api.getSession({
@@ -13,5 +13,10 @@ export default async function OrganizationsPage() {
     redirect('/login')
   }
 
-  return <OrganizationsContent />
+  return (
+    <div className="space-y-6">
+      <h2 className="text-lg font-semibold">Organizations</h2>
+      <OrganizationsTable />
+    </div>
+  )
 }

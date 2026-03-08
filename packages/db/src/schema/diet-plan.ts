@@ -80,6 +80,10 @@ export const dietPlanAssignment = pgTable(
       'diet_plan_assignment_assignee_check',
       sql`((${table.memberId} IS NOT NULL AND ${table.userId} IS NULL) OR (${table.memberId} IS NULL AND ${table.userId} IS NOT NULL))`
     ),
+    check(
+      'diet_plan_assignment_date_range_check',
+      sql`${table.startDate} <= ${table.endDate}`
+    ),
   ]
 )
 

@@ -1,0 +1,1 @@
+ALTER TABLE "diet_plan_assignment" ADD CONSTRAINT "diet_plan_assignment_date_range_check" CHECK ("diet_plan_assignment"."start_date" <= "diet_plan_assignment"."end_date");

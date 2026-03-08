@@ -20,6 +20,7 @@ interface CreateDietPlanDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
+  onSuccessWithPlanId?: (planId: string) => void
   source?: DataSource
 }
 
@@ -27,6 +28,7 @@ export function CreateDietPlanDialog({
   open,
   onOpenChange,
   onSuccess,
+  onSuccessWithPlanId,
   source = 'admin',
 }: CreateDietPlanDialogProps) {
   const [name, setName] = useState('')
@@ -57,7 +59,7 @@ export function CreateDietPlanDialog({
 
   const handleSubmit = async () => {
     if (!name.trim()) return
-    await create.mutateAsync({
+    const result = await create.mutateAsync({
       name: name.trim(),
       description: description.trim() || undefined,
       dietPlanMeals: meals.map((m) => ({
@@ -68,6 +70,8 @@ export function CreateDietPlanDialog({
       })),
     })
     handleOpenChange(false)
+    const planId = result?.data?.id
+    if (planId) onSuccessWithPlanId?.(planId)
     onSuccess?.()
   }
 

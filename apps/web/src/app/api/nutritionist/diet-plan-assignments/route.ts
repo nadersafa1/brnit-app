@@ -7,7 +7,7 @@ import {
   listDietPlanAssignments,
 } from '@/lib/services/diet-plan-assignments'
 import {
-  createDietPlanAssignmentSchema,
+  createDietPlanAssignmentNutritionistSchema,
   dietPlanAssignmentsQuerySchema,
 } from '@/types/api/diet-plan-assignment.schemas'
 
@@ -16,6 +16,14 @@ export const dynamic = 'force-dynamic'
 export const GET = async (request: NextRequest) => {
   const authResult = await requireNutritionistOrgContext(request.headers)
   if (authResult.error) return authResult.error
+
+  const activeOrgId = authResult.context?.activeOrgId ?? null
+  if (!activeOrgId) {
+    return NextResponse.json(
+      { error: 'Active organization required for listing assignments' },
+      { status: 403 }
+    )
+  }
 
   const { searchParams } = new URL(request.url)
   const parseResult = dietPlanAssignmentsQuerySchema.safeParse({
@@ -27,6 +35,7 @@ export const GET = async (request: NextRequest) => {
     memberId: searchParams.get('memberId') ?? undefined,
     userId: searchParams.get('userId') ?? undefined,
     dietPlanId: searchParams.get('dietPlanId') ?? undefined,
+    organizationId: activeOrgId,
   })
 
   if (!parseResult.success) {
@@ -46,8 +55,16 @@ export const POST = async (request: NextRequest) => {
   const authResult = await requireNutritionistOrgContext(request.headers)
   if (authResult.error) return authResult.error
 
+  const activeOrgId = authResult.context?.activeOrgId ?? null
+  if (!activeOrgId) {
+    return NextResponse.json(
+      { error: 'Active organization required for creating assignments' },
+      { status: 403 }
+    )
+  }
+
   const body = await request.json()
-  const parseResult = createDietPlanAssignmentSchema.safeParse(body)
+  const parseResult = createDietPlanAssignmentNutritionistSchema.safeParse(body)
 
   if (!parseResult.success) {
     return NextResponse.json(
@@ -56,7 +73,10 @@ export const POST = async (request: NextRequest) => {
     )
   }
 
-  const result = await createDietPlanAssignment(parseResult.data)
+  const result = await createDietPlanAssignment({
+    ...parseResult.data,
+    organizationId: activeOrgId,
+  })
 
   if (!result.ok) {
     if (result.code === 'OVERLAP') {

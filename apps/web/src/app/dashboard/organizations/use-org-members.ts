@@ -5,7 +5,10 @@ import { authClient } from '@/lib/auth-client'
 import type { Member } from 'better-auth/plugins'
 import type { User } from 'better-auth/types'
 
-export const useOrgMembers = (organizationId: string | null) => {
+export const useOrgMembers = (
+  organizationId: string | null,
+  roleFilter?: string
+) => {
   const [members, setMembers] = useState<(Member & { user: User })[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -22,11 +25,14 @@ export const useOrgMembers = (organizationId: string | null) => {
       setError(res.error.message ?? 'Failed to load members')
       setMembers([])
     } else {
-      const list = res.data.members as (Member & { user: User })[]
+      let list = (res.data.members ?? []) as (Member & { user: User })[]
+      if (roleFilter) {
+        list = list.filter((m) => m.role === roleFilter)
+      }
       setMembers(list)
     }
     setLoading(false)
-  }, [organizationId])
+  }, [organizationId, roleFilter])
 
   useEffect(() => {
     refetch()
