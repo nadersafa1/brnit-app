@@ -90,7 +90,7 @@ export const AppSidebar = (props: React.ComponentProps<typeof Sidebar>) => {
       items.push(adminNavItem)
     }
     if (canAccessDirectAdminFeatures(session ?? null, context)) {
-      items.push(directAdminNavItem)
+      items.push({ ...directAdminNavItem, isActive: session?.user?.role === 'direct-admin' ? true : false })
     }
     if (canAccessNutritionistFeatures(session ?? null, context)) {
       items.push({ ...nutritionistNavItem, isActive: session?.user?.role === 'nutritionist' ? true : false })
