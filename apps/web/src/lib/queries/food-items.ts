@@ -16,6 +16,7 @@ export interface FoodItem {
   carbs: string | null
   fat: string | null
   servingSize: string | null
+  imageUrl: string | null
   createdAt: string
   updatedAt: string
 }
