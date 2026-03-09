@@ -3,9 +3,20 @@ import { flattenError } from 'zod'
 import { requireAdmin } from '@/lib/api-helpers/admin-auth'
 import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
 import { createFoodItem, listFoodItems } from '@/lib/services/food'
-import { foodItemsQuerySchema, createFoodItemSchema } from '@/types/api/food.schemas'
+import { foodItemsQuerySchema, createFoodItemFormSchema } from '@/types/api/food.schemas'
 
 export const dynamic = 'force-dynamic'
+
+const FORM_FIELDS = [
+  'name',
+  'categoryId',
+  'fdcId',
+  'calories',
+  'protein',
+  'carbs',
+  'fat',
+  'servingSize',
+] as const
 
 export const GET = async (request: NextRequest) => {
   const authResult = await requireAdmin(request.headers)
@@ -38,9 +49,17 @@ export const POST = async (request: NextRequest) => {
   const authResult = await requireAdmin(request.headers)
   if (authResult.error) return authResult.error
 
-  const body = await request.json()
-  const parseResult = createFoodItemSchema.safeParse(body)
+  const formData = await request.formData()
+  const file = formData.get('file')
+  const parsed: Record<string, unknown> = {}
+  for (const key of FORM_FIELDS) {
+    const val = formData.get(key)
+    if (typeof val === 'string' && val.trim() !== '') {
+      parsed[key] = val
+    }
+  }
 
+  const parseResult = createFoodItemFormSchema.safeParse(parsed)
   if (!parseResult.success) {
     return NextResponse.json(
       { error: 'Invalid request body', details: flattenError(parseResult.error) },
@@ -48,19 +67,8 @@ export const POST = async (request: NextRequest) => {
     )
   }
 
-  const { name, categoryId, fdcId, calories, protein, carbs, fat, servingSize } =
-    parseResult.data
-
-  const newItem = await createFoodItem({
-    name,
-    categoryId,
-    fdcId,
-    calories,
-    protein,
-    carbs,
-    fat,
-    servingSize,
-  })
+  const uploadFile = file instanceof File && file.size > 0 ? file : undefined
+  const newItem = await createFoodItem(parseResult.data, { file: uploadFile })
 
   if (!newItem) {
     return NextResponse.json({ error: 'Failed to create food item' }, { status: 500 })

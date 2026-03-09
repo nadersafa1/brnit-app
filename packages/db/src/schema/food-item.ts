@@ -18,6 +18,7 @@ export const foodItem = pgTable(
     carbs: numeric('carbs'),
     fat: numeric('fat'),
     servingSize: numeric('serving_size'),
+    imagePublicId: text('image_public_id'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()

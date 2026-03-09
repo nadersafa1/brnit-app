@@ -1,6 +1,7 @@
 'use client'
 
 import type { ColumnDef } from '@tanstack/react-table'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -11,7 +12,7 @@ import {
 import { createSortableHeader, createTextColumn } from '@/lib/table-core'
 import type { SortOrder } from '@/lib/table-core'
 import type { FoodItem } from '@/lib/queries/food-items'
-import { Edit, MoreHorizontal, Trash2 } from 'lucide-react'
+import { Edit, ImageIcon, MoreHorizontal, Trash2 } from 'lucide-react'
 
 export type FoodItemsSortBy = 'name' | 'calories' | 'protein' | 'carbs' | 'fat' | 'createdAt'
 
@@ -46,6 +47,36 @@ export function createFoodItemsColumns({
           {row.original.name}
         </button>
       ),
+    },
+    {
+      id: 'image',
+      accessorKey: 'imageUrl',
+      header: 'Image',
+      cell: ({ row }) => {
+        const item = row.original
+        if (!item.imageUrl) {
+          return (
+            <Avatar className="size-8 rounded-md">
+              <AvatarFallback className="rounded-md">
+                <ImageIcon className="size-4 text-muted-foreground" />
+              </AvatarFallback>
+            </Avatar>
+          )
+        }
+        return (
+          <a
+            href={item.imageUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block rounded-md overflow-hidden ring-1 ring-border"
+          >
+            <Avatar className="size-8 rounded-md">
+              <AvatarImage src={item.imageUrl} alt="" className="rounded-md object-cover" />
+              <AvatarFallback className="rounded-md">View</AvatarFallback>
+            </Avatar>
+          </a>
+        )
+      },
     },
     createTextColumn<FoodItem>('categoryName', 'Category', (row) => row.categoryName ?? '–', {}),
     createTextColumn<FoodItem>('calories', 'Calories', (row) => row.calories ?? '–', {

@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { FoodItemForm } from './food-item-form'
+import { FoodItemForm, type FoodItemFormSubmitOptions } from './food-item-form'
 import type { CreateFoodItem, UpdateFoodItem } from '@/types/api/food.schemas'
 import type { FoodCategory } from '@/lib/queries/food-categories'
 import { useCreateFoodItem } from '@/hooks/use-food-mutations'
@@ -27,8 +27,11 @@ export function CreateFoodItemDialog({
 }: CreateFoodItemDialogProps) {
   const create = useCreateFoodItem()
 
-  const handleSubmit = async (data: CreateFoodItem | UpdateFoodItem) => {
-    await create.mutateAsync(data as CreateFoodItem)
+  const handleSubmit = async (
+    data: CreateFoodItem | UpdateFoodItem,
+    options?: FoodItemFormSubmitOptions
+  ) => {
+    await create.mutateAsync({ ...data, ...options } as CreateFoodItem & { file?: File })
     onOpenChange(false)
     onSuccess?.()
   }
@@ -41,6 +44,7 @@ export function CreateFoodItemDialog({
           <DialogDescription>Add a new food item with nutritional information.</DialogDescription>
         </DialogHeader>
         <FoodItemForm
+          key={open ? 'open' : 'closed'}
           categories={categories}
           onSubmit={handleSubmit}
           onCancel={() => onOpenChange(false)}

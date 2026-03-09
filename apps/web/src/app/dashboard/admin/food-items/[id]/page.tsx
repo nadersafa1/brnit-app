@@ -57,8 +57,11 @@ export default function FoodItemDetailPage() {
   }, [showDelete])
 
   const handleUpdate = useCallback(
-    async (data: UpdateFoodItem) => {
-      await update.mutateAsync({ id, ...data })
+    async (
+      data: UpdateFoodItem,
+      options?: { file?: File; clearImage?: boolean }
+    ) => {
+      await update.mutateAsync({ id, ...data, ...options })
       setEditOpen(false)
       refetch()
     },
@@ -134,7 +137,28 @@ export default function FoodItemDetailPage() {
           <h2 className="text-lg font-semibold">{item.name}</h2>
           <p className="text-sm text-muted-foreground">{item.categoryName ?? 'No category'}</p>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-4">
+          {item.imageUrl && (
+            <div className="rounded-lg border overflow-hidden bg-muted/50 max-w-xs">
+              <a
+                href={item.imageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+              >
+                <img
+                  src={item.imageUrl}
+                  alt=""
+                  className="size-full object-contain max-h-48 w-full"
+                />
+              </a>
+              <p className="text-xs text-muted-foreground px-2 py-1">
+                <a href={item.imageUrl} target="_blank" rel="noopener noreferrer" className="underline">
+                  Open in new tab
+                </a>
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>Calories: {item.calories ?? '–'}</div>
             <div>Protein: {item.protein ?? '–'} g</div>
@@ -156,6 +180,7 @@ export default function FoodItemDetailPage() {
             <DialogDescription>Update the food item details.</DialogDescription>
           </DialogHeader>
           <FoodItemForm
+            key={editOpen ? 'open' : 'closed'}
             item={item}
             categories={categories}
             onSubmit={handleUpdate}

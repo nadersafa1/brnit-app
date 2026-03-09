@@ -1,0 +1,1 @@
+ALTER TABLE "food_item" ADD COLUMN "image_public_id" text;

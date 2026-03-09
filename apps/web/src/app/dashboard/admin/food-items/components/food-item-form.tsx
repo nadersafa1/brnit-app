@@ -1,10 +1,13 @@
 'use client'
 
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Field, FieldLabel, FieldError } from '@/components/ui/field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { FoodItem } from '@/lib/queries/food-items'
@@ -14,10 +17,12 @@ import { createFoodItemSchema, updateFoodItemSchema } from '@/types/api/food.sch
 type CreateFormData = z.infer<typeof createFoodItemSchema>
 type UpdateFormData = z.infer<typeof updateFoodItemSchema>
 
+export type FoodItemFormSubmitOptions = { file?: File; clearImage?: boolean }
+
 interface FoodItemFormProps {
   item?: FoodItem | null
   categories: FoodCategory[]
-  onSubmit: (data: CreateFormData | UpdateFormData) => Promise<void>
+  onSubmit: (data: CreateFormData | UpdateFormData, options?: FoodItemFormSubmitOptions) => Promise<void>
   onCancel?: () => void
   isLoading?: boolean
 }
@@ -25,6 +30,8 @@ interface FoodItemFormProps {
 export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading = false }: FoodItemFormProps) {
   const isEdit = !!item
   const schema = isEdit ? updateFoodItemSchema : createFoodItemSchema
+  const [file, setFile] = useState<File | null>(null)
+  const [clearImage, setClearImage] = useState(false)
 
   type FormValues = {
     name: string
@@ -74,7 +81,12 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
       const c = payload as CreateFormData
       if (!c.name || !c.categoryId) return
     }
-    await onSubmit(payload)
+    const options: FoodItemFormSubmitOptions = {}
+    if (file) options.file = file
+    if (isEdit && clearImage) options.clearImage = true
+    await onSubmit(payload, options)
+    setFile(null)
+    setClearImage(false)
     form.reset()
   })
 
@@ -124,7 +136,7 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
           <Input
             id='item-calories'
             type='number'
-            step='0.1'
+            step='0.01'
             {...form.register('calories', { valueAsNumber: true })}
             placeholder='0'
             disabled={isLoading}
@@ -135,7 +147,7 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
           <Input
             id='item-protein'
             type='number'
-            step='0.1'
+            step='0.01'
             {...form.register('protein', { valueAsNumber: true })}
             placeholder='0'
             disabled={isLoading}
@@ -146,7 +158,7 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
           <Input
             id='item-carbs'
             type='number'
-            step='0.1'
+            step='0.01'
             {...form.register('carbs', { valueAsNumber: true })}
             placeholder='0'
             disabled={isLoading}
@@ -157,7 +169,7 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
           <Input
             id='item-fat'
             type='number'
-            step='0.1'
+            step='0.01'
             {...form.register('fat', { valueAsNumber: true })}
             placeholder='0'
             disabled={isLoading}
@@ -170,12 +182,46 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
         <Input
           id='item-serving'
           type='number'
-          step='0.1'
+          step='0.01'
           {...form.register('servingSize', { valueAsNumber: true })}
           placeholder='e.g. 100'
           disabled={isLoading}
         />
       </Field>
+
+      <Field>
+        <FieldLabel htmlFor='item-image'>{isEdit ? 'Replace image (optional)' : 'Image (optional)'}</FieldLabel>
+        <Input
+          id='item-image'
+          type='file'
+          accept='image/*'
+          className='cursor-pointer'
+          disabled={isLoading}
+          onChange={e => {
+            const f = e.target.files?.[0]
+            setFile(f ?? null)
+            if (f) setClearImage(false)
+          }}
+        />
+      </Field>
+
+      {isEdit && item?.imageUrl && !clearImage && (
+        <Field>
+          <div className='flex items-center gap-2'>
+            <Checkbox
+              id='item-clearImage'
+              checked={clearImage}
+              onCheckedChange={v => {
+                setClearImage(v === true)
+                if (v === true) setFile(null)
+              }}
+            />
+            <Label htmlFor='item-clearImage' className='cursor-pointer font-normal'>
+              Remove current image
+            </Label>
+          </div>
+        </Field>
+      )}
 
       <div className='flex gap-2 justify-end'>
         {onCancel && (
@@ -184,7 +230,7 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
           </Button>
         )}
         <Button type='submit' disabled={isLoading}>
-          {isLoading ? 'Saving…' : item ? 'Update' : 'Create'}
+          {isLoading ? 'Saving…' : isEdit ? 'Update' : 'Create'}
         </Button>
       </div>
     </form>
