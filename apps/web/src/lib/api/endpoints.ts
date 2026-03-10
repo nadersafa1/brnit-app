@@ -24,6 +24,7 @@ export const API_ENDPOINTS = {
   member: {
     dietPlanAssignments: '/api/member/me/diet-plan-assignments',
     dietPlanMealConsumptions: '/api/member/me/diet-plan-meal-consumptions',
+    currentDietPlan: '/api/member/me/current-diet-plan',
   },
   admin: {
     foodItems: '/api/admin/food-items',

@@ -1,0 +1,36 @@
+import { z } from 'zod'
+
+const dateStringSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD')
+
+export const currentDietPlanQuerySchema = z
+  .object({
+    from: dateStringSchema.optional(),
+    to: dateStringSchema.optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.from || !data.to) return true
+      return data.from <= data.to
+    },
+    {
+      message: 'from must be before or equal to to',
+      path: ['to'],
+    },
+  )
+  .refine(
+    (data) => {
+      if (!data.from || !data.to) return true
+      const fromDate = new Date(data.from)
+      const toDate = new Date(data.to)
+      const diffMs = toDate.getTime() - fromDate.getTime()
+      const diffDays = diffMs / (1000 * 60 * 60 * 24) + 1
+      return diffDays >= 1 && diffDays <= 31
+    },
+    {
+      message: 'Range must be between 1 and 31 days',
+      path: ['to'],
+    },
+  )
+
+export type CurrentDietPlanQuery = z.infer<typeof currentDietPlanQuerySchema>
+
