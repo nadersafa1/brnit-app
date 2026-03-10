@@ -13,42 +13,56 @@ import {
   dietPlanMealConsumptionQuerySchema,
 } from '@/types/api/diet-plan-meal-consumption.schemas'
 import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
-import { calculateOffset } from '@/lib/api-helpers/query-builders'
 
 export const dynamic = 'force-dynamic'
 
-/** Verify the assignment belongs to the current user. */
-async function userCanAccessAssignment(
+type AssignmentRow = {
+  id: string
+  userId: string | null
+  memberId: string | null
+  startDate: string
+  endDate: string
+}
+
+/** Fetch assignment if it belongs to the current user. Returns row with dates or null. */
+async function getAssignmentForUser(
   userId: string,
   assignmentId: string
-): Promise<boolean> {
+): Promise<AssignmentRow | null> {
   const memberIds = await db
     .select({ id: member.id })
     .from(member)
     .where(eq(member.userId, userId))
   const memberIdList = memberIds.map(m => m.id)
 
-  const [assignment] = await db
-    .select({ id: dietPlanAssignment.id })
-    .from(dietPlanAssignment)
-    .where(eq(dietPlanAssignment.id, assignmentId))
-    .limit(1)
-
-  if (!assignment) return false
-
   const [row] = await db
     .select({
+      id: dietPlanAssignment.id,
       userId: dietPlanAssignment.userId,
       memberId: dietPlanAssignment.memberId,
+      startDate: dietPlanAssignment.startDate,
+      endDate: dietPlanAssignment.endDate,
     })
     .from(dietPlanAssignment)
     .where(eq(dietPlanAssignment.id, assignmentId))
     .limit(1)
 
-  if (!row) return false
-  if (row.userId === userId) return true
-  if (row.memberId && memberIdList.includes(row.memberId)) return true
-  return false
+  if (!row) return null
+  if (row.userId === userId) return row
+  if (row.memberId && memberIdList.includes(row.memberId)) return row
+  return null
+}
+
+function addDaysToDateString(dateStr: string, days: number): string {
+  const d = new Date(dateStr + 'T00:00:00Z')
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
+function getGraceDays(): number {
+  const parsed = Number.parseInt(process.env.DIET_PLAN_CONSUMPTION_GRACE_DAYS ?? '2', 10)
+  const value = Number.isNaN(parsed) || parsed < 0 ? 2 : parsed
+  return Math.max(0, value)
 }
 
 export const GET = async (request: NextRequest) => {
@@ -75,8 +89,8 @@ export const GET = async (request: NextRequest) => {
   }
 
   if (parseResult.data.dietPlanAssignmentId) {
-    const canAccess = await userCanAccessAssignment(userId, parseResult.data.dietPlanAssignmentId)
-    if (!canAccess) {
+    const assignment = await getAssignmentForUser(userId, parseResult.data.dietPlanAssignmentId)
+    if (!assignment) {
       return NextResponse.json({ error: 'Forbidden: assignment not found or access denied' }, { status: 403 })
     }
   } else {
@@ -118,12 +132,34 @@ export const POST = async (request: NextRequest) => {
     )
   }
 
-  const canAccess = await userCanAccessAssignment(
+  const assignment = await getAssignmentForUser(
     authResult.session.user.id,
     parseResult.data.dietPlanAssignmentId
   )
-  if (!canAccess) {
+  if (!assignment) {
     return NextResponse.json({ error: 'Forbidden: assignment not found or access denied' }, { status: 403 })
+  }
+
+  const consumedAt = parseResult.data.consumedAt instanceof Date
+    ? parseResult.data.consumedAt
+    : new Date(parseResult.data.consumedAt)
+  const consumedDate = consumedAt.toISOString().slice(0, 10)
+  const graceDays = getGraceDays()
+  const maxAllowedDate = addDaysToDateString(assignment.endDate, graceDays)
+
+  if (consumedDate < assignment.startDate || consumedDate > maxAllowedDate) {
+    return NextResponse.json(
+      {
+        error:
+          'consumedAt must be within the assignment period (startDate to endDate + grace days)',
+        details: {
+          startDate: assignment.startDate,
+          endDate: assignment.endDate,
+          graceDays,
+        },
+      },
+      { status: 400 }
+    )
   }
 
   const result = await logDietPlanMealConsumption(parseResult.data)
