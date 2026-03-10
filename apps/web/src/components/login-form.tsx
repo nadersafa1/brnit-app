@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -40,6 +41,8 @@ const AppleIcon = () => (
   </svg>
 )
 
+const EMAIL_NOT_VERIFIED_STATUS = 403
+
 export const LoginForm = ({
   className,
   callbackUrl,
@@ -47,6 +50,8 @@ export const LoginForm = ({
 }: { className?: string; callbackUrl?: string; invitationId?: string } = {}) => {
   const router = useRouter()
   const { isPending } = authClient.useSession()
+  const [showEmailNotVerified, setShowEmailNotVerified] = useState(false)
+  const [isResending, setIsResending] = useState(false)
   const redirectTo = callbackUrl ?? '/dashboard'
   const signupHref = invitationId
     ? `/signup?invitationId=${encodeURIComponent(invitationId)}&callbackUrl=${encodeURIComponent('/accept-invitation')}`
@@ -58,6 +63,7 @@ export const LoginForm = ({
   })
 
   const onSubmit = form.handleSubmit(async values => {
+    setShowEmailNotVerified(false)
     await authClient.signIn.email(
       { email: values.email, password: values.password },
       {
@@ -66,11 +72,36 @@ export const LoginForm = ({
           toast.success('Sign in successful')
         },
         onError: ctx => {
-          toast.error(ctx.error?.message ?? ctx.error?.statusText ?? 'Sign in failed')
+          const isEmailNotVerified = ctx.error?.status === EMAIL_NOT_VERIFIED_STATUS
+          if (isEmailNotVerified) {
+            setShowEmailNotVerified(true)
+          } else {
+            toast.error(ctx.error?.message ?? ctx.error?.statusText ?? 'Sign in failed')
+          }
         },
       }
     )
   })
+
+  const handleResendVerificationEmail = async () => {
+    const email = form.getValues('email')
+    if (!email) {
+      toast.error('Enter your email above first')
+      return
+    }
+    setIsResending(true)
+    const { error } = await authClient.sendVerificationEmail({
+      email,
+      callbackURL: redirectTo ?? '/',
+    })
+    setIsResending(false)
+    if (error) {
+      toast.error(error.message ?? 'Failed to send verification email')
+      return
+    }
+    toast.success('Verification email sent. Check your inbox.')
+    setShowEmailNotVerified(false)
+  }
 
   const handleGoogleSignIn = () => {
     authClient.signIn.social(
@@ -132,6 +163,23 @@ export const LoginForm = ({
               {form.formState.isSubmitting ? 'Signing in...' : 'Sign in'}
             </Button>
           </Field>
+          {showEmailNotVerified && (
+            <div className='rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200'>
+              <p className='mb-3'>
+                Please verify your email address before signing in. Check your inbox for the verification link.
+              </p>
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                disabled={isResending}
+                onClick={handleResendVerificationEmail}
+                className='border-amber-300 bg-white hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/60 dark:hover:bg-amber-900/40'
+              >
+                {isResending ? 'Sending...' : 'Resend verification email'}
+              </Button>
+            </div>
+          )}
           <FieldSeparator>Or</FieldSeparator>
           <Field className='grid gap-4 sm:grid-cols-2'>
             <Button variant='outline' type='button' onClick={handleGoogleSignIn}>
