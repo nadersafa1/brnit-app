@@ -12,7 +12,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { member, user } from './auth'
 import { foodItem } from './food-item'
-import { meal } from './meal'
+import { meal, mealItem } from './meal'
 
 export const dietPlan = pgTable('diet_plan', {
   id: text('id')
@@ -118,6 +118,47 @@ export const dietPlanMealConsumption = pgTable(
   ],
 )
 
+export const dietPlanMealItemOverride = pgTable(
+  'diet_plan_meal_item_override',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    dietPlanAssignmentId: text('diet_plan_assignment_id')
+      .notNull()
+      .references(() => dietPlanAssignment.id, { onDelete: 'cascade' }),
+    dietPlanMealId: text('diet_plan_meal_id')
+      .notNull()
+      .references(() => dietPlanMeal.id, { onDelete: 'cascade' }),
+    mealItemId: text('meal_item_id')
+      .notNull()
+      .references(() => mealItem.id, { onDelete: 'cascade' }),
+    foodItemId: text('food_item_id')
+      .notNull()
+      .references(() => foodItem.id, { onDelete: 'restrict' }),
+    quantity: numeric('quantity').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index('diet_plan_meal_item_override_assignment_idx').on(
+      table.dietPlanAssignmentId,
+    ),
+    index('diet_plan_meal_item_override_assignment_meal_idx').on(
+      table.dietPlanAssignmentId,
+      table.dietPlanMealId,
+    ),
+    uniqueIndex('diet_plan_meal_item_override_unique_idx').on(
+      table.dietPlanAssignmentId,
+      table.dietPlanMealId,
+      table.mealItemId,
+    ),
+  ],
+)
+
 export const dietPlanMealConsumptionItem = pgTable(
   'diet_plan_meal_consumption_item',
   {
@@ -157,6 +198,7 @@ export const dietPlanMealRelations = relations(
       references: [meal.id],
     }),
     consumptions: many(dietPlanMealConsumption),
+    mealItemOverrides: many(dietPlanMealItemOverride),
   }),
 )
 
@@ -176,6 +218,7 @@ export const dietPlanAssignmentRelations = relations(
       references: [user.id],
     }),
     consumptions: many(dietPlanMealConsumption),
+    mealItemOverrides: many(dietPlanMealItemOverride),
   }),
 )
 
@@ -191,6 +234,28 @@ export const dietPlanMealConsumptionRelations = relations(
       references: [dietPlanMeal.id],
     }),
     consumedItems: many(dietPlanMealConsumptionItem),
+  }),
+)
+
+export const dietPlanMealItemOverrideRelations = relations(
+  dietPlanMealItemOverride,
+  ({ one }) => ({
+    dietPlanAssignment: one(dietPlanAssignment, {
+      fields: [dietPlanMealItemOverride.dietPlanAssignmentId],
+      references: [dietPlanAssignment.id],
+    }),
+    dietPlanMeal: one(dietPlanMeal, {
+      fields: [dietPlanMealItemOverride.dietPlanMealId],
+      references: [dietPlanMeal.id],
+    }),
+    mealItem: one(mealItem, {
+      fields: [dietPlanMealItemOverride.mealItemId],
+      references: [mealItem.id],
+    }),
+    foodItem: one(foodItem, {
+      fields: [dietPlanMealItemOverride.foodItemId],
+      references: [foodItem.id],
+    }),
   }),
 )
 

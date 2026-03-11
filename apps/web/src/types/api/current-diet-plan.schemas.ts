@@ -34,3 +34,15 @@ export const currentDietPlanQuerySchema = z
 
 export type CurrentDietPlanQuery = z.infer<typeof currentDietPlanQuerySchema>
 
+/** Meal item as returned in current-diet-plan (with override support). */
+export type CurrentDietPlanMealItem = {
+  mealItemId: string
+  foodItemId: string
+  foodName: string
+  quantity: number
+  isOverridden: boolean
+  originalFoodItemId?: string
+  originalFoodName?: string
+  originalQuantity?: number
+}
+

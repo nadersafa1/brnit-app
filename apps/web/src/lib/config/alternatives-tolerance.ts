@@ -1,4 +1,4 @@
-const DEFAULT_PCT = 15
+const DEFAULT_PCT = 20
 const MIN_PCT = 1
 const MAX_PCT = 100
 

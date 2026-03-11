@@ -18,6 +18,8 @@ export const createDietPlanMealConsumptionSchema = z.object({
     .array(consumedItemSchema)
     .max(50, 'consumedItems must have at most 50 entries')
     .optional(),
+  /** When true and consumedItems omitted/empty, backend fills items from plan + overrides for this slot. */
+  usePlannedItems: z.boolean().optional(),
 })
 
 export const dietPlanMealConsumptionQuerySchema = z.object({

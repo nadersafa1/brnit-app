@@ -106,12 +106,20 @@ export async function getDietPlanById(id: string) {
     )
 
   const mealIds = [...new Set(planMeals.map((pm) => pm.mealId))]
-  const mealItemsByMealId = new Map<string, Array<{ foodName: string; quantity: number }>>()
+  type MealItemRow = {
+    mealItemId: string
+    foodItemId: string
+    foodName: string
+    quantity: number
+  }
+  const mealItemsByMealId = new Map<string, MealItemRow[]>()
 
   if (mealIds.length > 0) {
     const items = await db
       .select({
         mealId: mealItem.mealId,
+        mealItemId: mealItem.id,
+        foodItemId: mealItem.foodItemId,
         foodName: foodItem.name,
         quantity: mealItem.quantity,
       })
@@ -121,7 +129,12 @@ export async function getDietPlanById(id: string) {
 
     for (const row of items) {
       const list = mealItemsByMealId.get(row.mealId) ?? []
-      list.push({ foodName: row.foodName, quantity: Number(row.quantity) })
+      list.push({
+        mealItemId: row.mealItemId,
+        foodItemId: row.foodItemId,
+        foodName: row.foodName,
+        quantity: Number(row.quantity),
+      })
       mealItemsByMealId.set(row.mealId, list)
     }
   }
