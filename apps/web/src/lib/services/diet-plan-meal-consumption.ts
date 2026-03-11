@@ -1,5 +1,11 @@
 import { db } from '@burn-app/db'
-import { dietPlanMealConsumption, dietPlanMeal, meal } from '@burn-app/db/schema'
+import {
+  dietPlanMealConsumption,
+  dietPlanMealConsumptionItem,
+  dietPlanMeal,
+  meal,
+  foodItem,
+} from '@burn-app/db/schema'
 import { count, asc, desc, eq, and, gte, lte, inArray } from 'drizzle-orm'
 import { calculateOffset } from '@/lib/api-helpers/query-builders'
 import type {
@@ -14,7 +20,7 @@ function toDateString(d: Date): string {
 
 export type LogConsumptionResult =
   | { ok: true; data: (typeof dietPlanMealConsumption.$inferSelect) }
-  | { ok: false; error: string; code: 'DUPLICATE' | 'NOT_FOUND' }
+  | { ok: false; error: string; code: 'DUPLICATE' | 'NOT_FOUND' | 'INVALID_CONSUMED_ITEMS' }
 
 export async function logDietPlanMealConsumption(
   data: CreateDietPlanMealConsumption
@@ -53,6 +59,35 @@ export async function logDietPlanMealConsumption(
     .returning()
 
   if (!created) return { ok: false, error: 'Failed to log consumption', code: 'NOT_FOUND' }
+
+  const consumedItems = data.consumedItems?.filter(
+    (item): item is { foodItemId: string; quantity: number } =>
+      typeof item.quantity === 'number' && item.quantity > 0
+  )
+  if (consumedItems && consumedItems.length > 0) {
+    const foodItemIds = [...new Set(consumedItems.map((i) => i.foodItemId))]
+    const existing = await db
+      .select({ id: foodItem.id })
+      .from(foodItem)
+      .where(inArray(foodItem.id, foodItemIds))
+    const existingIds = new Set(existing.map((r) => r.id))
+    const missing = foodItemIds.filter((id) => !existingIds.has(id))
+    if (missing.length > 0) {
+      return {
+        ok: false,
+        error: `Food item(s) not found: ${missing.join(', ')}`,
+        code: 'INVALID_CONSUMED_ITEMS',
+      }
+    }
+    await db.insert(dietPlanMealConsumptionItem).values(
+      consumedItems.map((item) => ({
+        dietPlanMealConsumptionId: created.id,
+        foodItemId: item.foodItemId,
+        quantity: String(item.quantity),
+      }))
+    )
+  }
+
   return { ok: true, data: created }
 }
 
@@ -91,7 +126,7 @@ export async function listDietPlanMealConsumptions(query: DietPlanMealConsumptio
   const sortColumn = sortFieldMap[sortBy ?? 'consumedAt'] ?? dietPlanMealConsumption.consumedAt
   const sortDir = sortOrder === 'asc' ? asc : desc
 
-  const [countResult, items] = await Promise.all([
+  const [countResult, rows] = await Promise.all([
     db.select({ count: count() }).from(dietPlanMealConsumption).where(where),
     db
       .select({
@@ -111,6 +146,43 @@ export async function listDietPlanMealConsumptions(query: DietPlanMealConsumptio
       .limit(perPage)
       .offset(offset),
   ])
+
+  const consumptionIds = rows.map((r) => r.id)
+  const consumedItemsByConsumption =
+    consumptionIds.length > 0
+      ? await db
+          .select({
+            dietPlanMealConsumptionId: dietPlanMealConsumptionItem.dietPlanMealConsumptionId,
+            foodItemId: dietPlanMealConsumptionItem.foodItemId,
+            quantity: dietPlanMealConsumptionItem.quantity,
+            foodName: foodItem.name,
+          })
+          .from(dietPlanMealConsumptionItem)
+          .innerJoin(
+            foodItem,
+            eq(dietPlanMealConsumptionItem.foodItemId, foodItem.id)
+          )
+          .where(inArray(dietPlanMealConsumptionItem.dietPlanMealConsumptionId, consumptionIds))
+      : []
+
+  const itemsMap = new Map<
+    string,
+    Array<{ foodItemId: string; quantity: number; foodName: string }>
+  >()
+  for (const row of consumedItemsByConsumption) {
+    const list = itemsMap.get(row.dietPlanMealConsumptionId) ?? []
+    list.push({
+      foodItemId: row.foodItemId,
+      quantity: Number(row.quantity),
+      foodName: row.foodName,
+    })
+    itemsMap.set(row.dietPlanMealConsumptionId, list)
+  }
+
+  const items = rows.map((row) => ({
+    ...row,
+    consumedItems: itemsMap.get(row.id) ?? [],
+  }))
 
   return {
     items,

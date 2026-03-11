@@ -84,5 +84,23 @@ export type CreateFoodCategory = z.infer<typeof createFoodCategorySchema>
 export type UpdateFoodCategory = z.infer<typeof updateFoodCategorySchema>
 export type CreateFoodItem = z.infer<typeof createFoodItemSchema>
 export type UpdateFoodItem = z.infer<typeof updateFoodItemSchema>
+
+/** Query params for GET /api/member/me/food-items/:foodItemId/alternatives */
+export const foodItemAlternativesQuerySchema = z.object({
+  quantity: z.coerce
+    .number()
+    .positive('Quantity must be positive')
+    .max(10000, 'Quantity must be at most 10000'),
+  page: z.coerce.number().int().positive().optional().default(1),
+  perPage: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(20)
+    .optional()
+    .default(10),
+})
+
+export type FoodItemAlternativesQuery = z.infer<typeof foodItemAlternativesQuerySchema>
 export type CreateFoodItemForm = z.infer<typeof createFoodItemFormSchema>
 export type UpdateFoodItemForm = z.infer<typeof updateFoodItemFormSchema>
