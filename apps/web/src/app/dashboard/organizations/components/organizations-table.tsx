@@ -1,6 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { Plus } from 'lucide-react'
 
 import { authClient } from '@/lib/auth-client'
 import { useRoles } from '@/hooks/authorization'
@@ -14,10 +16,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import CreateOrgForm from '../create-org-form'
+import { CreateOrganizationDialog } from './create-organization-dialog'
 
 export default function OrganizationsTable() {
   const router = useRouter()
+  const [createOrgOpen, setCreateOrgOpen] = useState(false)
   const { isAppAdmin } = useRoles()
   const { data: organizations, isPending } = authClient.useListOrganizations()
 
@@ -49,17 +52,23 @@ export default function OrganizationsTable() {
 
   return (
     <div className="space-y-6">
-      {isAppAdmin && (
-        <CreateOrgForm onSuccess={() => router.refresh()} />
-      )}
+      <CreateOrganizationDialog
+        open={createOrgOpen}
+        onOpenChange={setCreateOrgOpen}
+        onSuccess={() => router.refresh()}
+      />
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle>Organizations</CardTitle>
+          {isAppAdmin && (
+            <Button onClick={() => setCreateOrgOpen(true)} size="sm">
+              <Plus className="mr-2 size-4" />
+              Create organization
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
-          {!organizations?.length ? (
-            <p className="text-muted-foreground text-sm">No organizations.</p>
-          ) : (
+          {organizations?.length ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -94,6 +103,8 @@ export default function OrganizationsTable() {
                 ))}
               </TableBody>
             </Table>
+          ) : (
+            <p className="text-muted-foreground text-sm">No organizations.</p>
           )}
         </CardContent>
       </Card>

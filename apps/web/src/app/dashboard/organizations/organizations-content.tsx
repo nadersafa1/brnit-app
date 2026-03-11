@@ -3,9 +3,11 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
+import { Plus } from 'lucide-react'
 import { authClient } from '@/lib/auth-client'
 import { useOrganizationPermissions, useRoles } from '@/hooks/authorization'
-import CreateOrgForm from './create-org-form'
+import { Button } from '@/components/ui/button'
+import { CreateOrganizationDialog } from './components/create-organization-dialog'
 import InvitationsList from './invitations-list'
 import InviteMemberForm from './invite-member-form'
 import MembersList from './members-list'
@@ -14,6 +16,7 @@ import OrganizationSelect from './organization-select'
 const OrganizationsContent = () => {
   const router = useRouter()
   const [inviteRefetchTrigger, setInviteRefetchTrigger] = useState(0)
+  const [createOrgOpen, setCreateOrgOpen] = useState(false)
   const { canInvite: canInvitePermission } = useOrganizationPermissions()
   const { isAppAdmin } = useRoles()
   const { data: organizations } = authClient.useListOrganizations()
@@ -31,9 +34,21 @@ const OrganizationsContent = () => {
 
   return (
     <div className='space-y-6'>
-      <h2 className='text-lg font-semibold'>Organizations</h2>
+      <div className='flex items-center justify-between'>
+        <h2 className='text-lg font-semibold'>Organizations</h2>
+        {isAppAdmin && (
+          <Button onClick={() => setCreateOrgOpen(true)}>
+            <Plus className='mr-2 size-4' />
+            Create organization
+          </Button>
+        )}
+      </div>
 
-      {isAppAdmin && <CreateOrgForm onSuccess={handleOrgCreated} />}
+      <CreateOrganizationDialog
+        open={createOrgOpen}
+        onOpenChange={setCreateOrgOpen}
+        onSuccess={handleOrgCreated}
+      />
 
       <OrganizationSelect />
 

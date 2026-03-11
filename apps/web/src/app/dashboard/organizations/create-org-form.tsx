@@ -33,7 +33,13 @@ const createOrgSchema = z.object({
 
 type CreateOrgFormValues = z.infer<typeof createOrgSchema>
 
-const CreateOrgForm = ({ onSuccess }: { onSuccess?: () => void }) => {
+const CreateOrgForm = ({
+  onSuccess,
+  embedded = false,
+}: {
+  onSuccess?: () => void
+  embedded?: boolean
+}) => {
   const router = useRouter()
   const form = useForm<CreateOrgFormValues>({
     resolver: zodResolver(createOrgSchema),
@@ -71,30 +77,36 @@ const CreateOrgForm = ({ onSuccess }: { onSuccess?: () => void }) => {
     onSuccess?.()
   })
 
+  const formContent = (
+    <form onSubmit={onSubmit} className='space-y-4'>
+      <FieldGroup>
+        <Field>
+          <FieldLabel>Name</FieldLabel>
+          <Input {...form.register('name')} placeholder='Acme Inc' aria-invalid={!!form.formState.errors.name} />
+          <FieldError errors={[form.formState.errors.name]} />
+        </Field>
+        <Field>
+          <FieldLabel>Slug</FieldLabel>
+          <Input {...form.register('slug')} placeholder='acme-inc' aria-invalid={!!form.formState.errors.slug} />
+          <FieldError errors={[form.formState.errors.slug]} />
+        </Field>
+      </FieldGroup>
+      <Button type='submit' disabled={form.formState.isSubmitting}>
+        {form.formState.isSubmitting ? 'Creating…' : 'Create'}
+      </Button>
+    </form>
+  )
+
+  if (embedded) {
+    return formContent
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Create organization</CardTitle>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={onSubmit} className='space-y-4'>
-          <FieldGroup>
-            <Field>
-              <FieldLabel>Name</FieldLabel>
-              <Input {...form.register('name')} placeholder='Acme Inc' aria-invalid={!!form.formState.errors.name} />
-              <FieldError errors={[form.formState.errors.name]} />
-            </Field>
-            <Field>
-              <FieldLabel>Slug</FieldLabel>
-              <Input {...form.register('slug')} placeholder='acme-inc' aria-invalid={!!form.formState.errors.slug} />
-              <FieldError errors={[form.formState.errors.slug]} />
-            </Field>
-          </FieldGroup>
-          <Button type='submit' disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? 'Creating…' : 'Create'}
-          </Button>
-        </form>
-      </CardContent>
+      <CardContent>{formContent}</CardContent>
     </Card>
   )
 }
