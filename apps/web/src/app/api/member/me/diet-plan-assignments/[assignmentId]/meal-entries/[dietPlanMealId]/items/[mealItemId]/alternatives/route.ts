@@ -25,6 +25,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
   const parseResult = mealItemAlternativesQuerySchema.safeParse({
     page: searchParams.get('page') ?? undefined,
     perPage: searchParams.get('perPage') ?? undefined,
+    date: searchParams.get('date') ?? undefined,
   })
 
   if (!parseResult.success) {
@@ -34,12 +35,13 @@ export async function GET(request: NextRequest, context: RouteParams) {
     )
   }
 
-  const { page, perPage } = parseResult.data
+  const { page, perPage, date } = parseResult.data
   const displayed = await getDisplayedFoodAndQuantityForMealItem(
     authResult.session.user.id,
     assignmentId,
     dietPlanMealId,
-    mealItemId
+    mealItemId,
+    date
   )
 
   if (!displayed.ok) {

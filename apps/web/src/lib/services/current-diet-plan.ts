@@ -2,11 +2,8 @@ import { db } from '@burn-app/db'
 import { dietPlan, dietPlanAssignment, dietPlanMealConsumption, member } from '@burn-app/db/schema'
 import { and, asc, eq, inArray, or, SQL } from 'drizzle-orm'
 import { getDietPlanById } from '@/lib/services/diet-plans'
-import { getOverridesByAssignmentId } from '@/lib/services/diet-plan-meal-item-override'
-import type {
-  CurrentDietPlanQuery,
-  CurrentDietPlanMealItem,
-} from '@/types/api/current-diet-plan.schemas'
+import { getOverridesByAssignmentId, resolveOverridesForDate } from '@/lib/services/diet-plan-meal-item-override'
+import type { CurrentDietPlanQuery, CurrentDietPlanMealItem } from '@/types/api/current-diet-plan.schemas'
 
 function toDateStringUTC(input: string | Date): string {
   const date = typeof input === 'string' ? new Date(input) : input
@@ -73,12 +70,12 @@ export type CurrentDietPlanResult =
 
 async function getUserMemberIds(userId: string): Promise<string[]> {
   const rows = await db.select({ id: member.id }).from(member).where(eq(member.userId, userId))
-  return rows.map((m) => m.id)
+  return rows.map(m => m.id)
 }
 
 export async function getCurrentDietPlanForUser(
   userId: string,
-  query: CurrentDietPlanQuery,
+  query: CurrentDietPlanQuery
 ): Promise<CurrentDietPlanResult> {
   const today = getTodayUTC()
   const from = query.from ?? today
@@ -110,7 +107,7 @@ export async function getCurrentDietPlanForUser(
   }
 
   // Pick assignment that contains the first day of the range (from).
-  const containing = rows.filter((r) => r.startDate <= from && r.endDate >= from)
+  const containing = rows.filter(r => r.startDate <= from && r.endDate >= from)
   const assignment = (containing.length > 0 ? containing : rows)[0]
 
   const planFull = await getDietPlanById(assignment.dietPlanId)
@@ -139,22 +136,11 @@ export async function getCurrentDietPlanForUser(
 
   const dietPlanMeals = planFull.dietPlanMeals ?? []
 
-  const overrideRows = await getOverridesByAssignmentId(assignment.id)
-  const overrideMap = new Map<
-    string,
-    { foodItemId: string; foodName: string; quantity: number }
-  >()
-  for (const row of overrideRows) {
-    overrideMap.set(`${row.dietPlanMealId}:${row.mealItemId}`, {
-      foodItemId: row.foodItemId,
-      foodName: row.foodName,
-      quantity: Number(row.quantity),
-    })
-  }
-
-  const consumptionRows =
+  // Overrides and consumptions are independent; fetch in parallel.
+  const [overrideRows, consumptionRows] = await Promise.all([
+    getOverridesByAssignmentId(assignment.id),
     allDates.length > 0
-      ? await db
+      ? db
           .select({
             dietPlanMealId: dietPlanMealConsumption.dietPlanMealId,
             consumedDate: dietPlanMealConsumption.consumedDate,
@@ -164,10 +150,11 @@ export async function getCurrentDietPlanForUser(
           .where(
             and(
               eq(dietPlanMealConsumption.dietPlanAssignmentId, assignment.id),
-              inArray(dietPlanMealConsumption.consumedDate, allDates),
-            ),
+              inArray(dietPlanMealConsumption.consumedDate, allDates)
+            )
           )
-      : []
+      : Promise.resolve([]),
+  ])
 
   const consumptionMap = new Map<string, { consumedAt: string }>()
   for (const row of consumptionRows) {
@@ -175,24 +162,34 @@ export async function getCurrentDietPlanForUser(
     consumptionMap.set(key, { consumedAt: row.consumedAt.toISOString() })
   }
 
-  const days: CurrentDietPlanDay[] = allDates.map((date) => {
-    const planDay =
-      diffDaysInclusiveUTC(assignment.startDate, date) // 1-based
+  // Build one day per date: resolve overrides for that date, then map plan meals to items (with override or default).
+  const days: CurrentDietPlanDay[] = allDates.map(date => {
+    const planDay = diffDaysInclusiveUTC(assignment.startDate, date) // 1-based
+
+    const resolvedOverrides = resolveOverridesForDate(overrideRows, date)
+    const overrideMapForDay = new Map<string, { foodItemId: string; foodName: string; quantity: number }>()
+    for (const [, row] of resolvedOverrides) {
+      overrideMapForDay.set(`${row.dietPlanMealId}:${row.mealItemId}`, {
+        foodItemId: row.foodItemId,
+        foodName: row.foodName,
+        quantity: Number(row.quantity),
+      })
+    }
 
     const mealsForDay = dietPlanMeals
-      .filter((pm) => pm.dayNumber === 0 || pm.dayNumber === planDay)
+      .filter(pm => pm.dayNumber === 0 || pm.dayNumber === planDay)
       .sort((a, b) => {
         if (a.mealType === b.mealType) {
           return a.mealOrder - b.mealOrder
         }
         return a.mealType.localeCompare(b.mealType)
       })
-      .map<CurrentDietPlanMeal>((pm) => {
+      .map<CurrentDietPlanMeal>(pm => {
         const key = `${pm.id}:${date}`
         const consumption = consumptionMap.get(key)
         const mealItems: CurrentDietPlanMealItem[] = (pm.mealItems ?? []).map(
           (item: { mealItemId: string; foodItemId: string; foodName: string; quantity: number }) => {
-            const override = overrideMap.get(`${pm.id}:${item.mealItemId}`)
+            const override = overrideMapForDay.get(`${pm.id}:${item.mealItemId}`)
             if (override) {
               return {
                 mealItemId: item.mealItemId,
@@ -246,4 +243,3 @@ export async function getCurrentDietPlanForUser(
     },
   }
 }
-

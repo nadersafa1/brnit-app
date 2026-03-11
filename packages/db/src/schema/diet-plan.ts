@@ -137,6 +137,8 @@ export const dietPlanMealItemOverride = pgTable(
       .notNull()
       .references(() => foodItem.id, { onDelete: 'restrict' }),
     quantity: numeric('quantity').notNull(),
+    /** NULL = future only (applies when resolution date >= today); non-null = this date only. */
+    effectiveDate: date('effective_date'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
@@ -155,6 +157,7 @@ export const dietPlanMealItemOverride = pgTable(
       table.dietPlanAssignmentId,
       table.dietPlanMealId,
       table.mealItemId,
+      table.effectiveDate,
     ),
   ],
 )

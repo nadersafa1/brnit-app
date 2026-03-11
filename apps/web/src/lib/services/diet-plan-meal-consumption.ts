@@ -10,7 +10,7 @@ import {
 import { count, asc, desc, eq, and, gte, lte, inArray } from 'drizzle-orm'
 import { calculateOffset } from '@/lib/api-helpers/query-builders'
 import { getDietPlanById } from '@/lib/services/diet-plans'
-import { getOverridesByAssignmentId } from '@/lib/services/diet-plan-meal-item-override'
+import { getOverridesByAssignmentId, resolveOverridesForDate } from '@/lib/services/diet-plan-meal-item-override'
 import type {
   CreateDietPlanMealConsumption,
   DietPlanMealConsumptionQuery,
@@ -22,17 +22,21 @@ function toDateString(d: Date): string {
 }
 
 export type LogConsumptionResult =
-  | { ok: true; data: (typeof dietPlanMealConsumption.$inferSelect) }
+  | { ok: true; data: typeof dietPlanMealConsumption.$inferSelect }
   | {
       ok: false
       error: string
       code: 'DUPLICATE' | 'NOT_FOUND' | 'INVALID_CONSUMED_ITEMS' | 'INVALID_SLOT'
     }
 
-/** Resolve plan + overrides for one slot; returns items to log or null if slot invalid. */
+/**
+ * Resolves plan items for one meal slot on a given date, applying date-scoped overrides.
+ * Returns items to log (foodItemId + quantity) or null if assignment/slot invalid.
+ */
 async function resolvePlannedItemsForSlot(
   assignmentId: string,
-  dietPlanMealId: string
+  dietPlanMealId: string,
+  consumedDate: string
 ): Promise<Array<{ foodItemId: string; quantity: number }> | null> {
   const [assign] = await db
     .select({ dietPlanId: dietPlanAssignment.dietPlanId })
@@ -41,40 +45,44 @@ async function resolvePlannedItemsForSlot(
     .limit(1)
   if (!assign) return null
 
-  const plan = await getDietPlanById(assign.dietPlanId)
+  const [plan, overrides] = await Promise.all([
+    getDietPlanById(assign.dietPlanId),
+    getOverridesByAssignmentId(assignmentId),
+  ])
   if (!plan) return null
 
-  const dpm = plan.dietPlanMeals?.find((pm) => pm.id === dietPlanMealId)
+  const dpm = plan.dietPlanMeals?.find(pm => pm.id === dietPlanMealId)
   if (!dpm?.mealItems?.length) return null
 
-  const overrides = await getOverridesByAssignmentId(assignmentId)
+  const resolved = resolveOverridesForDate(overrides, consumedDate)
   const overrideMap = new Map<string, { foodItemId: string; quantity: number }>()
-  for (const row of overrides) {
-    overrideMap.set(`${row.dietPlanMealId}:${row.mealItemId}`, {
+  for (const [key, row] of resolved) {
+    overrideMap.set(key, {
       foodItemId: row.foodItemId,
       quantity: Number(row.quantity),
     })
   }
 
-  return dpm.mealItems.map((item) => {
+  return dpm.mealItems.map(item => {
     const ov = overrideMap.get(`${dietPlanMealId}:${item.mealItemId}`)
     return ov ?? { foodItemId: item.foodItemId, quantity: item.quantity }
   })
 }
 
-export async function logDietPlanMealConsumption(
-  data: CreateDietPlanMealConsumption
-): Promise<LogConsumptionResult> {
+/**
+ * Logs a diet plan meal consumption. If usePlannedItems is true and no items provided,
+ * resolves planned items (plan + date-scoped overrides) for the consumption date.
+ */
+export async function logDietPlanMealConsumption(data: CreateDietPlanMealConsumption): Promise<LogConsumptionResult> {
   let consumedItems = data.consumedItems?.filter(
-    (item): item is { foodItemId: string; quantity: number } =>
-      typeof item.quantity === 'number' && item.quantity > 0
+    (item): item is { foodItemId: string; quantity: number } => typeof item.quantity === 'number' && item.quantity > 0
   )
 
+  const consumedAt = data.consumedAt instanceof Date ? data.consumedAt : new Date(data.consumedAt)
+  const consumedDate = toDateString(consumedAt)
+
   if (data.usePlannedItems && (!consumedItems || consumedItems.length === 0)) {
-    const resolved = await resolvePlannedItemsForSlot(
-      data.dietPlanAssignmentId,
-      data.dietPlanMealId
-    )
+    const resolved = await resolvePlannedItemsForSlot(data.dietPlanAssignmentId, data.dietPlanMealId, consumedDate)
     if (resolved === null) {
       return {
         ok: false,
@@ -84,9 +92,6 @@ export async function logDietPlanMealConsumption(
     }
     consumedItems = resolved
   }
-
-  const consumedAt = data.consumedAt instanceof Date ? data.consumedAt : new Date(data.consumedAt)
-  const consumedDate = toDateString(consumedAt)
 
   const [existing] = await db
     .select({ id: dietPlanMealConsumption.id })
@@ -121,13 +126,10 @@ export async function logDietPlanMealConsumption(
   if (!created) return { ok: false, error: 'Failed to log consumption', code: 'NOT_FOUND' }
 
   if (consumedItems && consumedItems.length > 0) {
-    const foodItemIds = [...new Set(consumedItems.map((i) => i.foodItemId))]
-    const existing = await db
-      .select({ id: foodItem.id })
-      .from(foodItem)
-      .where(inArray(foodItem.id, foodItemIds))
-    const existingIds = new Set(existing.map((r) => r.id))
-    const missing = foodItemIds.filter((id) => !existingIds.has(id))
+    const foodItemIds = [...new Set(consumedItems.map(i => i.foodItemId))]
+    const existing = await db.select({ id: foodItem.id }).from(foodItem).where(inArray(foodItem.id, foodItemIds))
+    const existingIds = new Set(existing.map(r => r.id))
+    const missing = foodItemIds.filter(id => !existingIds.has(id))
     if (missing.length > 0) {
       return {
         ok: false,
@@ -136,7 +138,7 @@ export async function logDietPlanMealConsumption(
       }
     }
     await db.insert(dietPlanMealConsumptionItem).values(
-      consumedItems.map((item) => ({
+      consumedItems.map(item => ({
         dietPlanMealConsumptionId: created.id,
         foodItemId: item.foodItemId,
         quantity: String(item.quantity),
@@ -203,7 +205,7 @@ export async function listDietPlanMealConsumptions(query: DietPlanMealConsumptio
       .offset(offset),
   ])
 
-  const consumptionIds = rows.map((r) => r.id)
+  const consumptionIds = rows.map(r => r.id)
   const consumedItemsByConsumption =
     consumptionIds.length > 0
       ? await db
@@ -214,17 +216,11 @@ export async function listDietPlanMealConsumptions(query: DietPlanMealConsumptio
             foodName: foodItem.name,
           })
           .from(dietPlanMealConsumptionItem)
-          .innerJoin(
-            foodItem,
-            eq(dietPlanMealConsumptionItem.foodItemId, foodItem.id)
-          )
+          .innerJoin(foodItem, eq(dietPlanMealConsumptionItem.foodItemId, foodItem.id))
           .where(inArray(dietPlanMealConsumptionItem.dietPlanMealConsumptionId, consumptionIds))
       : []
 
-  const itemsMap = new Map<
-    string,
-    Array<{ foodItemId: string; quantity: number; foodName: string }>
-  >()
+  const itemsMap = new Map<string, Array<{ foodItemId: string; quantity: number; foodName: string }>>()
   for (const row of consumedItemsByConsumption) {
     const list = itemsMap.get(row.dietPlanMealConsumptionId) ?? []
     list.push({
@@ -235,7 +231,7 @@ export async function listDietPlanMealConsumptions(query: DietPlanMealConsumptio
     itemsMap.set(row.dietPlanMealConsumptionId, list)
   }
 
-  const items = rows.map((row) => ({
+  const items = rows.map(row => ({
     ...row,
     consumedItems: itemsMap.get(row.id) ?? [],
   }))
@@ -247,9 +243,6 @@ export async function listDietPlanMealConsumptions(query: DietPlanMealConsumptio
 }
 
 export async function deleteDietPlanMealConsumption(id: string) {
-  const [deleted] = await db
-    .delete(dietPlanMealConsumption)
-    .where(eq(dietPlanMealConsumption.id, id))
-    .returning()
+  const [deleted] = await db.delete(dietPlanMealConsumption).where(eq(dietPlanMealConsumption.id, id)).returning()
   return deleted ?? null
 }
