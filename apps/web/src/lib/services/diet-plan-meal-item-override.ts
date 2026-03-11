@@ -186,6 +186,70 @@ export async function deleteMealItemOverride(
   return deleted ? { ok: true } : { ok: false, error: 'Override not found', code: 'NOT_FOUND' }
 }
 
+export type GetDisplayedFoodResult =
+  | { ok: true; foodItemId: string; quantity: number }
+  | { ok: false; error: string; code: 'FORBIDDEN' | 'NOT_FOUND' }
+
+export async function getDisplayedFoodAndQuantityForMealItem(
+  userId: string,
+  assignmentId: string,
+  dietPlanMealId: string,
+  mealItemId: string
+): Promise<GetDisplayedFoodResult> {
+  const assignment = await getAssignmentForUser(userId, assignmentId)
+  if (!assignment) {
+    return { ok: false, error: 'Assignment not found or access denied', code: 'FORBIDDEN' }
+  }
+
+  const [dpm] = await db
+    .select({ id: dietPlanMeal.id, mealId: dietPlanMeal.mealId })
+    .from(dietPlanMeal)
+    .where(
+      and(
+        eq(dietPlanMeal.id, dietPlanMealId),
+        eq(dietPlanMeal.dietPlanId, assignment.dietPlanId)
+      )
+    )
+    .limit(1)
+  if (!dpm) {
+    return {
+      ok: false,
+      error: 'Diet plan meal not found or does not belong to this assignment',
+      code: 'NOT_FOUND',
+    }
+  }
+
+  const [mi] = await db
+    .select({ foodItemId: mealItem.foodItemId, quantity: mealItem.quantity })
+    .from(mealItem)
+    .where(and(eq(mealItem.id, mealItemId), eq(mealItem.mealId, dpm.mealId)))
+    .limit(1)
+  if (!mi) {
+    return {
+      ok: false,
+      error: 'Meal item not found or does not belong to this diet plan meal',
+      code: 'NOT_FOUND',
+    }
+  }
+
+  const overrides = await getOverridesByAssignmentId(assignmentId)
+  const override = overrides.find(
+    (r) => r.dietPlanMealId === dietPlanMealId && r.mealItemId === mealItemId
+  )
+  if (override) {
+    return {
+      ok: true,
+      foodItemId: override.foodItemId,
+      quantity: Number(override.quantity),
+    }
+  }
+  return {
+    ok: true,
+    foodItemId: mi.foodItemId,
+    quantity: Number(mi.quantity),
+  }
+}
+
 export type OverrideRow = {
   dietPlanMealId: string
   mealItemId: string
