@@ -36,11 +36,10 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
   type FormValues = {
     name: string
     categoryId: string
-    fdcId?: number
-    calories?: number
-    protein?: number
-    carbs?: number
-    fat?: number
+    calories: number
+    protein: number
+    carbs: number
+    fat: number
     servingSize?: number
   }
   const form = useForm<FormValues>({
@@ -49,37 +48,32 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
     defaultValues: {
       name: item?.name ?? '',
       categoryId: item?.categoryId ?? '',
-      fdcId: item?.fdcId ?? undefined,
-      calories: item?.calories ? Number.parseFloat(item.calories) : undefined,
-      protein: item?.protein ? Number.parseFloat(item.protein) : undefined,
-      carbs: item?.carbs ? Number.parseFloat(item.carbs) : undefined,
-      fat: item?.fat ? Number.parseFloat(item.fat) : undefined,
+      calories: item?.calories ? Number.parseFloat(item.calories) : 0,
+      protein: item?.protein ? Number.parseFloat(item.protein) : 0,
+      carbs: item?.carbs ? Number.parseFloat(item.carbs) : 0,
+      fat: item?.fat ? Number.parseFloat(item.fat) : 0,
       servingSize: item?.servingSize ? Number.parseFloat(item.servingSize) : undefined,
     },
   })
 
+  // Build API payload: coerce numbers; for update, send null for omitted macros.
   const handleSubmit = form.handleSubmit(async raw => {
-    const toNum = (v: unknown) => (typeof v === 'number' && !Number.isNaN(v) ? v : undefined)
+    const asNum = (v: unknown) => (typeof v === 'number' && !Number.isNaN(v) ? v : undefined)
     const payload: CreateFormData | UpdateFormData = {
       ...raw,
-      fdcId: toNum(raw.fdcId),
-      calories: toNum(raw.calories),
-      protein: toNum(raw.protein),
-      carbs: toNum(raw.carbs),
-      fat: toNum(raw.fat),
-      servingSize: toNum(raw.servingSize),
+      calories: asNum(raw.calories),
+      protein: asNum(raw.protein),
+      carbs: asNum(raw.carbs),
+      fat: asNum(raw.fat),
+      servingSize: asNum(raw.servingSize),
     }
     if (isEdit) {
       const u = payload as UpdateFormData
-      u.fdcId = (payload as UpdateFormData).fdcId ?? null
-      u.calories = (payload as UpdateFormData).calories ?? null
-      u.protein = (payload as UpdateFormData).protein ?? null
-      u.carbs = (payload as UpdateFormData).carbs ?? null
-      u.fat = (payload as UpdateFormData).fat ?? null
-      u.servingSize = (payload as UpdateFormData).servingSize ?? null
-    } else {
-      const c = payload as CreateFormData
-      if (!c.name || !c.categoryId) return
+      u.calories = u.calories ?? null
+      u.protein = u.protein ?? null
+      u.carbs = u.carbs ?? null
+      u.fat = u.fat ?? null
+      u.servingSize = u.servingSize ?? null
     }
     const options: FoodItemFormSubmitOptions = {}
     if (file) options.file = file
@@ -117,17 +111,6 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
           </SelectContent>
         </Select>
         <FieldError errors={form.formState.errors.categoryId ? [form.formState.errors.categoryId] : undefined} />
-      </Field>
-
-      <Field>
-        <FieldLabel htmlFor='item-fdcid'>FDC ID (optional)</FieldLabel>
-        <Input
-          id='item-fdcid'
-          type='number'
-          {...form.register('fdcId', { valueAsNumber: true })}
-          placeholder='USDA FDC ID'
-          disabled={isLoading}
-        />
       </Field>
 
       <div className='grid grid-cols-2 gap-4'>
@@ -190,7 +173,9 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
       </Field>
 
       <Field>
-        <FieldLabel htmlFor='item-image'>{isEdit ? 'Replace image (optional)' : 'Image (optional)'}</FieldLabel>
+        <FieldLabel htmlFor='item-image'>
+          {isEdit ? 'Replace image (optional)' : 'Image (optional)'}
+        </FieldLabel>
         <Input
           id='item-image'
           type='file'

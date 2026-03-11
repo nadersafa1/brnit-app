@@ -11,6 +11,10 @@ import type { FoodCategoriesQuery, FoodItemsQuery } from '@/types/api/food.schem
 
 const FOOD_ITEM_IMAGE_FOLDER = 'food-items'
 
+/**
+ * Resolves new image public ID for a food item update: clear image, replace with file, or leave unchanged.
+ * Delete (when applicable) must run before upload so we don't orphan the previous asset.
+ */
 async function resolveFoodItemImageUpdate(
   existingPublicId: string | null,
   options?: { file?: File; clearImage?: boolean }
@@ -27,14 +31,15 @@ async function resolveFoodItemImageUpdate(
   return undefined
 }
 
+// --- Food categories (list, get by id, crud) ---
+
+/** List categories with optional search and sort. Count and rows run in parallel. */
 export async function listFoodCategories(query: FoodCategoriesQuery) {
   const { page, perPage, q, sortBy, sortOrder } = query
   const offset = calculateOffset(page, perPage)
 
   const conditions = []
-  if (q) {
-    conditions.push(ilike(foodCategory.name, `%${q}%`))
-  }
+  if (q) conditions.push(ilike(foodCategory.name, `%${q}%`))
   const where = combineConditions(conditions)
 
   const sortFieldMap = {
@@ -61,6 +66,7 @@ export async function listFoodCategories(query: FoodCategoriesQuery) {
   }
 }
 
+/** Fetch a single category by id. Returns null if not found. */
 export async function getFoodCategoryById(id: string) {
   const [category] = await db
     .select()
@@ -70,17 +76,16 @@ export async function getFoodCategoryById(id: string) {
   return category ?? null
 }
 
+// --- Food items (list, get by id, crud) ---
+
+/** List food items with optional search, category filter, and sort. Count and rows run in parallel. */
 export async function listFoodItems(query: FoodItemsQuery) {
   const { page, perPage, q, sortBy, sortOrder, categoryId } = query
   const offset = calculateOffset(page, perPage)
 
   const conditions = []
-  if (q) {
-    conditions.push(ilike(foodItem.name, `%${q}%`))
-  }
-  if (categoryId) {
-    conditions.push(eq(foodItem.categoryId, categoryId))
-  }
+  if (q) conditions.push(ilike(foodItem.name, `%${q}%`))
+  if (categoryId) conditions.push(eq(foodItem.categoryId, categoryId))
   const where = combineConditions(conditions)
 
   const sortFieldMap = {
@@ -142,6 +147,7 @@ export async function listFoodItems(query: FoodItemsQuery) {
   }
 }
 
+/** Fetch a single food item by id with category name and image URL. Returns null if not found. */
 export async function getFoodItemById(id: string) {
   const [row] = await db
     .select({
@@ -170,6 +176,8 @@ export async function getFoodItemById(id: string) {
   }
 }
 
+// --- Category crud (single-statement; no transaction) ---
+
 export async function createFoodCategory(data: { name: string }) {
   const [newCategory] = await db
     .insert(foodCategory)
@@ -195,6 +203,12 @@ export async function deleteFoodCategory(id: string) {
   return deleted ?? null
 }
 
+// --- Food item crud (single insert/update; no transaction. Image upload before insert to avoid orphan rows.) ---
+
+/**
+ * Create a food item. Uploads image first if provided; then single insert.
+ * API layer enforces required macros (calories, protein, carbs, fat) via schema.
+ */
 export async function createFoodItem(
   data: {
     name: string
@@ -234,6 +248,10 @@ export async function createFoodItem(
   }
 }
 
+/**
+ * Update a food item. Fetches current image id, resolves new image (clear/replace/keep), then single update.
+ * No transaction: image changes are external (Cloudinary); DB update is one statement.
+ */
 export async function updateFoodItem(
   id: string,
   data: {
@@ -287,6 +305,7 @@ export async function updateFoodItem(
   }
 }
 
+/** Delete a food item by id. Returns the deleted row or null if not found. */
 export async function deleteFoodItem(id: string) {
   const [deleted] = await db.delete(foodItem).where(eq(foodItem.id, id)).returning()
   return deleted ?? null

@@ -28,14 +28,15 @@ export const updateFoodCategorySchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be less than 100 characters'),
 })
 
+/** Create payload: name, categoryId, and macros (calories, protein, carbs, fat) required; fdcId and servingSize optional. */
 export const createFoodItemSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
   categoryId: z.uuid('Invalid category ID'),
   fdcId: z.number().int().optional(),
-  calories: z.number().nonnegative('Calories must be non-negative').optional(),
-  protein: z.number().nonnegative('Protein must be non-negative').optional(),
-  carbs: z.number().nonnegative('Carbs must be non-negative').optional(),
-  fat: z.number().nonnegative('Fat must be non-negative').optional(),
+  calories: z.number().nonnegative('Calories must be non-negative'),
+  protein: z.number().nonnegative('Protein must be non-negative'),
+  carbs: z.number().nonnegative('Carbs must be non-negative'),
+  fat: z.number().nonnegative('Fat must be non-negative'),
   servingSize: z.number().positive('Serving size must be positive').optional(),
 })
 
@@ -55,10 +56,10 @@ export const createFoodItemFormSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
   categoryId: z.string().min(1).pipe(z.uuid('Invalid category ID')),
   fdcId: z.coerce.number().int().optional(),
-  calories: z.coerce.number().nonnegative('Calories must be non-negative').optional(),
-  protein: z.coerce.number().nonnegative('Protein must be non-negative').optional(),
-  carbs: z.coerce.number().nonnegative('Carbs must be non-negative').optional(),
-  fat: z.coerce.number().nonnegative('Fat must be non-negative').optional(),
+  calories: z.coerce.number().nonnegative('Calories must be non-negative'),
+  protein: z.coerce.number().nonnegative('Protein must be non-negative'),
+  carbs: z.coerce.number().nonnegative('Carbs must be non-negative'),
+  fat: z.coerce.number().nonnegative('Fat must be non-negative'),
   servingSize: z.coerce.number().positive('Serving size must be positive').optional(),
 })
 
