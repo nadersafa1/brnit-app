@@ -17,6 +17,8 @@ export const directAdminKeys = {
 } as const
 
 export const nutritionistKeys = {
+  bodyCompositionAssessments: (filters: object) =>
+    ['nutritionist', 'body-composition-assessments', filters] as const,
   dietPlanAssignments: (filters: object) =>
     ['nutritionist', 'diet-plan-assignments', filters] as const,
   foodCategories: (filters: object) => ['nutritionist', 'food-categories', filters] as const,

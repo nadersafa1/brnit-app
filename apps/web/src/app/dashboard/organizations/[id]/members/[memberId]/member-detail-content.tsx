@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button'
 import { CreateDietPlanDialog } from '@/app/dashboard/admin/diet-plans/components/create-diet-plan-dialog'
 import MemberAssignmentsList from './components/member-assignments-list'
 import AssignExistingPlanDialog from './components/assign-existing-plan-dialog'
+import { useBodyCompositionAssessments } from '@/hooks/use-body-composition-assessments'
+import AssessmentsTable from '@/app/dashboard/direct-admin/members/[memberId]/components/assessments-table'
 
 export default function MemberDetailContent({
   organizationId,
@@ -31,6 +33,16 @@ export default function MemberDetailContent({
 
   const member = members.find((m) => m.id === memberId)
   const canAccess = canAccessNutritionistFeatures(session ?? null, context)
+
+  const { data: assessmentsData, isLoading: assessmentsLoading } = useBodyCompositionAssessments(
+    {
+      memberId,
+      perPage: 100,
+      sortBy: 'assessedAt',
+      sortOrder: 'desc',
+    },
+    'nutritionist'
+  )
 
   useEffect(() => {
     if (!canAccess) {
@@ -101,6 +113,25 @@ export default function MemberDetailContent({
           <p className="text-sm">
             <span className="font-medium">Email:</span> {email}
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Body composition assessments</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {assessmentsLoading ? (
+            <p className="text-muted-foreground py-4 text-center text-sm">
+              Loading assessments...
+            </p>
+          ) : (
+            <AssessmentsTable
+              assessments={assessmentsData?.data ?? []}
+              memberId={memberId}
+              readOnly
+            />
+          )}
         </CardContent>
       </Card>
 

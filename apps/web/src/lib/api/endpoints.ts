@@ -8,6 +8,7 @@ export const API_ENDPOINTS = {
     organizationContext: '/api/users/me/organization-context',
   },
   nutritionist: {
+    bodyCompositionAssessments: '/api/nutritionist/body-composition-assessments',
     foodCategories: '/api/nutritionist/food-categories',
     foodCategory: (id: string) => `/api/nutritionist/food-categories/${id}`,
     foodItems: '/api/nutritionist/food-items',

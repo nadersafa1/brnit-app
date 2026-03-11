@@ -3,7 +3,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { API_ENDPOINTS } from '@/lib/api/endpoints'
-import { directAdminKeys } from '@/lib/queries/keys'
+import { directAdminKeys, nutritionistKeys } from '@/lib/queries/keys'
+
+export type AssessmentSource = 'direct_admin' | 'nutritionist'
 import type { PaginationMeta } from '@/lib/api-helpers/pagination'
 
 export interface BodyCompositionAssessment {
@@ -53,8 +55,15 @@ async function fetchWithAuth(
   return res
 }
 
+function getAssessmentsListUrl(source: AssessmentSource): string {
+  return source === 'nutritionist'
+    ? API_ENDPOINTS.nutritionist.bodyCompositionAssessments
+    : API_ENDPOINTS.directAdmin.bodyCompositionAssessments
+}
+
 export function fetchBodyCompositionAssessments(
-  filters: BodyCompositionAssessmentsFilters
+  filters: BodyCompositionAssessmentsFilters,
+  source: AssessmentSource = 'direct_admin'
 ): Promise<BodyCompositionAssessmentsResponse> {
   const params = new URLSearchParams()
   if (filters.page != null) params.set('page', String(filters.page))
@@ -62,7 +71,7 @@ export function fetchBodyCompositionAssessments(
   if (filters.memberId) params.set('memberId', filters.memberId)
   if (filters.sortBy) params.set('sortBy', filters.sortBy)
   if (filters.sortOrder) params.set('sortOrder', filters.sortOrder)
-  const url = `${API_ENDPOINTS.directAdmin.bodyCompositionAssessments}?${params.toString()}`
+  const url = `${getAssessmentsListUrl(source)}?${params.toString()}`
   return fetchWithAuth(url).then(async res => {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
@@ -72,11 +81,17 @@ export function fetchBodyCompositionAssessments(
   })
 }
 
-export function useBodyCompositionAssessments(filters: BodyCompositionAssessmentsFilters) {
-  const queryKey = directAdminKeys.bodyCompositionAssessments(filters)
+export function useBodyCompositionAssessments(
+  filters: BodyCompositionAssessmentsFilters,
+  source: AssessmentSource = 'direct_admin'
+) {
+  const queryKey =
+    source === 'nutritionist'
+      ? nutritionistKeys.bodyCompositionAssessments(filters)
+      : directAdminKeys.bodyCompositionAssessments(filters)
   return useQuery({
     queryKey,
-    queryFn: () => fetchBodyCompositionAssessments(filters),
+    queryFn: () => fetchBodyCompositionAssessments(filters, source),
     enabled: !!filters.memberId || true,
   })
 }

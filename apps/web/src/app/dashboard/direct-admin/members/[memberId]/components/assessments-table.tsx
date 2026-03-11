@@ -27,8 +27,9 @@ import type { BodyCompositionAssessment } from '@/hooks/use-body-composition-ass
 interface AssessmentsTableProps {
   assessments: BodyCompositionAssessment[]
   memberId: string
-  onEdit: (assessment: BodyCompositionAssessment) => void
+  onEdit?: (assessment: BodyCompositionAssessment) => void
   onDeleteSuccess?: () => void
+  readOnly?: boolean
 }
 
 export default function AssessmentsTable({
@@ -36,6 +37,7 @@ export default function AssessmentsTable({
   memberId,
   onEdit,
   onDeleteSuccess,
+  readOnly = false,
 }: AssessmentsTableProps) {
   const [deleteTarget, setDeleteTarget] = useState<BodyCompositionAssessment | null>(null)
   const deleteMutation = useDeleteAssessment()
@@ -50,7 +52,7 @@ export default function AssessmentsTable({
   if (assessments.length === 0) {
     return (
       <p className="text-muted-foreground py-4 text-center text-sm">
-        No assessments yet. Add one to get started.
+        {readOnly ? 'No assessments yet.' : 'No assessments yet. Add one to get started.'}
       </p>
     )
   }
@@ -68,7 +70,7 @@ export default function AssessmentsTable({
             <TableHead>Visceral fat</TableHead>
             <TableHead>Body water (L)</TableHead>
             <TableHead>Image</TableHead>
-            <TableHead className="w-[50px]"></TableHead>
+            {!readOnly && <TableHead className="w-[50px]"></TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -97,53 +99,57 @@ export default function AssessmentsTable({
                   '—'
                 )}
               </TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="size-8">
-                      <MoreHorizontal className="size-4" />
-                      <span className="sr-only">Actions</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEdit(a)}>Edit</DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive"
-                      onClick={() => setDeleteTarget(a)}
-                    >
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
+              {!readOnly && (
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="size-8">
+                        <MoreHorizontal className="size-4" />
+                        <span className="sr-only">Actions</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onEdit?.(a)}>Edit</DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => setDeleteTarget(a)}
+                      >
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>
       </Table>
 
-      <AlertDialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete assessment</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this assessment? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={e => {
-                e.preventDefault()
-                handleDelete()
-              }}
-              disabled={deleteMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleteMutation.isPending ? 'Deleting…' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {!readOnly && (
+        <AlertDialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete assessment</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this assessment? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={e => {
+                  e.preventDefault()
+                  handleDelete()
+                }}
+                disabled={deleteMutation.isPending}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleteMutation.isPending ? 'Deleting…' : 'Delete'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </>
   )
 }
