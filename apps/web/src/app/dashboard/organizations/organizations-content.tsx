@@ -8,8 +8,8 @@ import { authClient } from '@/lib/auth-client'
 import { useOrganizationPermissions, useRoles } from '@/hooks/authorization'
 import { Button } from '@/components/ui/button'
 import { CreateOrganizationDialog } from './components/create-organization-dialog'
+import { InviteMemberDialog } from './components/invite-member-dialog'
 import InvitationsList from './invitations-list'
-import InviteMemberForm from './invite-member-form'
 import MembersList from './members-list'
 import OrganizationSelect from './organization-select'
 
@@ -17,6 +17,7 @@ const OrganizationsContent = () => {
   const router = useRouter()
   const [inviteRefetchTrigger, setInviteRefetchTrigger] = useState(0)
   const [createOrgOpen, setCreateOrgOpen] = useState(false)
+  const [inviteMemberOpen, setInviteMemberOpen] = useState(false)
   const { canInvite: canInvitePermission } = useOrganizationPermissions()
   const { isAppAdmin } = useRoles()
   const { data: organizations } = authClient.useListOrganizations()
@@ -53,8 +54,20 @@ const OrganizationsContent = () => {
       <OrganizationSelect />
 
       {activeId && canInvite && (
-        <div className='grid gap-6 md:grid-cols-2'>
-          <InviteMemberForm organizationId={activeId} onSuccess={handleInviteSent} />
+        <div className='space-y-4'>
+          <div className='flex items-center justify-between'>
+            <h3 className='text-sm font-medium'>Invitations</h3>
+            <Button onClick={() => setInviteMemberOpen(true)} size='sm'>
+              <Plus className='mr-2 size-4' />
+              Invite member
+            </Button>
+          </div>
+          <InviteMemberDialog
+            open={inviteMemberOpen}
+            onOpenChange={setInviteMemberOpen}
+            onSuccess={handleInviteSent}
+            organizationId={activeId}
+          />
           <InvitationsList organizationId={activeId} refetchTrigger={inviteRefetchTrigger} />
         </div>
       )}

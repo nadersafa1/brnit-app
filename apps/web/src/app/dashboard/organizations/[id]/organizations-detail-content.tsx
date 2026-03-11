@@ -13,9 +13,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
 import { Plus } from 'lucide-react'
-import { CreateOrganizationDialog } from '../components/create-organization-dialog'
+import { InviteMemberDialog } from '../components/invite-member-dialog'
 import InvitationsList from '../invitations-list'
-import InviteMemberForm from '../invite-member-form'
 import MembersList from '../members-list'
 import AssignableMembersTable from './components/assignable-members-table'
 
@@ -34,7 +33,7 @@ export default function OrganizationsDetailContent({
   const { isAppAdmin } = useRoles()
 
   const [inviteRefetchTrigger, setInviteRefetchTrigger] = useState(0)
-  const [createOrgOpen, setCreateOrgOpen] = useState(false)
+  const [inviteMemberOpen, setInviteMemberOpen] = useState(false)
   const isNutritionist = canAccessNutritionistFeatures(session ?? null, context)
   const isMemberOfOrg = organizations?.some(
     (o: { id: string }) => o.id === organizationId
@@ -86,27 +85,27 @@ export default function OrganizationsDetailContent({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Organization</h2>
-        {isAppAdmin && (
-          <Button onClick={() => setCreateOrgOpen(true)}>
-            <Plus className="mr-2 size-4" />
-            Create organization
-          </Button>
-        )}
-      </div>
-
-      <CreateOrganizationDialog
-        open={createOrgOpen}
-        onOpenChange={setCreateOrgOpen}
-        onSuccess={() => router.refresh()}
-      />
+      <h2 className="text-lg font-semibold">Organization</h2>
 
       {canInvite && (
-        <div className="grid gap-6 md:grid-cols-2">
-          <InviteMemberForm organizationId={organizationId} onSuccess={handleInviteSent} />
-          <InvitationsList organizationId={organizationId} refetchTrigger={inviteRefetchTrigger} />
-        </div>
+        <>
+          <InviteMemberDialog
+            open={inviteMemberOpen}
+            onOpenChange={setInviteMemberOpen}
+            onSuccess={handleInviteSent}
+            organizationId={organizationId}
+          />
+          <InvitationsList
+            organizationId={organizationId}
+            refetchTrigger={inviteRefetchTrigger}
+            headerAction={
+              <Button onClick={() => setInviteMemberOpen(true)} size="sm">
+                <Plus className="mr-2 size-4" />
+                Invite member
+              </Button>
+            }
+          />
+        </>
       )}
 
       {organizationId && !canInvite && !isAppAdmin && (

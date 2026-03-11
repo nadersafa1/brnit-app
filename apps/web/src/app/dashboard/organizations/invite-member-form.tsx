@@ -29,7 +29,15 @@ const inviteSchema = z.object({
 
 type InviteMemberFormValues = z.infer<typeof inviteSchema>
 
-const InviteMemberForm = ({ organizationId, onSuccess }: { organizationId: string; onSuccess?: () => void }) => {
+const InviteMemberForm = ({
+  organizationId,
+  onSuccess,
+  embedded = false,
+}: {
+  organizationId: string
+  onSuccess?: () => void
+  embedded?: boolean
+}) => {
   const { context } = useOrganizationContext()
   const canChooseRole = !(context.isClientAdmin && !context.isOwner && !context.isAppAdmin)
 
@@ -65,58 +73,64 @@ const InviteMemberForm = ({ organizationId, onSuccess }: { organizationId: strin
     }
   })
 
+  const formContent = (
+    <form onSubmit={onSubmit} className='space-y-4'>
+      <FieldGroup>
+        <Field>
+          <FieldLabel>Email</FieldLabel>
+          <Input
+            type='email'
+            {...form.register('email')}
+            placeholder='colleague@example.com'
+            aria-invalid={!!form.formState.errors.email}
+          />
+          <FieldError errors={[form.formState.errors.email]} />
+        </Field>
+        <Field>
+          <FieldLabel>Role</FieldLabel>
+          {canChooseRole ? (
+            <select
+              {...form.register('role')}
+              className={cn(
+                'border-input h-9 w-full rounded-md border bg-transparent px-3 py-1 text-base shadow-xs',
+                'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none',
+                'disabled:opacity-50 md:text-sm'
+              )}
+              aria-invalid={!!form.formState.errors.role}
+            >
+              {ORG_INVITE_ROLES.map(r => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <Input
+              type="text"
+              value="Member"
+              disabled
+              className="text-muted-foreground"
+            />
+          )}
+          <FieldError errors={[form.formState.errors.role]} />
+        </Field>
+      </FieldGroup>
+      <Button type='submit' disabled={form.formState.isSubmitting}>
+        {form.formState.isSubmitting ? 'Sending…' : 'Send invitation'}
+      </Button>
+    </form>
+  )
+
+  if (embedded) {
+    return formContent
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Invite member</CardTitle>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={onSubmit} className='space-y-4'>
-          <FieldGroup>
-            <Field>
-              <FieldLabel>Email</FieldLabel>
-              <Input
-                type='email'
-                {...form.register('email')}
-                placeholder='colleague@example.com'
-                aria-invalid={!!form.formState.errors.email}
-              />
-              <FieldError errors={[form.formState.errors.email]} />
-            </Field>
-            <Field>
-              <FieldLabel>Role</FieldLabel>
-              {canChooseRole ? (
-                <select
-                  {...form.register('role')}
-                  className={cn(
-                    'border-input h-9 w-full rounded-md border bg-transparent px-3 py-1 text-base shadow-xs',
-                    'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none',
-                    'disabled:opacity-50 md:text-sm'
-                  )}
-                  aria-invalid={!!form.formState.errors.role}
-                >
-                  {ORG_INVITE_ROLES.map(r => (
-                    <option key={r.value} value={r.value}>
-                      {r.label}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <Input
-                  type="text"
-                  value="Member"
-                  disabled
-                  className="text-muted-foreground"
-                />
-              )}
-              <FieldError errors={[form.formState.errors.role]} />
-            </Field>
-          </FieldGroup>
-          <Button type='submit' disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? 'Sending…' : 'Send invitation'}
-          </Button>
-        </form>
-      </CardContent>
+      <CardContent>{formContent}</CardContent>
     </Card>
   )
 }

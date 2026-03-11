@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -12,7 +13,15 @@ import { ORG_INVITE_ROLES } from './invite-member-form'
 
 const statusLabel = (status: string) => status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
 
-const InvitationsList = ({ organizationId, refetchTrigger }: { organizationId: string; refetchTrigger?: number }) => {
+const InvitationsList = ({
+  organizationId,
+  refetchTrigger,
+  headerAction,
+}: {
+  organizationId: string
+  refetchTrigger?: number
+  headerAction?: ReactNode
+}) => {
   const [invitations, setInvitations] = useState<Invitation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -58,8 +67,9 @@ const InvitationsList = ({ organizationId, refetchTrigger }: { organizationId: s
   if (error) {
     return (
       <Card>
-        <CardHeader>
+        <CardHeader className={headerAction ? 'flex flex-row items-center justify-between space-y-0' : undefined}>
           <CardTitle>Pending invitations</CardTitle>
+          {headerAction}
         </CardHeader>
         <CardContent>
           <p className='text-destructive text-sm'>{error}</p>
@@ -67,31 +77,36 @@ const InvitationsList = ({ organizationId, refetchTrigger }: { organizationId: s
       </Card>
     )
   }
-  if (!invitations.length) return null
+  if (!invitations.length && !headerAction) return null
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className={headerAction ? 'flex flex-row items-center justify-between space-y-0' : undefined}>
         <CardTitle>Pending invitations</CardTitle>
+        {headerAction}
       </CardHeader>
       <CardContent>
-        <ul className='space-y-2'>
-          {invitations.map(inv => (
-            <li key={inv.id} className='flex items-center justify-between rounded-md border px-3 py-2'>
-              <span className='text-sm'>
-                {inv.email} · {roleLabel(inv.role)}
-              </span>
-              <div className='flex items-center gap-2'>
-                <Badge variant='secondary'>{statusLabel(inv.status ?? 'pending')}</Badge>
-                {inv.status === 'pending' && (
-                  <Button type='button' variant='ghost' size='sm' onClick={() => cancelInvitation(inv.id)}>
-                    Cancel
-                  </Button>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
+        {invitations.length ? (
+          <ul className='space-y-2'>
+            {invitations.map(inv => (
+              <li key={inv.id} className='flex items-center justify-between rounded-md border px-3 py-2'>
+                <span className='text-sm'>
+                  {inv.email} · {roleLabel(inv.role)}
+                </span>
+                <div className='flex items-center gap-2'>
+                  <Badge variant='secondary'>{statusLabel(inv.status ?? 'pending')}</Badge>
+                  {inv.status === 'pending' && (
+                    <Button type='button' variant='ghost' size='sm' onClick={() => cancelInvitation(inv.id)}>
+                      Cancel
+                    </Button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className='text-muted-foreground text-sm'>No pending invitations.</p>
+        )}
       </CardContent>
     </Card>
   )
