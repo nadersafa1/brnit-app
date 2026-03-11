@@ -9,11 +9,15 @@
     "name": "brnit",
     "slug": "brnit",
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true
+      "reactCompiler": true,
+      "autolinkingModuleResolution": true
     },
     "extra": {
       "eas": {
@@ -25,7 +29,8 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/eb226ae4-16cf-4326-bdba-08518b4ae2a3"
+      "url": "https://u.expo.dev/eb226ae4-16cf-4326-bdba-08518b4ae2a3",
+      "enableBsdiffPatchSupport": true
     },
     "android": {},
     "ios": {}

@@ -1,4 +1,4 @@
-import { ErrorView } from 'heroui-native'
+import { FieldError } from 'heroui-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Link, Redirect } from 'expo-router'
 import { useState } from 'react'
@@ -94,9 +94,9 @@ export default function ForgotPasswordScreen() {
           Enter your email and we'll send you a link to reset your password.
         </Text>
 
-        <ErrorView isInvalid={!!error} className='mb-4'>
+        <FieldError isInvalid={!!error} className='mb-4'>
           {error}
-        </ErrorView>
+        </FieldError>
 
         <View className='gap-4'>
           <TextInput

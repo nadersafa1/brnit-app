@@ -30,5 +30,11 @@
     "turbo": "^2.6.3",
     "typescript": "^5"
   },
+  "overrides": {
+    "expo-constants": "~55.0.7",
+    "react-native-reanimated": "4.2.1",
+    "react-native-svg": "15.15.3",
+    "react-native-worklets": "0.7.2"
+  },
   "packageManager": "npm@10.8.2"
 }

@@ -1,4 +1,4 @@
-import { ErrorView } from 'heroui-native'
+import { FieldError } from 'heroui-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Link, Redirect, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
@@ -119,9 +119,9 @@ export default function LoginScreen() {
           <Text className='text-ink text-2xl font-bold mb-2'>Sign In</Text>
           <Text className='text-muted text-sm mb-6'>Welcome back! Sign in to continue your fitness journey.</Text>
 
-          <ErrorView isInvalid={!!error} className='mb-4'>
+          <FieldError isInvalid={!!error} className='mb-4'>
             {error}
-          </ErrorView>
+          </FieldError>
 
           <View className='gap-4'>
             <TextInput

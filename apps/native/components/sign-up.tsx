@@ -1,8 +1,9 @@
-import { Button, ErrorView, Spinner, Surface, TextField } from "heroui-native";
+import { Button, FieldError, Spinner, Surface } from "heroui-native";
 import { useState } from "react";
 import { Text, View } from "react-native";
 
 import { authClient } from "@/lib/auth-client";
+import { PasswordInput, TextInput } from "@/components";
 
 function signUpHandler({
   name,
@@ -73,36 +74,39 @@ export function SignUp() {
     <Surface variant="secondary" className="p-4 rounded-lg">
       <Text className="text-foreground font-medium mb-4">Create Account</Text>
 
-      <ErrorView isInvalid={!!error} className="mb-3">
+      <FieldError isInvalid={!!error} className="mb-3">
         {error}
-      </ErrorView>
+      </FieldError>
 
       <View className="gap-3">
-        <TextField>
-          <TextField.Label>Name</TextField.Label>
-          <TextField.Input value={name} onChangeText={setName} placeholder="John Doe" />
-        </TextField>
+        <View className="gap-1">
+          <Text className="text-foreground text-sm font-medium">Name</Text>
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder="John Doe"
+          />
+        </View>
 
-        <TextField>
-          <TextField.Label>Email</TextField.Label>
-          <TextField.Input
+        <View className="gap-1">
+          <Text className="text-foreground text-sm font-medium">Email</Text>
+          <TextInput
             value={email}
             onChangeText={setEmail}
             placeholder="email@example.com"
             keyboardType="email-address"
             autoCapitalize="none"
           />
-        </TextField>
+        </View>
 
-        <TextField>
-          <TextField.Label>Password</TextField.Label>
-          <TextField.Input
+        <View className="gap-1">
+          <Text className="text-foreground text-sm font-medium">Password</Text>
+          <PasswordInput
             value={password}
             onChangeText={setPassword}
             placeholder="••••••••"
-            secureTextEntry
           />
-        </TextField>
+        </View>
 
         <Button onPress={handlePress} isDisabled={isLoading} className="mt-1">
           {isLoading ? (
