@@ -2,7 +2,11 @@ import { db } from '@burn-app/db'
 import { dietPlan, dietPlanAssignment, dietPlanMealConsumption, member } from '@burn-app/db/schema'
 import { and, asc, eq, inArray, or, SQL } from 'drizzle-orm'
 import { getDietPlanById } from '@/lib/services/diet-plans'
-import type { CurrentDietPlanQuery } from '@/types/api/current-diet-plan.schemas'
+import { getOverridesByAssignmentId } from '@/lib/services/diet-plan-meal-item-override'
+import type {
+  CurrentDietPlanQuery,
+  CurrentDietPlanMealItem,
+} from '@/types/api/current-diet-plan.schemas'
 
 function toDateStringUTC(input: string | Date): string {
   const date = typeof input === 'string' ? new Date(input) : input
@@ -35,7 +39,7 @@ type CurrentDietPlanMeal = {
   mealName: string
   mealType: string
   mealOrder: number
-  mealItems: Array<{ foodName: string; quantity: number }>
+  mealItems: CurrentDietPlanMealItem[]
   consumed: boolean
   consumedAt?: string
 }
@@ -135,6 +139,19 @@ export async function getCurrentDietPlanForUser(
 
   const dietPlanMeals = planFull.dietPlanMeals ?? []
 
+  const overrideRows = await getOverridesByAssignmentId(assignment.id)
+  const overrideMap = new Map<
+    string,
+    { foodItemId: string; foodName: string; quantity: number }
+  >()
+  for (const row of overrideRows) {
+    overrideMap.set(`${row.dietPlanMealId}:${row.mealItemId}`, {
+      foodItemId: row.foodItemId,
+      foodName: row.foodName,
+      quantity: Number(row.quantity),
+    })
+  }
+
   const consumptionRows =
     allDates.length > 0
       ? await db
@@ -173,13 +190,37 @@ export async function getCurrentDietPlanForUser(
       .map<CurrentDietPlanMeal>((pm) => {
         const key = `${pm.id}:${date}`
         const consumption = consumptionMap.get(key)
+        const mealItems: CurrentDietPlanMealItem[] = (pm.mealItems ?? []).map(
+          (item: { mealItemId: string; foodItemId: string; foodName: string; quantity: number }) => {
+            const override = overrideMap.get(`${pm.id}:${item.mealItemId}`)
+            if (override) {
+              return {
+                mealItemId: item.mealItemId,
+                foodItemId: override.foodItemId,
+                foodName: override.foodName,
+                quantity: override.quantity,
+                isOverridden: true,
+                originalFoodItemId: item.foodItemId,
+                originalFoodName: item.foodName,
+                originalQuantity: item.quantity,
+              }
+            }
+            return {
+              mealItemId: item.mealItemId,
+              foodItemId: item.foodItemId,
+              foodName: item.foodName,
+              quantity: item.quantity,
+              isOverridden: false,
+            }
+          }
+        )
         return {
           dietPlanMealId: pm.id,
           mealId: pm.mealId,
           mealName: pm.mealName,
           mealType: pm.mealType,
           mealOrder: pm.mealOrder,
-          mealItems: pm.mealItems ?? [],
+          mealItems,
           consumed: !!consumption,
           consumedAt: consumption?.consumedAt,
         }

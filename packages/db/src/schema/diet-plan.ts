@@ -1,18 +1,18 @@
-import { relations } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
 import {
   check,
+  date,
+  index,
+  integer,
+  numeric,
   pgTable,
   text,
   timestamp,
-  date,
-  integer,
-  index,
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
-import { sql } from 'drizzle-orm'
-import { meal } from './meal'
-import { user } from './auth'
-import { member } from './auth'
+import { member, user } from './auth'
+import { foodItem } from './food-item'
+import { meal, mealItem } from './meal'
 
 export const dietPlan = pgTable('diet_plan', {
   id: text('id')
@@ -52,7 +52,7 @@ export const dietPlanMeal = pgTable(
       table.dietPlanId,
       table.dayNumber,
       table.mealType,
-      table.mealOrder
+      table.mealOrder,
     ),
   ],
 )
@@ -63,7 +63,9 @@ export const dietPlanAssignment = pgTable(
     id: text('id')
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
-    memberId: text('member_id').references(() => member.id, { onDelete: 'cascade' }),
+    memberId: text('member_id').references(() => member.id, {
+      onDelete: 'cascade',
+    }),
     userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
     dietPlanId: text('diet_plan_id')
       .notNull()
@@ -78,13 +80,13 @@ export const dietPlanAssignment = pgTable(
     index('diet_plan_assignment_plan_idx').on(table.dietPlanId),
     check(
       'diet_plan_assignment_assignee_check',
-      sql`((${table.memberId} IS NOT NULL AND ${table.userId} IS NULL) OR (${table.memberId} IS NULL AND ${table.userId} IS NOT NULL))`
+      sql`((${table.memberId} IS NOT NULL AND ${table.userId} IS NULL) OR (${table.memberId} IS NULL AND ${table.userId} IS NOT NULL))`,
     ),
     check(
       'diet_plan_assignment_date_range_check',
-      sql`${table.startDate} <= ${table.endDate}`
+      sql`${table.startDate} <= ${table.endDate}`,
     ),
-  ]
+  ],
 )
 
 export const dietPlanMealConsumption = pgTable(
@@ -104,14 +106,79 @@ export const dietPlanMealConsumption = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [
-    index('diet_plan_meal_consumption_assignment_idx').on(table.dietPlanAssignmentId),
+    index('diet_plan_meal_consumption_assignment_idx').on(
+      table.dietPlanAssignmentId,
+    ),
     index('diet_plan_meal_consumption_meal_idx').on(table.dietPlanMealId),
     uniqueIndex('diet_plan_meal_consumption_unique_idx').on(
       table.dietPlanAssignmentId,
       table.dietPlanMealId,
-      table.consumedDate
+      table.consumedDate,
     ),
-  ]
+  ],
+)
+
+export const dietPlanMealItemOverride = pgTable(
+  'diet_plan_meal_item_override',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    dietPlanAssignmentId: text('diet_plan_assignment_id')
+      .notNull()
+      .references(() => dietPlanAssignment.id, { onDelete: 'cascade' }),
+    dietPlanMealId: text('diet_plan_meal_id')
+      .notNull()
+      .references(() => dietPlanMeal.id, { onDelete: 'cascade' }),
+    mealItemId: text('meal_item_id')
+      .notNull()
+      .references(() => mealItem.id, { onDelete: 'cascade' }),
+    foodItemId: text('food_item_id')
+      .notNull()
+      .references(() => foodItem.id, { onDelete: 'restrict' }),
+    quantity: numeric('quantity').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index('diet_plan_meal_item_override_assignment_idx').on(
+      table.dietPlanAssignmentId,
+    ),
+    index('diet_plan_meal_item_override_assignment_meal_idx').on(
+      table.dietPlanAssignmentId,
+      table.dietPlanMealId,
+    ),
+    uniqueIndex('diet_plan_meal_item_override_unique_idx').on(
+      table.dietPlanAssignmentId,
+      table.dietPlanMealId,
+      table.mealItemId,
+    ),
+  ],
+)
+
+export const dietPlanMealConsumptionItem = pgTable(
+  'diet_plan_meal_consumption_item',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    dietPlanMealConsumptionId: text('diet_plan_meal_consumption_id')
+      .notNull()
+      .references(() => dietPlanMealConsumption.id, { onDelete: 'cascade' }),
+    foodItemId: text('food_item_id')
+      .notNull()
+      .references(() => foodItem.id, { onDelete: 'restrict' }),
+    quantity: numeric('quantity').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('diet_plan_meal_consumption_item_consumption_idx').on(
+      table.dietPlanMealConsumptionId,
+    ),
+  ],
 )
 
 export const dietPlanRelations = relations(dietPlan, ({ many }) => ({
@@ -119,41 +186,89 @@ export const dietPlanRelations = relations(dietPlan, ({ many }) => ({
   dietPlanAssignments: many(dietPlanAssignment),
 }))
 
-export const dietPlanMealRelations = relations(dietPlanMeal, ({ one, many }) => ({
-  dietPlan: one(dietPlan, {
-    fields: [dietPlanMeal.dietPlanId],
-    references: [dietPlan.id],
+export const dietPlanMealRelations = relations(
+  dietPlanMeal,
+  ({ one, many }) => ({
+    dietPlan: one(dietPlan, {
+      fields: [dietPlanMeal.dietPlanId],
+      references: [dietPlan.id],
+    }),
+    meal: one(meal, {
+      fields: [dietPlanMeal.mealId],
+      references: [meal.id],
+    }),
+    consumptions: many(dietPlanMealConsumption),
+    mealItemOverrides: many(dietPlanMealItemOverride),
   }),
-  meal: one(meal, {
-    fields: [dietPlanMeal.mealId],
-    references: [meal.id],
-  }),
-  consumptions: many(dietPlanMealConsumption),
-}))
+)
 
-export const dietPlanAssignmentRelations = relations(dietPlanAssignment, ({ one, many }) => ({
-  dietPlan: one(dietPlan, {
-    fields: [dietPlanAssignment.dietPlanId],
-    references: [dietPlan.id],
+export const dietPlanAssignmentRelations = relations(
+  dietPlanAssignment,
+  ({ one, many }) => ({
+    dietPlan: one(dietPlan, {
+      fields: [dietPlanAssignment.dietPlanId],
+      references: [dietPlan.id],
+    }),
+    member: one(member, {
+      fields: [dietPlanAssignment.memberId],
+      references: [member.id],
+    }),
+    user: one(user, {
+      fields: [dietPlanAssignment.userId],
+      references: [user.id],
+    }),
+    consumptions: many(dietPlanMealConsumption),
+    mealItemOverrides: many(dietPlanMealItemOverride),
   }),
-  member: one(member, {
-    fields: [dietPlanAssignment.memberId],
-    references: [member.id],
-  }),
-  user: one(user, {
-    fields: [dietPlanAssignment.userId],
-    references: [user.id],
-  }),
-  consumptions: many(dietPlanMealConsumption),
-}))
+)
 
-export const dietPlanMealConsumptionRelations = relations(dietPlanMealConsumption, ({ one }) => ({
-  dietPlanAssignment: one(dietPlanAssignment, {
-    fields: [dietPlanMealConsumption.dietPlanAssignmentId],
-    references: [dietPlanAssignment.id],
+export const dietPlanMealConsumptionRelations = relations(
+  dietPlanMealConsumption,
+  ({ one, many }) => ({
+    dietPlanAssignment: one(dietPlanAssignment, {
+      fields: [dietPlanMealConsumption.dietPlanAssignmentId],
+      references: [dietPlanAssignment.id],
+    }),
+    dietPlanMeal: one(dietPlanMeal, {
+      fields: [dietPlanMealConsumption.dietPlanMealId],
+      references: [dietPlanMeal.id],
+    }),
+    consumedItems: many(dietPlanMealConsumptionItem),
   }),
-  dietPlanMeal: one(dietPlanMeal, {
-    fields: [dietPlanMealConsumption.dietPlanMealId],
-    references: [dietPlanMeal.id],
+)
+
+export const dietPlanMealItemOverrideRelations = relations(
+  dietPlanMealItemOverride,
+  ({ one }) => ({
+    dietPlanAssignment: one(dietPlanAssignment, {
+      fields: [dietPlanMealItemOverride.dietPlanAssignmentId],
+      references: [dietPlanAssignment.id],
+    }),
+    dietPlanMeal: one(dietPlanMeal, {
+      fields: [dietPlanMealItemOverride.dietPlanMealId],
+      references: [dietPlanMeal.id],
+    }),
+    mealItem: one(mealItem, {
+      fields: [dietPlanMealItemOverride.mealItemId],
+      references: [mealItem.id],
+    }),
+    foodItem: one(foodItem, {
+      fields: [dietPlanMealItemOverride.foodItemId],
+      references: [foodItem.id],
+    }),
   }),
-}))
+)
+
+export const dietPlanMealConsumptionItemRelations = relations(
+  dietPlanMealConsumptionItem,
+  ({ one }) => ({
+    dietPlanMealConsumption: one(dietPlanMealConsumption, {
+      fields: [dietPlanMealConsumptionItem.dietPlanMealConsumptionId],
+      references: [dietPlanMealConsumption.id],
+    }),
+    foodItem: one(foodItem, {
+      fields: [dietPlanMealConsumptionItem.foodItemId],
+      references: [foodItem.id],
+    }),
+  }),
+)
