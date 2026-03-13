@@ -12,6 +12,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.62.7",
     "@better-auth/expo": "^1.4.9",
     "@burn-app/env": "*",
     "@expo/metro-runtime": "~55.0.6",
