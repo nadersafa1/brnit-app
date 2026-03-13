@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter, useSegments } from 'expo-router'
-import { Pressable, Text, View, StyleSheet } from 'react-native'
+import { Pressable, View, StyleSheet } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Text } from '@/components/ui'
 import { Colors } from '@/theme/colors'
 import { radii } from '@/theme/radii'
 import { spacing } from '@/theme/spacing'
-import { fontSize, fontWeight } from '@/theme/typography'
 import { shadows } from '@/theme/shadows'
 
 type TabName = 'home' | 'search' | 'stats' | 'profile'
@@ -17,12 +17,14 @@ interface NavItemProps {
   onPress?: () => void
 }
 
-function NavItem({ icon, label, isActive, onPress }: NavItemProps) {
+function NavItem({ icon, label, isActive, onPress }: Readonly<NavItemProps>) {
   if (isActive) {
     return (
       <View style={styles.activeItem}>
         <Ionicons name={icon} size={20} color={Colors.light.white} />
-        <Text style={styles.activeLabel}>{label}</Text>
+        <Text size='xs' weight='bold' style={styles.activeLabel}>
+          {label}
+        </Text>
       </View>
     )
   }
@@ -38,7 +40,7 @@ interface BottomNavProps {
   activeTab?: TabName
 }
 
-export function BottomNav({ activeTab }: BottomNavProps) {
+export function BottomNav({ activeTab }: Readonly<BottomNavProps>) {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const segments = useSegments()
@@ -54,27 +56,22 @@ export function BottomNav({ activeTab }: BottomNavProps) {
 
   return (
     <View style={[styles.container, { bottom: insets.bottom + 16 }]}>
+      <NavItem icon='home' label='Home' isActive={currentTab === 'home'} onPress={() => navigate('home')} />
       <NavItem
-        icon="home"
-        label="Home"
-        isActive={currentTab === 'home'}
-        onPress={() => navigate('home')}
-      />
-      <NavItem
-        icon="search-outline"
-        label="Search"
+        icon='search-outline'
+        label='Search'
         isActive={currentTab === 'search'}
         onPress={() => navigate('search')}
       />
       <NavItem
-        icon="bar-chart-outline"
-        label="Stats"
+        icon='bar-chart-outline'
+        label='Stats'
         isActive={currentTab === 'stats'}
         onPress={() => navigate('stats')}
       />
       <NavItem
-        icon="person-outline"
-        label="Profile"
+        icon='person-outline'
+        label='Profile'
         isActive={currentTab === 'profile'}
         onPress={() => navigate('profile')}
       />
@@ -104,8 +101,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.accent,
   },
   activeLabel: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
     color: Colors.light.white,
     marginLeft: spacing[2],
   },

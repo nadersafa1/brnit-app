@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Link, Redirect } from 'expo-router'
 import { useState } from 'react'
-import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { AuthSuccessScreen, PasswordInput, PrimaryButton, TextInput } from '@/components'
-import { FieldError, Text } from '@/components/ui'
+import { FieldError, Spinner, Text } from '@/components/ui'
 import { DEEP_LINKS } from '@/constants/deep-links'
 import { useColors } from '@/hooks/use-theme-color'
 import { authClient } from '@/lib/auth-client'
@@ -33,7 +33,7 @@ export default function SignUpScreen() {
   if (isPending) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.appBg }]}>
-        <ActivityIndicator size='large' color={colors.accent} />
+        <Spinner size='lg' />
       </View>
     )
   }
@@ -190,7 +190,7 @@ export default function SignUpScreen() {
             {password.length > 0 && (
               <View style={styles.requirements}>
                 {passwordRequirements.map((requirement, index) => (
-                  <View key={index} style={styles.requirementRow}>
+                  <View key={`${requirement.label}-${index}`} style={styles.requirementRow}>
                     <Ionicons
                       name={requirement.met ? 'checkmark-circle' : 'close-circle'}
                       size={16}

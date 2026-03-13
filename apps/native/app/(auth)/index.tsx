@@ -1,6 +1,7 @@
 import { Redirect } from 'expo-router'
-import { ActivityIndicator, View, StyleSheet } from 'react-native'
+import { View, StyleSheet } from 'react-native'
 
+import { Spinner } from '@/components/ui'
 import { authClient } from '@/lib/auth-client'
 import { useColors } from '@/hooks/use-theme-color'
 
@@ -11,16 +12,16 @@ export default function AuthScreen() {
   if (isPending) {
     return (
       <View style={[styles.container, { backgroundColor: colors.appBg }]}>
-        <ActivityIndicator size="large" color={colors.accent} />
+        <Spinner size='lg' />
       </View>
     )
   }
 
   if (session?.user) {
-    return <Redirect href="/(tabs)" />
+    return <Redirect href='/(tabs)' />
   }
 
-  return <Redirect href="/(auth)/login" />
+  return <Redirect href='/(auth)/login' />
 }
 
 const styles = StyleSheet.create({

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
 import dayjs from 'dayjs'
 import { useMemo, useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, View, StyleSheet } from 'react-native'
+import { Pressable, ScrollView, View, StyleSheet } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BottomNav } from '@/components/bottom-nav'
@@ -9,12 +9,11 @@ import { CalorieRing } from '@/components/calorie-ring'
 import { CalendarStrip } from '@/components/calendar-strip'
 import { MacroBar } from '@/components/macro-bar'
 import { MealCard } from '@/components/meal-card'
-import { Text } from '@/components/ui'
+import { Spinner, Text } from '@/components/ui'
 import { useCurrentDietPlan } from '@/hooks/use-current-diet-plan'
 import { useColors } from '@/hooks/use-theme-color'
 import { authClient } from '@/lib/auth-client'
 import type { CurrentDietPlanMeal } from '@/lib/api/member-types'
-import { Colors } from '@/theme/colors'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
 import { shadows } from '@/theme/shadows'
@@ -43,12 +42,9 @@ function formatMealTime(mealType: string): string {
   return times[mealType.toLowerCase()] ?? '12:00 PM'
 }
 
-function getMealsForDate(
-  data: ReturnType<typeof useCurrentDietPlan>['data'],
-  dateStr: string
-): CurrentDietPlanMeal[] {
+function getMealsForDate(data: ReturnType<typeof useCurrentDietPlan>['data'], dateStr: string): CurrentDietPlanMeal[] {
   if (!data?.data) return []
-  const day = data.data.days.find((d) => d.date === dateStr)
+  const day = data.data.days.find(d => d.date === dateStr)
   return day?.meals ?? []
 }
 
@@ -59,7 +55,11 @@ export default function Home() {
   const [selectedDate, setSelectedDate] = useState(() => new Date())
 
   const dateStr = dayjs(selectedDate).format('YYYY-MM-DD')
-  const { data: dietPlanData, isLoading, error } = useCurrentDietPlan({
+  const {
+    data: dietPlanData,
+    isLoading,
+    error,
+  } = useCurrentDietPlan({
     from: dateStr,
     to: dateStr,
   })
@@ -87,21 +87,21 @@ export default function Home() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <View style={[styles.avatar, { backgroundColor: colors.accent }]}>
-              <Text size="lg" weight="bold" style={{ color: colors.white }}>
+              <Text size='lg' weight='bold' style={{ color: colors.white }}>
                 {userName.charAt(0).toUpperCase()}
               </Text>
             </View>
             <View>
-              <Text size="sm" weight="medium" muted>
+              <Text size='sm' weight='medium' muted>
                 Good morning 👋
               </Text>
-              <Text size="lg" weight="bold">
+              <Text size='lg' weight='bold'>
                 {userName}
               </Text>
             </View>
           </View>
           <Pressable style={[styles.notificationButton, { backgroundColor: colors.card }, shadows.sm]}>
-            <Ionicons name="notifications-outline" size={20} color={colors.ink} />
+            <Ionicons name='notifications-outline' size={20} color={colors.ink} />
           </Pressable>
         </View>
 
@@ -109,14 +109,14 @@ export default function Home() {
 
         <View style={[styles.calorieCard, { backgroundColor: colors.card }, shadows.md]}>
           <View style={styles.cardHeader}>
-            <Text size="xl" weight="bold">
+            <Text size='xl' weight='bold'>
               {isToday ? "Today's Progress" : dayjs(selectedDate).format('MMMM D')}
             </Text>
             <View style={[styles.weekBadge, { backgroundColor: colors.surfaceAlt }]}>
-              <Text size="xs" weight="semibold" style={{ color: colors.subtle }}>
+              <Text size='xs' weight='semibold' style={{ color: colors.subtle }}>
                 This Week
               </Text>
-              <Ionicons name="chevron-down" size={14} color={colors.muted} style={{ marginLeft: 4 }} />
+              <Ionicons name='chevron-down' size={14} color={colors.muted} style={{ marginLeft: 4 }} />
             </View>
           </View>
 
@@ -126,43 +126,43 @@ export default function Home() {
 
           <View style={styles.remainingContainer}>
             <View style={[styles.remainingBadge, { backgroundColor: 'rgba(53, 196, 139, 0.15)' }]}>
-              <Text size="sm" weight="semibold" style={{ color: colors.success }}>
+              <Text size='sm' weight='semibold' style={{ color: colors.success }}>
                 {remainingCalories} kcal remaining
               </Text>
             </View>
           </View>
 
           <View style={styles.macrosRow}>
-            <MacroBar label="Protein" current={macros.protein.current} goal={macros.protein.goal} color="accent" />
-            <MacroBar label="Carbs" current={macros.carbs.current} goal={macros.carbs.goal} color="info" />
-            <MacroBar label="Fat" current={macros.fat.current} goal={macros.fat.goal} color="success" />
+            <MacroBar label='Protein' current={macros.protein.current} goal={macros.protein.goal} color='accent' />
+            <MacroBar label='Carbs' current={macros.carbs.current} goal={macros.carbs.goal} color='info' />
+            <MacroBar label='Fat' current={macros.fat.current} goal={macros.fat.goal} color='success' />
           </View>
         </View>
 
         <View style={styles.mealsHeader}>
-          <Text size="lg" weight="bold">
+          <Text size='lg' weight='bold'>
             {isToday ? "Today's Meals" : dayjs(selectedDate).format('MMMM D') + ' Meals'}
           </Text>
           <Pressable style={styles.addMealButton}>
-            <Text size="sm" weight="semibold" accent>
+            <Text size='sm' weight='semibold' accent>
               Add Meal
             </Text>
             <View style={[styles.addIcon, { backgroundColor: colors.accent }]}>
-              <Ionicons name="add" size={16} color={colors.white} />
+              <Ionicons name='add' size={16} color={colors.white} />
             </View>
           </Pressable>
         </View>
 
         {isLoading && (
           <View style={styles.loadingState}>
-            <ActivityIndicator size="large" color={colors.accent} />
+            <Spinner size='lg' />
           </View>
         )}
 
         {error && (
           <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
-            <Ionicons name="alert-circle-outline" size={32} color={colors.danger} />
-            <Text size="sm" muted style={styles.emptyText}>
+            <Ionicons name='alert-circle-outline' size={32} color={colors.danger} />
+            <Text size='sm' muted style={styles.emptyText}>
               {error.message}
             </Text>
           </View>
@@ -170,11 +170,11 @@ export default function Home() {
 
         {!isLoading && !error && meals.length === 0 && (
           <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
-            <Ionicons name="restaurant-outline" size={32} color={colors.muted} />
-            <Text size="base" weight="semibold" style={styles.emptyTitle}>
+            <Ionicons name='restaurant-outline' size={32} color={colors.muted} />
+            <Text size='base' weight='semibold' style={styles.emptyTitle}>
               No meals planned
             </Text>
-            <Text size="sm" muted style={styles.emptyText}>
+            <Text size='sm' muted style={styles.emptyText}>
               You don't have a diet plan assigned for this date yet.
             </Text>
           </View>
@@ -182,19 +182,19 @@ export default function Home() {
 
         {!isLoading &&
           !error &&
-          meals.map((meal) => (
+          meals.map(meal => (
             <MealCard
               key={meal.dietPlanMealId}
               title={meal.mealName}
               calories={0}
               time={formatMealTime(meal.mealType)}
               icon={MEAL_TYPE_ICONS[meal.mealType.toLowerCase()] ?? 'restaurant-outline'}
-              items={meal.mealItems.map((item) => item.foodName)}
+              items={meal.mealItems.map(item => item.foodName)}
             />
           ))}
       </ScrollView>
 
-      <BottomNav activeTab="home" />
+      <BottomNav activeTab='home' />
     </View>
   )
 }

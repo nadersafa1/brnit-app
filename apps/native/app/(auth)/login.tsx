@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Link, Redirect, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
-import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { PasswordInput, PrimaryButton, TextInput } from '@/components'
-import { FieldError, Text } from '@/components/ui'
+import { FieldError, Spinner, Text } from '@/components/ui'
 import { useColors } from '@/hooks/use-theme-color'
 import { authClient } from '@/lib/auth-client'
 import { radii } from '@/theme/radii'
@@ -25,7 +25,7 @@ export default function LoginScreen() {
   if (isPending) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.appBg }]}>
-        <ActivityIndicator size='large' color={colors.accent} />
+        <Spinner size='lg' />
       </View>
     )
   }

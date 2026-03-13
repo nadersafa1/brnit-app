@@ -2,9 +2,9 @@
 
 import { Redirect, useLocalSearchParams } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, View, StyleSheet } from 'react-native'
+import { View, StyleSheet } from 'react-native'
 
-import { Text } from '@/components/ui'
+import { Spinner, Text } from '@/components/ui'
 import { authClient } from '@/lib/auth-client'
 import { useColors } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
@@ -23,7 +23,7 @@ const AcceptInvitationScreen = () => {
     setStatus('loading')
     authClient.organization
       .acceptInvitation({ invitationId })
-      .then(async (res) => {
+      .then(async res => {
         if (res.error) {
           setStatus('error')
           return
@@ -44,7 +44,7 @@ const AcceptInvitationScreen = () => {
   }, [session, sessionPending, invitationId, status])
 
   if (!invitationId) {
-    return <Redirect href="/(tabs)" />
+    return <Redirect href='/(tabs)' />
   }
 
   if (!sessionPending && !session?.user) {
@@ -59,13 +59,13 @@ const AcceptInvitationScreen = () => {
   }
 
   if (status === 'done') {
-    return <Redirect href="/(tabs)" />
+    return <Redirect href='/(tabs)' />
   }
 
   if (status === 'loading' || status === 'idle') {
     return (
       <View style={[styles.container, { backgroundColor: colors.appBg }]}>
-        <ActivityIndicator size="large" color={colors.accent} />
+        <Spinner size='lg' />
         <Text muted style={styles.text}>
           Joining organization…
         </Text>
@@ -73,7 +73,7 @@ const AcceptInvitationScreen = () => {
     )
   }
 
-  return <Redirect href="/(tabs)" />
+  return <Redirect href='/(tabs)' />
 }
 
 const styles = StyleSheet.create({
