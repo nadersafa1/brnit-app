@@ -1,30 +1,25 @@
-import "@/polyfills";
-import "@/global.css";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { Redirect, Stack } from "expo-router";
-import { HeroUINativeProvider } from "heroui-native";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { KeyboardProvider } from "react-native-keyboard-controller";
+import '@/polyfills'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { Redirect, Stack } from 'expo-router'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { KeyboardProvider } from 'react-native-keyboard-controller'
 
-import { AppThemeProvider } from "@/contexts/app-theme-context";
-import { authClient } from "@/lib/auth-client";
-import { queryClient } from "@/lib/query-client";
+import { AppThemeProvider } from '@/contexts/app-theme-context'
+import { authClient } from '@/lib/auth-client'
+import { queryClient } from '@/lib/query-client'
 
 function AuthenticatedLayout() {
-  const { data: session, isPending } = authClient.useSession();
+  const { data: session, isPending } = authClient.useSession()
 
-  // Show nothing while checking auth status
   if (isPending) {
-    return null;
+    return null
   }
 
-  // Redirect to auth if not logged in
   if (!session?.user) {
-    return <Redirect href="/(auth)" />;
+    return <Redirect href="/(auth)" />
   }
 
-  // Redirect to tabs if logged in
-  return <Redirect href="/(tabs)" />;
+  return <Redirect href="/(tabs)" />
 }
 
 function RootNavigator() {
@@ -34,9 +29,9 @@ function RootNavigator() {
       <Stack.Screen name="accept-invitation" />
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+      <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
     </Stack>
-  );
+  )
 }
 
 export default function Layout() {
@@ -45,12 +40,10 @@ export default function Layout() {
       <KeyboardProvider>
         <QueryClientProvider client={queryClient}>
           <AppThemeProvider>
-            <HeroUINativeProvider>
-              <RootNavigator />
-            </HeroUINativeProvider>
+            <RootNavigator />
           </AppThemeProvider>
         </QueryClientProvider>
       </KeyboardProvider>
     </GestureHandlerRootView>
-  );
+  )
 }

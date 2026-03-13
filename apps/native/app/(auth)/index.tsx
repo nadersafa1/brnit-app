@@ -1,25 +1,33 @@
-import { Redirect } from "expo-router";
-import { ActivityIndicator, View } from "react-native";
+import { Redirect } from 'expo-router'
+import { View, StyleSheet } from 'react-native'
 
-import { authClient } from "@/lib/auth-client";
+import { Spinner } from '@/components/ui'
+import { authClient } from '@/lib/auth-client'
+import { useColors } from '@/hooks/use-theme-color'
 
 export default function AuthScreen() {
-  const { data: session, isPending } = authClient.useSession();
+  const colors = useColors()
+  const { data: session, isPending } = authClient.useSession()
 
-  // Show loading while checking auth
   if (isPending) {
     return (
-      <View className="flex-1 items-center justify-center bg-app-bg">
-        <ActivityIndicator size="large" color="#FD6E20" />
+      <View style={[styles.container, { backgroundColor: colors.appBg }]}>
+        <Spinner size='lg' />
       </View>
-    );
+    )
   }
 
-  // Redirect to tabs if already signed in
   if (session?.user) {
-    return <Redirect href="/(tabs)" />;
+    return <Redirect href='/(tabs)' />
   }
 
-  // Redirect to login page by default
-  return <Redirect href="/(auth)/login" />;
+  return <Redirect href='/(auth)/login' />
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+})

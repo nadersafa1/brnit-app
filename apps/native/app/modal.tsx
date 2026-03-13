@@ -1,37 +1,73 @@
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { Button, Surface, useThemeColor } from "heroui-native";
-import { Text, View } from "react-native";
+import { Ionicons } from '@expo/vector-icons'
+import { router } from 'expo-router'
+import { View, StyleSheet } from 'react-native'
 
-import { Container } from "@/components/container";
+import { Container } from '@/components/container'
+import { Button, Surface, Text } from '@/components/ui'
+import { useColors } from '@/hooks/use-theme-color'
+import { spacing } from '@/theme/spacing'
+import { radii } from '@/theme/radii'
+
+function handleClose() {
+  router.back()
+}
 
 function Modal() {
-  const accentForegroundColor = useThemeColor("accent-foreground");
-
-  function handleClose() {
-    router.back();
-  }
+  const colors = useColors()
 
   return (
     <Container>
-      <View className="flex-1 justify-center items-center p-4">
-        <Surface variant="secondary" className="p-5 w-full max-w-sm rounded-lg">
-          <View className="items-center">
-            <View className="w-12 h-12 bg-accent rounded-lg items-center justify-center mb-3">
-              <Ionicons name="checkmark" size={24} color={accentForegroundColor} />
+      <View style={styles.content}>
+        <Surface variant='secondary' padding={5} radius='sm' style={styles.surface}>
+          <View style={styles.iconContainer}>
+            <View style={[styles.iconCircle, { backgroundColor: colors.accent }]}>
+              <Ionicons name='checkmark' size={24} color={colors.white} />
             </View>
-            <Text className="text-foreground font-medium text-lg mb-1">Modal Screen</Text>
-            <Text className="text-muted text-sm text-center mb-4">
+            <Text size='lg' weight='medium' style={styles.title}>
+              Modal Screen
+            </Text>
+            <Text size='sm' muted style={styles.description}>
               This is an example modal screen for dialogs and confirmations.
             </Text>
           </View>
-          <Button onPress={handleClose} className="w-full" size="sm">
-            <Button.Label>Close</Button.Label>
+          <Button onPress={handleClose} size='sm'>
+            Close
           </Button>
         </Surface>
       </View>
     </Container>
-  );
+  )
 }
 
-export default Modal;
+const styles = StyleSheet.create({
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing[4],
+  },
+  surface: {
+    width: '100%',
+    maxWidth: 320,
+  },
+  iconContainer: {
+    alignItems: 'center',
+  },
+  iconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: radii.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing[3],
+  },
+  title: {
+    marginBottom: spacing[1],
+  },
+  description: {
+    textAlign: 'center',
+    marginBottom: spacing[4],
+  },
+})
+
+export default Modal

@@ -2,11 +2,15 @@
 
 import { Redirect, useLocalSearchParams } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, Text, View } from 'react-native'
+import { View, StyleSheet } from 'react-native'
 
+import { Spinner, Text } from '@/components/ui'
 import { authClient } from '@/lib/auth-client'
+import { useColors } from '@/hooks/use-theme-color'
+import { spacing } from '@/theme/spacing'
 
 const AcceptInvitationScreen = () => {
+  const colors = useColors()
   const { invitationId } = useLocalSearchParams<{ invitationId?: string }>()
   const { data: session, isPending: sessionPending } = authClient.useSession()
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
@@ -19,7 +23,7 @@ const AcceptInvitationScreen = () => {
     setStatus('loading')
     authClient.organization
       .acceptInvitation({ invitationId })
-      .then(async (res) => {
+      .then(async res => {
         if (res.error) {
           setStatus('error')
           return
@@ -40,7 +44,7 @@ const AcceptInvitationScreen = () => {
   }, [session, sessionPending, invitationId, status])
 
   if (!invitationId) {
-    return <Redirect href="/(tabs)" />
+    return <Redirect href='/(tabs)' />
   }
 
   if (!sessionPending && !session?.user) {
@@ -55,19 +59,32 @@ const AcceptInvitationScreen = () => {
   }
 
   if (status === 'done') {
-    return <Redirect href="/(tabs)" />
+    return <Redirect href='/(tabs)' />
   }
 
   if (status === 'loading' || status === 'idle') {
     return (
-      <View className="flex-1 items-center justify-center bg-app-bg">
-        <ActivityIndicator size="large" color="#FD6E20" />
-        <Text className="mt-4 text-app-fg">Joining organization…</Text>
+      <View style={[styles.container, { backgroundColor: colors.appBg }]}>
+        <Spinner size='lg' />
+        <Text muted style={styles.text}>
+          Joining organization…
+        </Text>
       </View>
     )
   }
 
-  return <Redirect href="/(tabs)" />
+  return <Redirect href='/(tabs)' />
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  text: {
+    marginTop: spacing[4],
+  },
+})
 
 export default AcceptInvitationScreen

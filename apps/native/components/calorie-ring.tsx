@@ -1,38 +1,40 @@
-import { Text, View } from "react-native";
-import Svg, { Circle, Defs, LinearGradient, Stop } from "react-native-svg";
+import { View, StyleSheet } from 'react-native'
+import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg'
+import { Text } from '@/components/ui'
+import { useColors } from '@/hooks/use-theme-color'
+import { Colors } from '@/theme/colors'
 
 interface CalorieRingProps {
-  consumed: number;
-  goal: number;
-  size?: number;
+  consumed: number
+  goal: number
+  size?: number
 }
 
 export function CalorieRing({ consumed, goal, size = 180 }: CalorieRingProps) {
-  const strokeWidth = 14;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const progress = Math.min(consumed / goal, 1);
-  const strokeDashoffset = circumference * (1 - progress);
+  const colors = useColors()
+  const strokeWidth = 14
+  const radius = (size - strokeWidth) / 2
+  const circumference = 2 * Math.PI * radius
+  const progress = Math.min(consumed / goal, 1)
+  const strokeDashoffset = circumference * (1 - progress)
 
   return (
-    <View className="items-center justify-center">
+    <View style={styles.container}>
       <Svg width={size} height={size}>
         <Defs>
           <LinearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <Stop offset="0%" stopColor="#FD6E20" />
-            <Stop offset="100%" stopColor="#FF8F50" />
+            <Stop offset="0%" stopColor={Colors.light.accent} />
+            <Stop offset="100%" stopColor={Colors.light.accentLight} />
           </LinearGradient>
         </Defs>
-        {/* Background circle */}
         <Circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#F2F2F2"
+          stroke={Colors.light.surfaceAlt}
           strokeWidth={strokeWidth}
           fill="none"
         />
-        {/* Progress circle */}
         <Circle
           cx={size / 2}
           cy={size / 2}
@@ -47,11 +49,25 @@ export function CalorieRing({ consumed, goal, size = 180 }: CalorieRingProps) {
           origin={`${size / 2}, ${size / 2}`}
         />
       </Svg>
-      {/* Center content */}
-      <View className="absolute items-center">
-        <Text className="text-4xl font-bold text-ink">{consumed}</Text>
-        <Text className="text-sm font-medium text-muted">of {goal} kcal</Text>
+      <View style={styles.centerContent}>
+        <Text size="4xl" weight="bold">
+          {consumed}
+        </Text>
+        <Text size="sm" weight="medium" muted>
+          of {goal} kcal
+        </Text>
       </View>
     </View>
-  );
+  )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centerContent: {
+    position: 'absolute',
+    alignItems: 'center',
+  },
+})

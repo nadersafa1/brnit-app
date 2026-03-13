@@ -1,36 +1,67 @@
-import { Text, View } from "react-native";
+import { View, StyleSheet } from 'react-native'
+import { Text } from '@/components/ui'
+import { useColors } from '@/hooks/use-theme-color'
+import { Colors } from '@/theme/colors'
+import { spacing } from '@/theme/spacing'
+import { radii } from '@/theme/radii'
 
 interface MacroBarProps {
-  label: string;
-  current: number;
-  goal: number;
-  color: "accent" | "info" | "success";
-  unit?: string;
+  label: string
+  current: number
+  goal: number
+  color: 'accent' | 'info' | 'success'
+  unit?: string
 }
 
 const colorMap = {
-  accent: "bg-accent",
-  info: "bg-info",
-  success: "bg-success",
-};
+  accent: Colors.light.accent,
+  info: Colors.light.info,
+  success: Colors.light.success,
+}
 
-export function MacroBar({ label, current, goal, color, unit = "g" }: MacroBarProps) {
-  const progress = Math.min(current / goal, 1);
+export function MacroBar({ label, current, goal, color, unit = 'g' }: MacroBarProps) {
+  const colors = useColors()
+  const progress = Math.min(current / goal, 1)
 
   return (
-    <View className="flex-1">
-      <View className="flex-row justify-between mb-1">
-        <Text className="text-xs font-semibold text-subtle">{label}</Text>
-        <Text className="text-xs font-medium text-muted">
-          {current}/{goal}{unit}
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text size="xs" weight="semibold" style={{ color: colors.subtle }}>
+          {label}
+        </Text>
+        <Text size="xs" weight="medium" muted>
+          {current}/{goal}
+          {unit}
         </Text>
       </View>
-      <View className="h-2 rounded-full overflow-hidden bg-border">
+      <View style={[styles.track, { backgroundColor: colors.border }]}>
         <View
-          className={`h-full rounded-full ${colorMap[color]}`}
-          style={{ width: `${progress * 100}%` }}
+          style={[
+            styles.progress,
+            { backgroundColor: colorMap[color], width: `${progress * 100}%` },
+          ]}
         />
       </View>
     </View>
-  );
+  )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing[1],
+  },
+  track: {
+    height: 8,
+    borderRadius: radii.pill,
+    overflow: 'hidden',
+  },
+  progress: {
+    height: '100%',
+    borderRadius: radii.pill,
+  },
+})

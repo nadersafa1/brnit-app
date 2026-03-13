@@ -1,13 +1,17 @@
-import { FieldError } from 'heroui-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Link, Redirect } from 'expo-router'
 import { useState } from 'react'
-import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native'
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { AuthSuccessScreen, PasswordInput, PrimaryButton, TextInput } from '@/components'
+import { FieldError, Spinner, Text } from '@/components/ui'
 import { DEEP_LINKS } from '@/constants/deep-links'
+import { useColors } from '@/hooks/use-theme-color'
 import { authClient } from '@/lib/auth-client'
+import { radii } from '@/theme/radii'
+import { shadows } from '@/theme/shadows'
+import { spacing } from '@/theme/spacing'
 
 interface PasswordRequirement {
   label: string
@@ -16,6 +20,7 @@ interface PasswordRequirement {
 
 export default function SignUpScreen() {
   const insets = useSafeAreaInsets()
+  const colors = useColors()
   const { data: session, isPending } = authClient.useSession()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -25,38 +30,23 @@ export default function SignUpScreen() {
   const [error, setError] = useState<string | null>(null)
   const [sent, setSent] = useState(false)
 
-  // Show loading while checking auth
   if (isPending) {
     return (
-      <View className='flex-1 items-center justify-center bg-app-bg'>
-        <ActivityIndicator size='large' color='#FD6E20' />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.appBg }]}>
+        <Spinner size='lg' />
       </View>
     )
   }
 
-  // Redirect to tabs if already signed in
   if (session?.user) {
     return <Redirect href='/(tabs)' />
   }
 
-  // Password requirements validation
   const passwordRequirements: PasswordRequirement[] = [
-    {
-      label: 'Minimum 8 characters',
-      met: password.length >= 8,
-    },
-    {
-      label: 'One number required',
-      met: /\d/.test(password),
-    },
-    {
-      label: 'No spaces allowed',
-      met: !/\s/.test(password),
-    },
-    {
-      label: 'Add a symbol (e.g., @, #, !)',
-      met: /[!@#$%^&*(),.?":{}|<>]/.test(password),
-    },
+    { label: 'Minimum 8 characters', met: password.length >= 8 },
+    { label: 'One number required', met: /\d/.test(password) },
+    { label: 'No spaces allowed', met: !/\s/.test(password) },
+    { label: 'Add a symbol (e.g., @, #, !)', met: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
   ]
 
   const allRequirementsMet = passwordRequirements.every(req => req.met)
@@ -67,7 +57,6 @@ export default function SignUpScreen() {
       setError('Please meet all password requirements')
       return
     }
-
     if (!passwordsMatch) {
       setError('Passwords do not match')
       return
@@ -77,12 +66,7 @@ export default function SignUpScreen() {
     setError(null)
 
     await authClient.signUp.email(
-      {
-        name,
-        email,
-        password,
-        callbackURL: DEEP_LINKS.root,
-      },
+      { name, email, password, callbackURL: DEEP_LINKS.root },
       {
         onError(error) {
           setError(error.error?.message || 'Failed to sign up')
@@ -106,10 +90,7 @@ export default function SignUpScreen() {
     setIsLoading(true)
     setError(null)
     await authClient.signIn.social(
-      {
-        provider: 'google',
-        callbackURL: '/(tabs)',
-      },
+      { provider: 'google', callbackURL: '/(tabs)' },
       {
         onError(err) {
           setError(err.error?.message || 'Google sign-in failed')
@@ -127,7 +108,6 @@ export default function SignUpScreen() {
 
   function handleAppleLogin() {
     console.log('Apple login pressed')
-    // TODO: Implement Apple OAuth
   }
 
   if (sent) {
@@ -148,41 +128,32 @@ export default function SignUpScreen() {
 
   return (
     <ScrollView
-      className='flex-1 bg-app-bg'
-      contentContainerStyle={{
-        paddingTop: insets.top + 20,
-        paddingBottom: insets.bottom + 20,
-        paddingHorizontal: 24,
-        minHeight: '100%',
-      }}
+      style={[styles.scrollView, { backgroundColor: colors.appBg }]}
+      contentContainerStyle={[
+        styles.contentContainer,
+        { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 },
+      ]}
     >
-      <View className='flex-1 justify-center'>
-        {/* Decorative Icon */}
-        <View className='items-center mb-8'>
-          <View className='w-24 h-24 rounded-full bg-pastel-purple items-center justify-center'>
-            <Ionicons name='shield-checkmark' size={48} color='#FFFFFF' />
+      <View style={styles.mainContent}>
+        <View style={styles.iconContainer}>
+          <View style={[styles.iconCircle, { backgroundColor: colors.pastelPurple }]}>
+            <Ionicons name='shield-checkmark' size={48} color={colors.white} />
           </View>
         </View>
 
-        {/* Modal-like Card */}
-        <View
-          className='bg-card rounded-lg p-6'
-          style={{
-            shadowColor: 'rgba(1, 4, 9, 0.12)',
-            shadowOffset: { width: 0, height: 6 },
-            shadowOpacity: 1,
-            shadowRadius: 18,
-            elevation: 8,
-          }}
-        >
-          <Text className='text-ink text-2xl font-bold mb-2'>Create Account</Text>
-          <Text className='text-muted text-sm mb-6'>Set a strong password to keep your account safe.</Text>
+        <View style={[styles.card, { backgroundColor: colors.card }, shadows.lg]}>
+          <Text size='2xl' weight='bold' style={styles.title}>
+            Create Account
+          </Text>
+          <Text size='sm' muted style={styles.subtitle}>
+            Set a strong password to keep your account safe.
+          </Text>
 
-          <FieldError isInvalid={!!error} className='mb-4'>
-            {error}
-          </FieldError>
+          <View style={styles.errorContainer}>
+            <FieldError error={error ?? undefined} isInvalid={!!error} />
+          </View>
 
-          <View className='gap-4'>
+          <View style={styles.form}>
             <TextInput
               value={name}
               onChangeText={setName}
@@ -216,17 +187,16 @@ export default function SignUpScreen() {
               autoComplete='password-new'
             />
 
-            {/* Password Requirements */}
             {password.length > 0 && (
-              <View className='gap-2 mt-2'>
+              <View style={styles.requirements}>
                 {passwordRequirements.map((requirement, index) => (
-                  <View key={index} className='flex-row items-center gap-2'>
+                  <View key={`${requirement.label}-${index}`} style={styles.requirementRow}>
                     <Ionicons
                       name={requirement.met ? 'checkmark-circle' : 'close-circle'}
                       size={16}
-                      color={requirement.met ? '#35C48B' : '#FF4D4F'}
+                      color={requirement.met ? colors.success : colors.danger}
                     />
-                    <Text className='text-xs' style={{ color: requirement.met ? '#35C48B' : '#FF4D4F' }}>
+                    <Text size='xs' style={{ color: requirement.met ? colors.success : colors.danger }}>
                       {requirement.label}
                     </Text>
                   </View>
@@ -234,40 +204,24 @@ export default function SignUpScreen() {
               </View>
             )}
 
-            {/* Social Login Buttons */}
-            <View className='flex-row gap-3 mt-2'>
+            <View style={styles.socialButtons}>
               <TouchableOpacity
                 onPress={handleGoogleLogin}
                 disabled={isLoading}
-                className='bg-card rounded-full h-11 flex-1 flex-row items-center justify-center px-4'
-                style={{
-                  shadowColor: 'rgba(1, 4, 9, 0.12)',
-                  shadowOffset: { width: 0, height: 6 },
-                  shadowOpacity: 1,
-                  shadowRadius: 18,
-                  elevation: 4,
-                }}
+                style={[styles.socialButton, { backgroundColor: colors.card }, shadows.md]}
               >
-                <Ionicons name='logo-google' size={20} color='#3A3A3A' />
+                <Ionicons name='logo-google' size={20} color={colors.subtle} />
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={handleAppleLogin}
-                className='bg-card rounded-full h-11 flex-1 flex-row items-center justify-center px-4'
-                style={{
-                  shadowColor: 'rgba(1, 4, 9, 0.12)',
-                  shadowOffset: { width: 0, height: 6 },
-                  shadowOpacity: 1,
-                  shadowRadius: 18,
-                  elevation: 4,
-                }}
+                style={[styles.socialButton, { backgroundColor: colors.card }, shadows.md]}
               >
-                <Ionicons name='logo-apple' size={20} color='#3A3A3A' />
+                <Ionicons name='logo-apple' size={20} color={colors.subtle} />
               </TouchableOpacity>
             </View>
 
-            {/* Primary Sign Up Button */}
-            <View className='mt-2'>
+            <View style={styles.buttonContainer}>
               <PrimaryButton
                 onPress={handleSignUp}
                 isLoading={isLoading}
@@ -277,12 +231,15 @@ export default function SignUpScreen() {
               </PrimaryButton>
             </View>
 
-            {/* Navigation Link */}
-            <View className='flex-row justify-center items-center mt-4'>
-              <Text className='text-muted text-sm'>Already have an account? </Text>
+            <View style={styles.linkContainer}>
+              <Text size='sm' muted>
+                Already have an account?{' '}
+              </Text>
               <Link href='/(auth)/login' asChild>
                 <TouchableOpacity>
-                  <Text className='text-accent font-medium text-sm'>Sign in</Text>
+                  <Text size='sm' weight='medium' accent>
+                    Sign in
+                  </Text>
                 </TouchableOpacity>
               </Link>
             </View>
@@ -292,3 +249,81 @@ export default function SignUpScreen() {
     </ScrollView>
   )
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  contentContainer: {
+    paddingHorizontal: spacing[6],
+    minHeight: '100%',
+  },
+  mainContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  iconContainer: {
+    alignItems: 'center',
+    marginBottom: spacing[8],
+  },
+  iconCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  card: {
+    borderRadius: radii.sm,
+    padding: spacing[6],
+  },
+  title: {
+    marginBottom: spacing[2],
+  },
+  subtitle: {
+    marginBottom: spacing[6],
+  },
+  errorContainer: {
+    marginBottom: spacing[4],
+  },
+  form: {
+    gap: spacing[4],
+  },
+  requirements: {
+    gap: spacing[2],
+    marginTop: spacing[2],
+  },
+  requirementRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+  socialButtons: {
+    flexDirection: 'row',
+    gap: spacing[3],
+    marginTop: spacing[2],
+  },
+  socialButton: {
+    flex: 1,
+    height: 44,
+    borderRadius: radii.pill,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing[4],
+  },
+  buttonContainer: {
+    marginTop: spacing[2],
+  },
+  linkContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: spacing[4],
+  },
+})
