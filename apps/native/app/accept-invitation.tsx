@@ -2,11 +2,15 @@
 
 import { Redirect, useLocalSearchParams } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, Text, View } from 'react-native'
+import { ActivityIndicator, View, StyleSheet } from 'react-native'
 
+import { Text } from '@/components/ui'
 import { authClient } from '@/lib/auth-client'
+import { useColors } from '@/hooks/use-theme-color'
+import { spacing } from '@/theme/spacing'
 
 const AcceptInvitationScreen = () => {
+  const colors = useColors()
   const { invitationId } = useLocalSearchParams<{ invitationId?: string }>()
   const { data: session, isPending: sessionPending } = authClient.useSession()
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
@@ -60,14 +64,27 @@ const AcceptInvitationScreen = () => {
 
   if (status === 'loading' || status === 'idle') {
     return (
-      <View className="flex-1 items-center justify-center bg-app-bg">
-        <ActivityIndicator size="large" color="#FD6E20" />
-        <Text className="mt-4 text-app-fg">Joining organization…</Text>
+      <View style={[styles.container, { backgroundColor: colors.appBg }]}>
+        <ActivityIndicator size="large" color={colors.accent} />
+        <Text muted style={styles.text}>
+          Joining organization…
+        </Text>
       </View>
     )
   }
 
   return <Redirect href="/(tabs)" />
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  text: {
+    marginTop: spacing[4],
+  },
+})
 
 export default AcceptInvitationScreen

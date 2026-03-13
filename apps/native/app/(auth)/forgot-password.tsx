@@ -1,16 +1,21 @@
-import { FieldError } from 'heroui-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Link, Redirect } from 'expo-router'
 import { useState } from 'react'
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native'
+import { ScrollView, TouchableOpacity, View, StyleSheet } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { AuthSuccessScreen, PrimaryButton, TextInput } from '@/components'
+import { FieldError, Text } from '@/components/ui'
 import { DEEP_LINKS } from '@/constants/deep-links'
 import { authClient } from '@/lib/auth-client'
+import { useColors } from '@/hooks/use-theme-color'
+import { spacing } from '@/theme/spacing'
+import { radii } from '@/theme/radii'
+import { shadows } from '@/theme/shadows'
 
 export default function ForgotPasswordScreen() {
   const insets = useSafeAreaInsets()
+  const colors = useColors()
   const { data: session, isPending } = authClient.useSession()
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -22,7 +27,7 @@ export default function ForgotPasswordScreen() {
   }
 
   if (session?.user) {
-    return <Redirect href='/(tabs)' />
+    return <Redirect href="/(tabs)" />
   }
 
   async function handleSendResetLink() {
@@ -49,11 +54,11 @@ export default function ForgotPasswordScreen() {
   if (sent) {
     return (
       <AuthSuccessScreen
-        icon='mail-open-outline'
-        title='Check your email'
+        icon="mail-open-outline"
+        title="Check your email"
         description="If an account exists for that email, we've sent a link to reset your password."
-        backHref='/(auth)/login'
-        backLabel='Back to sign in'
+        backHref="/(auth)/login"
+        backLabel="Back to sign in"
         contentContainerStyle={{
           paddingTop: insets.top + 20,
           paddingBottom: insets.bottom + 20,
@@ -65,62 +70,53 @@ export default function ForgotPasswordScreen() {
 
   return (
     <ScrollView
-      className='flex-1 bg-app-bg'
-      contentContainerStyle={{
-        paddingTop: insets.top + 20,
-        paddingBottom: insets.bottom + 20,
-        paddingHorizontal: 24,
-        minHeight: '100%',
-        justifyContent: 'center',
-      }}
+      style={[styles.scrollView, { backgroundColor: colors.appBg }]}
+      contentContainerStyle={[
+        styles.contentContainer,
+        { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 },
+      ]}
     >
-      <View className='items-center mb-8'>
-        <View className='w-24 h-24 rounded-full bg-pastel-purple items-center justify-center'>
-          <Ionicons name='key-outline' size={48} color='#FFFFFF' />
+      <View style={styles.iconContainer}>
+        <View style={[styles.iconCircle, { backgroundColor: colors.pastelPurple }]}>
+          <Ionicons name="key-outline" size={48} color={colors.white} />
         </View>
       </View>
-      <View
-        className='bg-card rounded-lg p-6'
-        style={{
-          shadowColor: 'rgba(1, 4, 9, 0.12)',
-          shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 1,
-          shadowRadius: 18,
-          elevation: 8,
-        }}
-      >
-        <Text className='text-ink text-2xl font-bold mb-2'>Forgot password</Text>
-        <Text className='text-muted text-sm mb-6'>
+
+      <View style={[styles.card, { backgroundColor: colors.card }, shadows.lg]}>
+        <Text size="2xl" weight="bold" style={styles.title}>
+          Forgot password
+        </Text>
+        <Text size="sm" muted style={styles.subtitle}>
           Enter your email and we'll send you a link to reset your password.
         </Text>
 
-        <FieldError isInvalid={!!error} className='mb-4'>
-          {error}
-        </FieldError>
+        <View style={styles.errorContainer}>
+          <FieldError error={error ?? undefined} isInvalid={!!error} />
+        </View>
 
-        <View className='gap-4'>
+        <View style={styles.form}>
           <TextInput
             value={email}
             onChangeText={setEmail}
-            placeholder='Email'
-            icon='mail-outline'
-            keyboardType='email-address'
-            autoCapitalize='none'
-            autoComplete='email'
+            placeholder="Email"
+            icon="mail-outline"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
           />
 
-          <PrimaryButton
-            onPress={handleSendResetLink}
-            isLoading={isLoading}
-            className='mt-2'
-          >
-            Send reset link
-          </PrimaryButton>
+          <View style={styles.buttonContainer}>
+            <PrimaryButton onPress={handleSendResetLink} isLoading={isLoading}>
+              Send reset link
+            </PrimaryButton>
+          </View>
 
-          <View className='flex-row justify-center items-center mt-4'>
-            <Link href='/(auth)/login' asChild>
+          <View style={styles.linkContainer}>
+            <Link href="/(auth)/login" asChild>
               <TouchableOpacity>
-                <Text className='text-accent font-medium text-sm'>Back to sign in</Text>
+                <Text size="sm" weight="medium" accent>
+                  Back to sign in
+                </Text>
               </TouchableOpacity>
             </Link>
           </View>
@@ -129,3 +125,50 @@ export default function ForgotPasswordScreen() {
     </ScrollView>
   )
 }
+
+const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+  },
+  contentContainer: {
+    paddingHorizontal: spacing[6],
+    minHeight: '100%',
+    justifyContent: 'center',
+  },
+  iconContainer: {
+    alignItems: 'center',
+    marginBottom: spacing[8],
+  },
+  iconCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  card: {
+    borderRadius: radii.sm,
+    padding: spacing[6],
+  },
+  title: {
+    marginBottom: spacing[2],
+  },
+  subtitle: {
+    marginBottom: spacing[6],
+  },
+  errorContainer: {
+    marginBottom: spacing[4],
+  },
+  form: {
+    gap: spacing[4],
+  },
+  buttonContainer: {
+    marginTop: spacing[2],
+  },
+  linkContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: spacing[4],
+  },
+})

@@ -1,9 +1,10 @@
-import { Button, FieldError, Spinner, Surface } from "heroui-native";
-import { useState } from "react";
-import { Text, View } from "react-native";
+import { useState } from 'react'
+import { View, StyleSheet } from 'react-native'
 
-import { authClient } from "@/lib/auth-client";
-import { PasswordInput, TextInput } from "@/components";
+import { authClient } from '@/lib/auth-client'
+import { PasswordInput, TextInput } from '@/components'
+import { Button, Surface, FieldError, Text } from '@/components/ui'
+import { spacing } from '@/theme/spacing'
 
 function signUpHandler({
   name,
@@ -15,17 +16,17 @@ function signUpHandler({
   setEmail,
   setPassword,
 }: {
-  name: string;
-  email: string;
-  password: string;
-  setError: (error: string | null) => void;
-  setIsLoading: (loading: boolean) => void;
-  setName: (name: string) => void;
-  setEmail: (email: string) => void;
-  setPassword: (password: string) => void;
+  name: string
+  email: string
+  password: string
+  setError: (error: string | null) => void
+  setIsLoading: (loading: boolean) => void
+  setName: (name: string) => void
+  setEmail: (email: string) => void
+  setPassword: (password: string) => void
 }) {
-  setIsLoading(true);
-  setError(null);
+  setIsLoading(true)
+  setError(null)
 
   authClient.signUp.email(
     {
@@ -35,27 +36,27 @@ function signUpHandler({
     },
     {
       onError(error) {
-        setError(error.error?.message || "Failed to sign up");
-        setIsLoading(false);
+        setError(error.error?.message || 'Failed to sign up')
+        setIsLoading(false)
       },
       onSuccess() {
-        setName("");
-        setEmail("");
-        setPassword("");
+        setName('')
+        setEmail('')
+        setPassword('')
       },
       onFinished() {
-        setIsLoading(false);
+        setIsLoading(false)
       },
-    },
-  );
+    }
+  )
 }
 
 export function SignUp() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   function handlePress() {
     signUpHandler({
@@ -67,29 +68,36 @@ export function SignUp() {
       setName,
       setEmail,
       setPassword,
-    });
+    })
   }
 
   return (
-    <Surface variant="secondary" className="p-4 rounded-lg">
-      <Text className="text-foreground font-medium mb-4">Create Account</Text>
+    <Surface variant="secondary" padding={4} radius="sm">
+      <Text weight="medium" style={styles.title}>
+        Create Account
+      </Text>
 
-      <FieldError isInvalid={!!error} className="mb-3">
-        {error}
-      </FieldError>
+      <View style={styles.errorContainer}>
+        <FieldError error={error ?? undefined} isInvalid={!!error} />
+      </View>
 
-      <View className="gap-3">
-        <View className="gap-1">
-          <Text className="text-foreground text-sm font-medium">Name</Text>
+      <View style={styles.form}>
+        <View style={styles.field}>
+          <Text size="sm" weight="medium">
+            Name
+          </Text>
           <TextInput
             value={name}
             onChangeText={setName}
             placeholder="John Doe"
+            icon="person-outline"
           />
         </View>
 
-        <View className="gap-1">
-          <Text className="text-foreground text-sm font-medium">Email</Text>
+        <View style={styles.field}>
+          <Text size="sm" weight="medium">
+            Email
+          </Text>
           <TextInput
             value={email}
             onChangeText={setEmail}
@@ -99,8 +107,10 @@ export function SignUp() {
           />
         </View>
 
-        <View className="gap-1">
-          <Text className="text-foreground text-sm font-medium">Password</Text>
+        <View style={styles.field}>
+          <Text size="sm" weight="medium">
+            Password
+          </Text>
           <PasswordInput
             value={password}
             onChangeText={setPassword}
@@ -108,14 +118,30 @@ export function SignUp() {
           />
         </View>
 
-        <Button onPress={handlePress} isDisabled={isLoading} className="mt-1">
-          {isLoading ? (
-            <Spinner size="sm" color="default" />
-          ) : (
-            <Button.Label>Create Account</Button.Label>
-          )}
-        </Button>
+        <View style={styles.buttonContainer}>
+          <Button onPress={handlePress} loading={isLoading} disabled={isLoading}>
+            Create Account
+          </Button>
+        </View>
       </View>
     </Surface>
-  );
+  )
 }
+
+const styles = StyleSheet.create({
+  title: {
+    marginBottom: spacing[4],
+  },
+  errorContainer: {
+    marginBottom: spacing[3],
+  },
+  form: {
+    gap: spacing[3],
+  },
+  field: {
+    gap: spacing[1],
+  },
+  buttonContainer: {
+    marginTop: spacing[1],
+  },
+})

@@ -1,24 +1,19 @@
-import { Ionicons } from "@expo/vector-icons";
-import { Link, type Href } from "expo-router";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
-
-import type { ComponentProps } from "react";
-
-const CARD_STYLE = {
-  shadowColor: "rgba(1, 4, 9, 0.12)",
-  shadowOffset: { width: 0, height: 6 },
-  shadowOpacity: 1,
-  shadowRadius: 18,
-  elevation: 8,
-} as const;
+import { Ionicons } from '@expo/vector-icons'
+import { Link, type Href } from 'expo-router'
+import { ScrollView, TouchableOpacity, View, StyleSheet, ScrollViewProps } from 'react-native'
+import { Text } from '@/components/ui'
+import { useColors } from '@/hooks/use-theme-color'
+import { spacing } from '@/theme/spacing'
+import { radii } from '@/theme/radii'
+import { shadows } from '@/theme/shadows'
 
 export interface AuthSuccessScreenProps {
-  icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  description: string;
-  backHref: Href;
-  backLabel: string;
-  contentContainerStyle?: ComponentProps<typeof ScrollView>["contentContainerStyle"];
+  icon: keyof typeof Ionicons.glyphMap
+  title: string
+  description: string
+  backHref: Href
+  backLabel: string
+  contentContainerStyle?: ScrollViewProps['contentContainerStyle']
 }
 
 export function AuthSuccessScreen({
@@ -29,32 +24,68 @@ export function AuthSuccessScreen({
   backLabel,
   contentContainerStyle,
 }: AuthSuccessScreenProps) {
+  const colors = useColors()
+
   return (
     <ScrollView
-      className="flex-1 bg-app-bg"
-      contentContainerStyle={[
-        {
-          paddingHorizontal: 24,
-          minHeight: "100%",
-          justifyContent: "center",
-        },
-        contentContainerStyle,
-      ]}
+      style={[styles.scrollView, { backgroundColor: colors.appBg }]}
+      contentContainerStyle={[styles.contentContainer, contentContainerStyle]}
     >
-      <View className="items-center mb-8">
-        <View className="w-24 h-24 rounded-full bg-pastel-purple items-center justify-center">
-          <Ionicons name={icon} size={48} color="#FFFFFF" />
+      <View style={styles.iconContainer}>
+        <View style={[styles.iconCircle, { backgroundColor: colors.pastelPurple }]}>
+          <Ionicons name={icon} size={48} color={colors.white} />
         </View>
       </View>
-      <View className="bg-card rounded-lg p-6" style={CARD_STYLE}>
-        <Text className="text-ink text-2xl font-bold mb-2">{title}</Text>
-        <Text className="text-muted text-sm mb-6">{description}</Text>
+      <View style={[styles.card, { backgroundColor: colors.card }, shadows.lg]}>
+        <Text size="2xl" weight="bold" style={styles.title}>
+          {title}
+        </Text>
+        <Text size="sm" muted style={styles.description}>
+          {description}
+        </Text>
         <Link href={backHref} asChild>
           <TouchableOpacity>
-            <Text className="text-accent font-medium text-sm text-center">{backLabel}</Text>
+            <Text size="sm" weight="medium" accent style={styles.link}>
+              {backLabel}
+            </Text>
           </TouchableOpacity>
         </Link>
       </View>
     </ScrollView>
-  );
+  )
 }
+
+const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+  },
+  contentContainer: {
+    paddingHorizontal: spacing[6],
+    minHeight: '100%',
+    justifyContent: 'center',
+  },
+  iconContainer: {
+    alignItems: 'center',
+    marginBottom: spacing[8],
+  },
+  iconCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  card: {
+    borderRadius: radii.sm,
+    padding: spacing[6],
+  },
+  title: {
+    marginBottom: spacing[2],
+  },
+  description: {
+    marginBottom: spacing[6],
+  },
+  link: {
+    textAlign: 'center',
+  },
+})

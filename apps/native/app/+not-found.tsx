@@ -1,27 +1,57 @@
-import { Link, Stack } from "expo-router";
-import { Button, Surface } from "heroui-native";
-import { Text, View } from "react-native";
+import { Link, Stack } from 'expo-router'
+import { View, StyleSheet } from 'react-native'
 
-import { Container } from "@/components/container";
+import { Container } from '@/components/container'
+import { Button, Surface, Text } from '@/components/ui'
+import { spacing } from '@/theme/spacing'
 
 export default function NotFoundScreen() {
   return (
     <>
-      <Stack.Screen options={{ title: "Not Found" }} />
+      <Stack.Screen options={{ title: 'Not Found' }} />
       <Container>
-        <View className="flex-1 justify-center items-center p-4">
-          <Surface variant="secondary" className="items-center p-6 max-w-sm rounded-lg">
-            <Text className="text-4xl mb-3">🤔</Text>
-            <Text className="text-foreground font-medium text-lg mb-1">Page Not Found</Text>
-            <Text className="text-muted text-sm text-center mb-4">
+        <View style={styles.content}>
+          <Surface variant="secondary" padding={6} radius="sm" style={styles.surface}>
+            <Text size="4xl" style={styles.emoji}>
+              🤔
+            </Text>
+            <Text size="lg" weight="medium" style={styles.title}>
+              Page Not Found
+            </Text>
+            <Text size="sm" muted style={styles.description}>
               The page you're looking for doesn't exist.
             </Text>
             <Link href="/" asChild>
-              <Button size="sm">Go Home</Button>
+              <Button size="sm" onPress={() => {}}>
+                Go Home
+              </Button>
             </Link>
           </Surface>
         </View>
       </Container>
     </>
-  );
+  )
 }
+
+const styles = StyleSheet.create({
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing[4],
+  },
+  surface: {
+    alignItems: 'center',
+    maxWidth: 320,
+  },
+  emoji: {
+    marginBottom: spacing[3],
+  },
+  title: {
+    marginBottom: spacing[1],
+  },
+  description: {
+    textAlign: 'center',
+    marginBottom: spacing[4],
+  },
+})

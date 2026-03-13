@@ -1,22 +1,32 @@
-import { Redirect } from "expo-router";
-import { ActivityIndicator, View } from "react-native";
+import { Redirect } from 'expo-router'
+import { ActivityIndicator, View, StyleSheet } from 'react-native'
 
-import { authClient } from "@/lib/auth-client";
+import { authClient } from '@/lib/auth-client'
+import { useColors } from '@/hooks/use-theme-color'
 
 export default function Index() {
-  const { data: session, isPending } = authClient.useSession();
+  const colors = useColors()
+  const { data: session, isPending } = authClient.useSession()
 
   if (isPending) {
     return (
-      <View className="flex-1 items-center justify-center bg-app-bg">
-        <ActivityIndicator size="large" color="#FD6E20" />
+      <View style={[styles.container, { backgroundColor: colors.appBg }]}>
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
-    );
+    )
   }
 
   if (session?.user) {
-    return <Redirect href="/(tabs)" />;
+    return <Redirect href="/(tabs)" />
   }
 
-  return <Redirect href="/(auth)" />;
+  return <Redirect href="/(auth)" />
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+})

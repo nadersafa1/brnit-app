@@ -1,38 +1,62 @@
-import dayjs from "dayjs";
-import { Ionicons } from "@expo/vector-icons";
-import { Pressable, Text, View } from "react-native";
+import dayjs from 'dayjs'
+import { Pressable, View, StyleSheet } from 'react-native'
+import { Text } from '@/components/ui'
+import { useColors } from '@/hooks/use-theme-color'
+import { radii } from '@/theme/radii'
+import { spacing } from '@/theme/spacing'
 
 interface DayPillProps {
-  day: string;
-  date: Date;
-  isSelected?: boolean;
-  isCompleted?: boolean;
-  onPress?: () => void;
+  day: string
+  date: Date
+  isSelected?: boolean
+  isCompleted?: boolean
+  onPress?: () => void
 }
 
 export function DayPill({ day, date, isSelected, onPress }: DayPillProps) {
-  const dateNumber = dayjs(date).date();
+  const colors = useColors()
+  const dateNumber = dayjs(date).date()
 
   return (
-    <Pressable className="items-center" onPress={onPress} style={{ flex: 1 }}>
+    <Pressable style={styles.container} onPress={onPress}>
       <Text
-        className={`text-xs font-medium mb-1 ${isSelected ? "text-accent" : "text-muted"}`}
+        size="xs"
+        weight="medium"
+        style={[styles.dayLabel, { color: isSelected ? colors.accent : colors.muted }]}
       >
         {day}
       </Text>
       <View
-        className={`w-9 h-9 rounded-full items-center justify-center ${
-          isSelected ? "bg-accent" : "bg-surface-alt"
-        }`}
+        style={[
+          styles.pill,
+          { backgroundColor: isSelected ? colors.accent : colors.surfaceAlt },
+        ]}
       >
         <Text
-          className={`text-sm font-semibold ${
-            isSelected ? "text-white" : "text-subtle"
-          }`}
+          size="sm"
+          weight="semibold"
+          style={{ color: isSelected ? colors.white : colors.subtle }}
         >
           {dateNumber}
         </Text>
       </View>
     </Pressable>
-  );
+  )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  dayLabel: {
+    marginBottom: spacing[1],
+  },
+  pill: {
+    width: 36,
+    height: 36,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+})

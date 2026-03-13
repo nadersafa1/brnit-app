@@ -1,94 +1,192 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { Alert, Pressable, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from '@expo/vector-icons'
+import { useRouter } from 'expo-router'
+import { Alert, Pressable, View, StyleSheet } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { BottomNav } from "@/components/bottom-nav";
-import { authClient } from "@/lib/auth-client";
+import { BottomNav } from '@/components/bottom-nav'
+import { Text } from '@/components/ui'
+import { authClient } from '@/lib/auth-client'
+import { useColors } from '@/hooks/use-theme-color'
+import { spacing } from '@/theme/spacing'
+import { radii } from '@/theme/radii'
+import { shadows } from '@/theme/shadows'
 
 export default function Profile() {
-  const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const { data: session } = authClient.useSession();
+  const insets = useSafeAreaInsets()
+  const colors = useColors()
+  const router = useRouter()
+  const { data: session } = authClient.useSession()
 
-  const userName = session?.user?.name || "User";
-  const userEmail = session?.user?.email || "";
+  const userName = session?.user?.name || 'User'
+  const userEmail = session?.user?.email || ''
 
   const handleSignOut = () => {
     Alert.alert(
-      "Sign Out",
-      "Are you sure you want to sign out?",
+      'Sign Out',
+      'Are you sure you want to sign out?',
       [
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Sign Out",
-          style: "destructive",
+          text: 'Sign Out',
+          style: 'destructive',
           onPress: async () => {
-            await authClient.signOut();
-            router.replace("/(auth)");
+            await authClient.signOut()
+            router.replace('/(auth)')
           },
         },
       ],
       { cancelable: true }
-    );
-  };
+    )
+  }
 
   return (
-    <View className="flex-1 bg-app-bg">
-      {/* Decorative Corner Blob */}
-      <View className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-pastel-purple" />
+    <View style={[styles.container, { backgroundColor: colors.appBg }]}>
+      <View style={[styles.decorativeBlob, { backgroundColor: colors.pastelPurple }]} />
 
       <View
-        className="flex-1 px-4"
-        style={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 96 }}
+        style={[
+          styles.content,
+          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 96 },
+        ]}
       >
-        <Text className="text-2xl font-bold text-ink mb-6">Profile</Text>
+        <Text size="2xl" weight="bold" style={styles.title}>
+          Profile
+        </Text>
 
-        {/* Profile Header */}
-        <View className="bg-card rounded-xl p-5 shadow-md mb-4 items-center">
-          <View className="w-20 h-20 rounded-full bg-accent items-center justify-center mb-3">
-            <Text className="text-3xl font-bold text-white">
+        <View style={[styles.profileCard, { backgroundColor: colors.card }, shadows.md]}>
+          <View style={[styles.avatarLarge, { backgroundColor: colors.accent }]}>
+            <Text size="3xl" weight="bold" style={{ color: colors.white }}>
               {userName.charAt(0).toUpperCase()}
             </Text>
           </View>
-          <Text className="text-xl font-bold text-ink">{userName}</Text>
-          <Text className="text-sm text-muted">{userEmail}</Text>
+          <Text size="xl" weight="bold">
+            {userName}
+          </Text>
+          <Text size="sm" muted>
+            {userEmail}
+          </Text>
         </View>
 
-        {/* Settings List */}
-        <View className="bg-card rounded-xl shadow-md overflow-hidden">
-          <SettingsRow icon="person-outline" label="Edit Profile" />
-          <SettingsRow icon="notifications-outline" label="Notifications" />
-          <SettingsRow icon="fitness-outline" label="Goals" />
-          <SettingsRow icon="help-circle-outline" label="Help & Support" />
+        <View style={[styles.settingsCard, { backgroundColor: colors.card }, shadows.md]}>
+          <SettingsRow icon="person-outline" label="Edit Profile" colors={colors} />
+          <SettingsRow icon="notifications-outline" label="Notifications" colors={colors} />
+          <SettingsRow icon="fitness-outline" label="Goals" colors={colors} />
+          <SettingsRow icon="help-circle-outline" label="Help & Support" colors={colors} isLast />
         </View>
 
-        {/* Sign Out */}
         <Pressable
-          className="bg-card rounded-xl p-4 mt-4 shadow-md flex-row items-center justify-center active:scale-[0.98]"
+          style={({ pressed }) => [
+            styles.signOutButton,
+            { backgroundColor: colors.card, transform: [{ scale: pressed ? 0.98 : 1 }] },
+            shadows.md,
+          ]}
           onPress={handleSignOut}
         >
-          <Ionicons name="log-out-outline" size={20} color="#FF4D4F" />
-          <Text className="text-base font-semibold text-danger ml-2">Sign Out</Text>
+          <Ionicons name="log-out-outline" size={20} color={colors.danger} />
+          <Text size="base" weight="semibold" danger style={styles.signOutText}>
+            Sign Out
+          </Text>
         </Pressable>
       </View>
 
       <BottomNav activeTab="profile" />
     </View>
-  );
+  )
 }
 
-function SettingsRow({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; label: string }) {
+function SettingsRow({
+  icon,
+  label,
+  colors,
+  isLast,
+}: {
+  icon: keyof typeof Ionicons.glyphMap
+  label: string
+  colors: ReturnType<typeof useColors>
+  isLast?: boolean
+}) {
   return (
-    <Pressable className="flex-row items-center px-4 py-4 border-b border-border active:bg-surface-alt">
-      <View className="w-9 h-9 rounded-xl bg-surface-alt items-center justify-center">
-        <Ionicons name={icon} size={18} color="#3A3A3A" />
+    <Pressable
+      style={({ pressed }) => [
+        styles.settingsRow,
+        !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border },
+        pressed && { backgroundColor: colors.surfaceAlt },
+      ]}
+    >
+      <View style={[styles.settingsIcon, { backgroundColor: colors.surfaceAlt }]}>
+        <Ionicons name={icon} size={18} color={colors.subtle} />
       </View>
-      <Text className="flex-1 text-base font-medium text-ink ml-3">{label}</Text>
-      <Ionicons name="chevron-forward" size={18} color="#6B6B6B" />
+      <Text size="base" weight="medium" style={styles.settingsLabel}>
+        {label}
+      </Text>
+      <Ionicons name="chevron-forward" size={18} color={colors.muted} />
     </Pressable>
-  );
+  )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  decorativeBlob: {
+    position: 'absolute',
+    top: -80,
+    right: -80,
+    width: 256,
+    height: 256,
+    borderRadius: radii.pill,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: spacing[4],
+  },
+  title: {
+    marginBottom: spacing[6],
+  },
+  profileCard: {
+    borderRadius: radii.xl,
+    padding: spacing[5],
+    marginBottom: spacing[4],
+    alignItems: 'center',
+  },
+  avatarLarge: {
+    width: 80,
+    height: 80,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing[3],
+  },
+  settingsCard: {
+    borderRadius: radii.xl,
+    overflow: 'hidden',
+  },
+  settingsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[4],
+  },
+  settingsIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radii.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingsLabel: {
+    flex: 1,
+    marginLeft: spacing[3],
+  },
+  signOutButton: {
+    borderRadius: radii.xl,
+    padding: spacing[4],
+    marginTop: spacing[4],
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signOutText: {
+    marginLeft: spacing[2],
+  },
+})

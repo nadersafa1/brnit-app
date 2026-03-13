@@ -1,42 +1,58 @@
-import { Ionicons } from "@expo/vector-icons";
-import { Pressable, Text, TextInput, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from '@expo/vector-icons'
+import { Pressable, TextInput, View, StyleSheet } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { BottomNav } from "@/components/bottom-nav";
+import { BottomNav } from '@/components/bottom-nav'
+import { Text } from '@/components/ui'
+import { useColors } from '@/hooks/use-theme-color'
+import { spacing } from '@/theme/spacing'
+import { radii } from '@/theme/radii'
+import { shadows } from '@/theme/shadows'
+import { fontSize } from '@/theme/typography'
 
 export default function Search() {
-  const insets = useSafeAreaInsets();
+  const insets = useSafeAreaInsets()
+  const colors = useColors()
 
   return (
-    <View className="flex-1 bg-app-bg">
-      {/* Decorative Corner Blob */}
-      <View className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-pastel-purple" />
+    <View style={[styles.container, { backgroundColor: colors.appBg }]}>
+      <View style={[styles.decorativeBlob, { backgroundColor: colors.pastelPurple }]} />
 
       <View
-        className="flex-1 px-4"
-        style={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 96 }}
+        style={[
+          styles.content,
+          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 96 },
+        ]}
       >
-        <Text className="text-2xl font-bold text-ink mb-6">Search Foods</Text>
+        <Text size="2xl" weight="bold" style={styles.title}>
+          Search Foods
+        </Text>
 
-        {/* Search Input */}
-        <View className="flex-row items-center bg-card rounded-full px-4 py-3 shadow-sm mb-6">
-          <Ionicons name="search-outline" size={20} color="#6B6B6B" />
+        <View style={[styles.searchInput, { backgroundColor: colors.card }, shadows.sm]}>
+          <Ionicons name="search-outline" size={20} color={colors.muted} />
           <TextInput
             placeholder="Search for a food..."
-            placeholderTextColor="#6B6B6B"
-            className="flex-1 ml-3 text-base text-ink"
+            placeholderTextColor={colors.muted}
+            style={[styles.input, { color: colors.ink }]}
           />
         </View>
 
-        {/* Quick Categories */}
-        <Text className="text-lg font-bold text-ink mb-4">Quick Add</Text>
-        <View className="flex-row flex-wrap gap-3">
-          {["Breakfast", "Lunch", "Dinner", "Snacks", "Drinks", "Desserts"].map((category) => (
+        <Text size="lg" weight="bold" style={styles.sectionTitle}>
+          Quick Add
+        </Text>
+        <View style={styles.categories}>
+          {['Breakfast', 'Lunch', 'Dinner', 'Snacks', 'Drinks', 'Desserts'].map((category) => (
             <Pressable
               key={category}
-              className="bg-card px-4 py-3 rounded-full shadow-sm active:scale-95"
+              style={({ pressed }) => [
+                styles.categoryPill,
+                { backgroundColor: colors.card, transform: [{ scale: pressed ? 0.95 : 1 }] },
+                shadows.sm,
+              ]}
             >
-              <Text className="text-sm font-semibold text-subtle">{category}</Text>
+              <Text size="sm" weight="semibold" style={{ color: colors.subtle }}>
+                {category}
+              </Text>
             </Pressable>
           ))}
         </View>
@@ -44,5 +60,52 @@ export default function Search() {
 
       <BottomNav activeTab="search" />
     </View>
-  );
+  )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  decorativeBlob: {
+    position: 'absolute',
+    top: -80,
+    right: -80,
+    width: 256,
+    height: 256,
+    borderRadius: radii.pill,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: spacing[4],
+  },
+  title: {
+    marginBottom: spacing[6],
+  },
+  searchInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    marginBottom: spacing[6],
+  },
+  input: {
+    flex: 1,
+    marginLeft: spacing[3],
+    fontSize: fontSize.base,
+  },
+  sectionTitle: {
+    marginBottom: spacing[4],
+  },
+  categories: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[3],
+  },
+  categoryPill: {
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    borderRadius: radii.pill,
+  },
+})
