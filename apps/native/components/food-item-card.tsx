@@ -1,5 +1,6 @@
 import { Image } from "expo-image";
 import { Pressable, View, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Text } from "@/components/ui";
 import { useColors } from "@/hooks/use-theme-color";
 import { spacing } from "@/theme/spacing";
@@ -10,10 +11,19 @@ import type { FoodItem } from "@/lib/api/member-food-types";
 interface FoodItemCardProps {
   item: FoodItem;
   onPress?: () => void;
+  onAlternativesPress?: () => void;
 }
 
-export function FoodItemCard({ item, onPress }: Readonly<FoodItemCardProps>) {
+export function FoodItemCard({
+  item,
+  onPress,
+  onAlternativesPress,
+}: Readonly<FoodItemCardProps>) {
   const colors = useColors();
+
+  const handleAlternativesPress = () => {
+    onAlternativesPress?.();
+  };
 
   return (
     <Pressable
@@ -71,13 +81,27 @@ export function FoodItemCard({ item, onPress }: Readonly<FoodItemCardProps>) {
           </View>
         </View>
 
-        <View style={styles.caloriesContainer}>
-          <Text size="base" weight="bold" accent>
-            {item.calories}
-          </Text>
-          <Text size="xs" muted>
-            kcal
-          </Text>
+        <View style={styles.rightSection}>
+          <View style={styles.caloriesContainer}>
+            <Text size="base" weight="bold" accent>
+              {item.calories}
+            </Text>
+            <Text size="xs" muted>
+              kcal
+            </Text>
+          </View>
+          {onAlternativesPress && (
+            <Pressable
+              onPress={handleAlternativesPress}
+              hitSlop={8}
+              style={({ pressed }) => [
+                styles.alternativesButton,
+                { backgroundColor: colors.surfaceAlt, opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <Ionicons name="swap-horizontal" size={18} color={colors.accent} />
+            </Pressable>
+          )}
         </View>
       </View>
     </Pressable>
@@ -118,7 +142,15 @@ const styles = StyleSheet.create({
   macroDivider: {
     marginHorizontal: spacing[1],
   },
+  rightSection: {
+    alignItems: "flex-end",
+    gap: spacing[2],
+  },
   caloriesContainer: {
     alignItems: "flex-end",
+  },
+  alternativesButton: {
+    padding: spacing[1],
+    borderRadius: radii.xs,
   },
 });

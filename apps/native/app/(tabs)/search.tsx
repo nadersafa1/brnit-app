@@ -7,7 +7,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BottomNav } from "@/components/bottom-nav";
 import { FoodItemCard } from "@/components/food-item-card";
+import { FoodAlternativesSheet } from "@/components/food-alternatives-sheet";
 import { SearchFilterSheet } from "@/components/search-filter-sheet";
+import type { FoodItem } from "@/lib/api/member-food-types";
 import { Input, Spinner, Text } from "@/components/ui";
 import { useFoodCategories } from "@/hooks/use-food-categories";
 import { useFoodItems } from "@/hooks/use-food-items";
@@ -27,6 +29,8 @@ export default function Search() {
 
   const [inputValue, setInputValue] = useState("");
   const deferredQuery = useDeferredValue(inputValue);
+  const [selectedFoodForAlternatives, setSelectedFoodForAlternatives] =
+    useState<FoodItem | null>(null);
 
   const { categoryId, sortBy, sortOrder, setQuery } = useSearchFilterStore();
   const hasActiveFilters = useHasActiveFilters();
@@ -77,6 +81,14 @@ export default function Search() {
     bottomSheetRef.current?.expand();
   }, []);
 
+  const handleAlternativesPress = useCallback((item: FoodItem) => {
+    setSelectedFoodForAlternatives(item);
+  }, []);
+
+  const handleCloseAlternatives = useCallback(() => {
+    setSelectedFoodForAlternatives(null);
+  }, []);
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -100,7 +112,12 @@ export default function Search() {
     return (
       <FlashList
         data={foodItems}
-        renderItem={({ item }) => <FoodItemCard item={item} />}
+        renderItem={({ item }) => (
+          <FoodItemCard
+            item={item}
+            onAlternativesPress={() => handleAlternativesPress(item)}
+          />
+        )}
         keyExtractor={(item) => item.id}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
@@ -198,6 +215,10 @@ export default function Search() {
 
       <BottomNav activeTab="search" />
       <SearchFilterSheet ref={bottomSheetRef} />
+      <FoodAlternativesSheet
+        foodItem={selectedFoodForAlternatives}
+        onClose={handleCloseAlternatives}
+      />
     </View>
   );
 }

@@ -45,3 +45,30 @@ export type FoodItemsQuery = {
   page?: number
   perPage?: number
 }
+
+export type FoodItemAlternative = {
+  foodItemId: string
+  name: string
+  categoryId: string
+  categoryName: string
+  suggestedQuantityGrams: number
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
+  deltaCalories: number
+  deltaProtein: number
+  deltaCarbs: number
+  deltaFat: number
+}
+
+export type FoodItemAlternativesResponse = {
+  data: FoodItemAlternative[]
+  pagination: Pagination
+}
+
+export type FoodItemAlternativesQuery = {
+  quantity: number
+  page?: number
+  perPage?: number
+}
