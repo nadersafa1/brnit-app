@@ -2,7 +2,6 @@ import { View, StyleSheet } from 'react-native'
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg'
 import { Text } from '@/components/ui'
 import { useColors } from '@/hooks/use-theme-color'
-import { Colors } from '@/theme/colors'
 
 interface CalorieRingProps {
   consumed: number
@@ -10,50 +9,71 @@ interface CalorieRingProps {
   size?: number
 }
 
-export function CalorieRing({ consumed, goal, size = 180 }: CalorieRingProps) {
+export function CalorieRing({ consumed, goal, size = 180 }: Readonly<CalorieRingProps>) {
   const colors = useColors()
   const strokeWidth = 14
   const radius = (size - strokeWidth) / 2
   const circumference = 2 * Math.PI * radius
-  const progress = Math.min(consumed / goal, 1)
+  const progress = goal > 0 ? Math.min(consumed / goal, 1) : 0
   const strokeDashoffset = circumference * (1 - progress)
 
   return (
     <View style={styles.container}>
-      <Svg width={size} height={size}>
+      <Svg
+        width={size}
+        height={size}
+      >
         <Defs>
-          <LinearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <Stop offset="0%" stopColor={Colors.light.accent} />
-            <Stop offset="100%" stopColor={Colors.light.accentLight} />
+          <LinearGradient
+            id='progressGradient'
+            x1='0%'
+            y1='0%'
+            x2='100%'
+            y2='0%'
+          >
+            <Stop
+              offset='0%'
+              stopColor={colors.accent}
+            />
+            <Stop
+              offset='100%'
+              stopColor={colors.accentLight}
+            />
           </LinearGradient>
         </Defs>
         <Circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={Colors.light.surfaceAlt}
+          stroke={colors.surfaceAlt}
           strokeWidth={strokeWidth}
-          fill="none"
+          fill='none'
         />
         <Circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="url(#progressGradient)"
+          stroke='url(#progressGradient)'
           strokeWidth={strokeWidth}
-          fill="none"
-          strokeLinecap="round"
+          fill='none'
+          strokeLinecap='round'
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
-          rotation={-90}
-          origin={`${size / 2}, ${size / 2}`}
+          transform={`rotate(-90, ${size / 2}, ${size / 2})`}
         />
       </Svg>
       <View style={styles.centerContent}>
-        <Text size="4xl" weight="bold">
+        <Text
+          size='4xl'
+          weight='bold'
+        >
           {consumed}
         </Text>
-        <Text size="sm" weight="medium" muted>
+        <Text
+          size='sm'
+          weight='medium'
+          muted
+        >
           of {goal} kcal
         </Text>
       </View>
@@ -64,10 +84,10 @@ export function CalorieRing({ consumed, goal, size = 180 }: CalorieRingProps) {
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'center'
   },
   centerContent: {
     position: 'absolute',
-    alignItems: 'center',
-  },
+    alignItems: 'center'
+  }
 })

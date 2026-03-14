@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native'
 import { Text } from '@/components/ui'
 import { useColors } from '@/hooks/use-theme-color'
 import type { CurrentDietPlanMealItem } from '@/lib/api/member-types'
+import { formatCalorieDisplay } from '@/lib/utils/numbers'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
 import { shadows } from '@/theme/shadows'
@@ -60,7 +61,7 @@ export function MealCard({ title, calories, time, icon, items }: Readonly<MealCa
             weight='bold'
             accent
           >
-            {calories}
+            {formatCalorieDisplay(calories)}
           </Text>
           <Text
             size='xs'

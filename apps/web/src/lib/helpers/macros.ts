@@ -20,10 +20,9 @@ export type NutritionPer100g = {
 /** Used when summing or when no nutrition data exists (e.g. missing food item). */
 export const ZERO_MACROS: Macros = { calories: 0, protein: 0, carbs: 0, fat: 0 }
 
-const ROUND_PRECISION = 1
-
-function round(value: number): number {
-  return Math.round(value * 10 ** ROUND_PRECISION) / 10 ** ROUND_PRECISION
+/** Round up to the nearest tenth (0.1 step). */
+function roundUpToTenth(value: number): number {
+  return Math.ceil(value * 10) / 10
 }
 
 /**
@@ -36,10 +35,10 @@ export function calculateMacrosForMealItem(
 ): Macros {
   const factor = quantityGrams / 100
   return {
-    calories: round(factor * (nutritionPer100g.calories ?? 0)),
-    protein: round(factor * (nutritionPer100g.protein ?? 0)),
-    carbs: round(factor * (nutritionPer100g.carbs ?? 0)),
-    fat: round(factor * (nutritionPer100g.fat ?? 0)),
+    calories: roundUpToTenth(factor * (nutritionPer100g.calories ?? 0)),
+    protein: roundUpToTenth(factor * (nutritionPer100g.protein ?? 0)),
+    carbs: roundUpToTenth(factor * (nutritionPer100g.carbs ?? 0)),
+    fat: roundUpToTenth(factor * (nutritionPer100g.fat ?? 0)),
   }
 }
 
@@ -54,10 +53,10 @@ export function calculateMacrosForMeal(
     (acc, item) => {
       const itemMacros = calculateMacrosForMealItem(item.quantity, item.nutritionPer100g)
       return {
-        calories: round(acc.calories + itemMacros.calories),
-        protein: round(acc.protein + itemMacros.protein),
-        carbs: round(acc.carbs + itemMacros.carbs),
-        fat: round(acc.fat + itemMacros.fat),
+        calories: roundUpToTenth(acc.calories + itemMacros.calories),
+        protein: roundUpToTenth(acc.protein + itemMacros.protein),
+        carbs: roundUpToTenth(acc.carbs + itemMacros.carbs),
+        fat: roundUpToTenth(acc.fat + itemMacros.fat),
       }
     },
     { ...ZERO_MACROS }
@@ -71,10 +70,10 @@ export function calculateMacrosForMeal(
 export function calculateMacrosForDay(meals: Macros[]): Macros {
   return meals.reduce<Macros>(
     (acc, m) => ({
-      calories: round(acc.calories + m.calories),
-      protein: round(acc.protein + m.protein),
-      carbs: round(acc.carbs + m.carbs),
-      fat: round(acc.fat + m.fat),
+      calories: roundUpToTenth(acc.calories + m.calories),
+      protein: roundUpToTenth(acc.protein + m.protein),
+      carbs: roundUpToTenth(acc.carbs + m.carbs),
+      fat: roundUpToTenth(acc.fat + m.fat),
     }),
     { ...ZERO_MACROS }
   )
