@@ -1,3 +1,10 @@
+export type Macros = {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+};
+
 export type CurrentDietPlanMealItem = {
   mealItemId: string;
   foodItemId: string;
@@ -7,6 +14,7 @@ export type CurrentDietPlanMealItem = {
   originalFoodItemId?: string;
   originalFoodName?: string;
   originalQuantity?: number;
+  macros: Macros;
 };
 
 export type CurrentDietPlanMeal = {
@@ -18,11 +26,13 @@ export type CurrentDietPlanMeal = {
   mealItems: CurrentDietPlanMealItem[];
   consumed: boolean;
   consumedAt?: string;
+  macros: Macros;
 };
 
 export type CurrentDietPlanDay = {
   date: string;
   meals: CurrentDietPlanMeal[];
+  macros: Macros;
 };
 
 export type CurrentDietPlanAssignment = {

@@ -72,6 +72,7 @@ async function resolvePlannedItemsForSlot(
 /**
  * Logs a diet plan meal consumption. If usePlannedItems is true and no items provided,
  * resolves planned items (plan + date-scoped overrides) for the consumption date.
+ * Insert of consumption + consumption items is done in a transaction for atomicity.
  */
 export async function logDietPlanMealConsumption(data: CreateDietPlanMealConsumption): Promise<LogConsumptionResult> {
   let consumedItems = data.consumedItems?.filter(
@@ -81,6 +82,7 @@ export async function logDietPlanMealConsumption(data: CreateDietPlanMealConsump
   const consumedAt = data.consumedAt instanceof Date ? data.consumedAt : new Date(data.consumedAt)
   const consumedDate = toDateString(consumedAt)
 
+  // Resolve planned items from plan + overrides when client requests meal-level consumption only.
   if (data.usePlannedItems && (!consumedItems || consumedItems.length === 0)) {
     const resolved = await resolvePlannedItemsForSlot(data.dietPlanAssignmentId, data.dietPlanMealId, consumedDate)
     if (resolved === null) {
@@ -93,6 +95,7 @@ export async function logDietPlanMealConsumption(data: CreateDietPlanMealConsump
     consumedItems = resolved
   }
 
+  // Prevent duplicate consumption for the same slot and date.
   const [existing] = await db
     .select({ id: dietPlanMealConsumption.id })
     .from(dietPlanMealConsumption)
@@ -113,22 +116,11 @@ export async function logDietPlanMealConsumption(data: CreateDietPlanMealConsump
     }
   }
 
-  const [created] = await db
-    .insert(dietPlanMealConsumption)
-    .values({
-      dietPlanAssignmentId: data.dietPlanAssignmentId,
-      dietPlanMealId: data.dietPlanMealId,
-      consumedAt,
-      consumedDate,
-    })
-    .returning()
-
-  if (!created) return { ok: false, error: 'Failed to log consumption', code: 'NOT_FOUND' }
-
+  // Validate referenced food items exist before starting the transaction (read-only check).
   if (consumedItems && consumedItems.length > 0) {
     const foodItemIds = [...new Set(consumedItems.map(i => i.foodItemId))]
-    const existing = await db.select({ id: foodItem.id }).from(foodItem).where(inArray(foodItem.id, foodItemIds))
-    const existingIds = new Set(existing.map(r => r.id))
+    const existingFoodItems = await db.select({ id: foodItem.id }).from(foodItem).where(inArray(foodItem.id, foodItemIds))
+    const existingIds = new Set(existingFoodItems.map(r => r.id))
     const missing = foodItemIds.filter(id => !existingIds.has(id))
     if (missing.length > 0) {
       return {
@@ -137,18 +129,43 @@ export async function logDietPlanMealConsumption(data: CreateDietPlanMealConsump
         code: 'INVALID_CONSUMED_ITEMS',
       }
     }
-    await db.insert(dietPlanMealConsumptionItem).values(
-      consumedItems.map(item => ({
-        dietPlanMealConsumptionId: created.id,
-        foodItemId: item.foodItemId,
-        quantity: String(item.quantity),
-      }))
-    )
   }
 
+  // Atomic insert: consumption row + consumption items. Rollback on any failure.
+  const created = await db.transaction(async (tx) => {
+    const [inserted] = await tx
+      .insert(dietPlanMealConsumption)
+      .values({
+        dietPlanAssignmentId: data.dietPlanAssignmentId,
+        dietPlanMealId: data.dietPlanMealId,
+        consumedAt,
+        consumedDate,
+      })
+      .returning()
+
+    if (!inserted) return null
+
+    if (consumedItems && consumedItems.length > 0) {
+      await tx.insert(dietPlanMealConsumptionItem).values(
+        consumedItems.map((item) => ({
+          dietPlanMealConsumptionId: inserted.id,
+          foodItemId: item.foodItemId,
+          quantity: String(item.quantity),
+        }))
+      )
+    }
+
+    return inserted
+  })
+
+  if (!created) return { ok: false, error: 'Failed to log consumption', code: 'NOT_FOUND' }
   return { ok: true, data: created }
 }
 
+/**
+ * Lists diet plan meal consumptions with optional filters and pagination.
+ * Fetches count and rows in parallel; then fetches consumption items for the returned rows.
+ */
 export async function listDietPlanMealConsumptions(query: DietPlanMealConsumptionQuery) {
   const {
     page,
@@ -162,6 +179,7 @@ export async function listDietPlanMealConsumptions(query: DietPlanMealConsumptio
   } = query
   const offset = calculateOffset(page, perPage)
 
+  // Build filter conditions from query (assignment and date range).
   const conditions: Parameters<typeof and>[0][] = []
   if (dietPlanAssignmentId) {
     conditions.push(eq(dietPlanMealConsumption.dietPlanAssignmentId, dietPlanAssignmentId))
@@ -184,6 +202,7 @@ export async function listDietPlanMealConsumptions(query: DietPlanMealConsumptio
   const sortColumn = sortFieldMap[sortBy ?? 'consumedAt'] ?? dietPlanMealConsumption.consumedAt
   const sortDir = sortOrder === 'asc' ? asc : desc
 
+  // Count and paginated rows are independent; run in parallel.
   const [countResult, rows] = await Promise.all([
     db.select({ count: count() }).from(dietPlanMealConsumption).where(where),
     db
@@ -205,7 +224,8 @@ export async function listDietPlanMealConsumptions(query: DietPlanMealConsumptio
       .offset(offset),
   ])
 
-  const consumptionIds = rows.map(r => r.id)
+  // Fetch consumption items for this page of consumptions (single batch query).
+  const consumptionIds = rows.map((r) => r.id)
   const consumedItemsByConsumption =
     consumptionIds.length > 0
       ? await db
@@ -220,6 +240,7 @@ export async function listDietPlanMealConsumptions(query: DietPlanMealConsumptio
           .where(inArray(dietPlanMealConsumptionItem.dietPlanMealConsumptionId, consumptionIds))
       : []
 
+  // Group consumption items by consumption id for attachment to each row.
   const itemsMap = new Map<string, Array<{ foodItemId: string; quantity: number; foodName: string }>>()
   for (const row of consumedItemsByConsumption) {
     const list = itemsMap.get(row.dietPlanMealConsumptionId) ?? []
@@ -231,7 +252,7 @@ export async function listDietPlanMealConsumptions(query: DietPlanMealConsumptio
     itemsMap.set(row.dietPlanMealConsumptionId, list)
   }
 
-  const items = rows.map(row => ({
+  const items = rows.map((row) => ({
     ...row,
     consumedItems: itemsMap.get(row.id) ?? [],
   }))
@@ -242,7 +263,36 @@ export async function listDietPlanMealConsumptions(query: DietPlanMealConsumptio
   }
 }
 
+/** Deletes a single consumption by id. Consumption items are removed by DB cascade. */
 export async function deleteDietPlanMealConsumption(id: string) {
   const [deleted] = await db.delete(dietPlanMealConsumption).where(eq(dietPlanMealConsumption.id, id)).returning()
+  return deleted ?? null
+}
+
+/**
+ * Deletes the consumption for a given assignment + meal + date (member unmark flow).
+ * Finds the row by composite key then deletes by id; cascade removes consumption items.
+ * Returns the deleted row or null if not found.
+ */
+export async function deleteDietPlanMealConsumptionBySlot(
+  assignmentId: string,
+  dietPlanMealId: string,
+  consumedDate: string
+) {
+  const [row] = await db
+    .select({ id: dietPlanMealConsumption.id })
+    .from(dietPlanMealConsumption)
+    .where(
+      and(
+        eq(dietPlanMealConsumption.dietPlanAssignmentId, assignmentId),
+        eq(dietPlanMealConsumption.dietPlanMealId, dietPlanMealId),
+        eq(dietPlanMealConsumption.consumedDate, consumedDate)
+      )
+    )
+    .limit(1)
+
+  if (!row) return null
+
+  const [deleted] = await db.delete(dietPlanMealConsumption).where(eq(dietPlanMealConsumption.id, row.id)).returning()
   return deleted ?? null
 }
