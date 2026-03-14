@@ -34,6 +34,13 @@ export const currentDietPlanQuerySchema = z
 
 export type CurrentDietPlanQuery = z.infer<typeof currentDietPlanQuerySchema>
 
+export type Macros = {
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
+}
+
 /** Meal item as returned in current-diet-plan (with override support). */
 export type CurrentDietPlanMealItem = {
   mealItemId: string
@@ -44,5 +51,24 @@ export type CurrentDietPlanMealItem = {
   originalFoodItemId?: string
   originalFoodName?: string
   originalQuantity?: number
+  macros: Macros
+}
+
+export type CurrentDietPlanMeal = {
+  dietPlanMealId: string
+  mealId: string
+  mealName: string
+  mealType: string
+  mealOrder: number
+  mealItems: CurrentDietPlanMealItem[]
+  consumed: boolean
+  consumedAt?: string
+  macros: Macros
+}
+
+export type CurrentDietPlanDay = {
+  date: string
+  meals: CurrentDietPlanMeal[]
+  macros: Macros
 }
 

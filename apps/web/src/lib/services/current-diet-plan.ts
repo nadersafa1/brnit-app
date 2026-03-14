@@ -1,9 +1,31 @@
 import { db } from '@burn-app/db'
-import { dietPlan, dietPlanAssignment, dietPlanMealConsumption, member } from '@burn-app/db/schema'
+import { dietPlan, dietPlanAssignment, dietPlanMealConsumption, foodItem, member } from '@burn-app/db/schema'
 import { and, asc, eq, inArray, or, SQL } from 'drizzle-orm'
+import {
+  calculateMacrosForDay,
+  calculateMacrosForMealItem,
+  type NutritionPer100g,
+} from '@/lib/helpers/macros'
 import { getDietPlanById } from '@/lib/services/diet-plans'
-import { getOverridesByAssignmentId, resolveOverridesForDate } from '@/lib/services/diet-plan-meal-item-override'
-import type { CurrentDietPlanQuery, CurrentDietPlanMealItem } from '@/types/api/current-diet-plan.schemas'
+import {
+  getOverridesByAssignmentId,
+  resolveOverridesForDate,
+  type OverrideRow,
+} from '@/lib/services/diet-plan-meal-item-override'
+import type {
+  CurrentDietPlanDay,
+  CurrentDietPlanMeal,
+  CurrentDietPlanQuery,
+  CurrentDietPlanMealItem,
+} from '@/types/api/current-diet-plan.schemas'
+
+/**
+ * Current diet plan service: returns the active assignment and daily meal structure
+ * (with overrides and consumptions) plus computed macros per item/meal/day.
+ * Read-only; no transactions. Failures propagate to the route handler.
+ */
+
+// --- Date helpers (UTC, YYYY-MM-DD) ---
 
 function toDateStringUTC(input: string | Date): string {
   const date = typeof input === 'string' ? new Date(input) : input
@@ -30,21 +52,7 @@ function getTodayUTC(): string {
   return toDateStringUTC(new Date())
 }
 
-type CurrentDietPlanMeal = {
-  dietPlanMealId: string
-  mealId: string
-  mealName: string
-  mealType: string
-  mealOrder: number
-  mealItems: CurrentDietPlanMealItem[]
-  consumed: boolean
-  consumedAt?: string
-}
-
-type CurrentDietPlanDay = {
-  date: string
-  meals: CurrentDietPlanMeal[]
-}
+// --- Response types ---
 
 type CurrentDietPlanAssignment = {
   id: string
@@ -68,9 +76,156 @@ export type CurrentDietPlanResult =
       }
     }
 
+/**
+ * Returns member IDs linked to the given user (for assignment visibility).
+ */
 async function getUserMemberIds(userId: string): Promise<string[]> {
   const rows = await db.select({ id: member.id }).from(member).where(eq(member.userId, userId))
   return rows.map(m => m.id)
+}
+
+/**
+ * Collects all unique food item IDs referenced by plan meal items and overrides.
+ * Used to batch-fetch nutrition so we can compute macros without N+1 queries.
+ */
+function collectFoodItemIds(
+  dietPlanMeals: Array<{ mealItems?: Array<{ foodItemId: string }> }>,
+  overrideRows: OverrideRow[]
+): Set<string> {
+  const ids = new Set<string>()
+  for (const pm of dietPlanMeals) {
+    for (const item of pm.mealItems ?? []) {
+      ids.add(item.foodItemId)
+    }
+  }
+  for (const row of overrideRows) {
+    ids.add(row.foodItemId)
+  }
+  return ids
+}
+
+/**
+ * Fetches nutrition (per 100g) for the given food item IDs.
+ * Null/undefined DB values are coerced to 0 so macro math never produces NaN.
+ * Missing IDs are simply absent from the map; callers use ZERO_NUTRITION for those.
+ */
+async function getNutritionMapForFoodIds(
+  foodItemIds: Set<string>
+): Promise<Map<string, NutritionPer100g>> {
+  const map = new Map<string, NutritionPer100g>()
+  if (foodItemIds.size === 0) return map
+
+  const toNum = (v: string | null | undefined): number =>
+    v != null && Number.isFinite(Number(v)) ? Number(v) : 0
+
+  const rows = await db
+    .select({
+      id: foodItem.id,
+      calories: foodItem.calories,
+      protein: foodItem.protein,
+      carbs: foodItem.carbs,
+      fat: foodItem.fat,
+    })
+    .from(foodItem)
+    .where(inArray(foodItem.id, [...foodItemIds]))
+
+  for (const row of rows) {
+    map.set(row.id, {
+      calories: toNum(row.calories),
+      protein: toNum(row.protein),
+      carbs: toNum(row.carbs),
+      fat: toNum(row.fat),
+    })
+  }
+  return map
+}
+
+/**
+ * Builds the days array: for each date, resolves overrides and consumptions,
+ * attaches per-item and per-meal macros from the nutrition map, and per-day macros.
+ * Pure/synchronous; all data is already loaded.
+ */
+function buildCurrentDietPlanDays(
+  allDates: string[],
+  assignment: { startDate: string },
+  dietPlanMeals: Array<{
+    id: string
+    mealId: string
+    mealName: string
+    dayNumber: number
+    mealType: string
+    mealOrder: number
+    mealItems: Array<{ mealItemId: string; foodItemId: string; foodName: string; quantity: number }>
+  }>,
+  overrideRows: OverrideRow[],
+  consumptionMap: Map<string, { consumedAt: string }>,
+  nutritionMap: Map<string, NutritionPer100g>,
+  ZERO_NUTRITION: NutritionPer100g
+): CurrentDietPlanDay[] {
+  return allDates.map(date => {
+    const planDay = diffDaysInclusiveUTC(assignment.startDate, date)
+    const resolvedOverrides = resolveOverridesForDate(overrideRows, date)
+    const overrideMapForDay = new Map<string, { foodItemId: string; foodName: string; quantity: number }>()
+    for (const [, row] of resolvedOverrides) {
+      overrideMapForDay.set(`${row.dietPlanMealId}:${row.mealItemId}`, {
+        foodItemId: row.foodItemId,
+        foodName: row.foodName,
+        quantity: Number(row.quantity),
+      })
+    }
+    const mealsForDay = dietPlanMeals
+      .filter(pm => pm.dayNumber === 0 || pm.dayNumber === planDay)
+      .sort((a, b) => {
+        if (a.mealType === b.mealType) return a.mealOrder - b.mealOrder
+        return a.mealType.localeCompare(b.mealType)
+      })
+      .map<CurrentDietPlanMeal>(pm => {
+        const key = `${pm.id}:${date}`
+        const consumption = consumptionMap.get(key)
+        const mealItems: CurrentDietPlanMealItem[] = (pm.mealItems ?? []).map(item => {
+          const override = overrideMapForDay.get(`${pm.id}:${item.mealItemId}`)
+          const foodItemId = override?.foodItemId ?? item.foodItemId
+          const quantity = override?.quantity ?? item.quantity
+          const nutrition = nutritionMap.get(foodItemId) ?? ZERO_NUTRITION
+          const macros = calculateMacrosForMealItem(quantity, nutrition)
+          if (override) {
+            return {
+              mealItemId: item.mealItemId,
+              foodItemId: override.foodItemId,
+              foodName: override.foodName,
+              quantity: override.quantity,
+              isOverridden: true,
+              originalFoodItemId: item.foodItemId,
+              originalFoodName: item.foodName,
+              originalQuantity: item.quantity,
+              macros,
+            }
+          }
+          return {
+            mealItemId: item.mealItemId,
+            foodItemId: item.foodItemId,
+            foodName: item.foodName,
+            quantity: item.quantity,
+            isOverridden: false,
+            macros,
+          }
+        })
+        const mealMacros = calculateMacrosForDay(mealItems.map(i => i.macros))
+        return {
+          dietPlanMealId: pm.id,
+          mealId: pm.mealId,
+          mealName: pm.mealName,
+          mealType: pm.mealType,
+          mealOrder: pm.mealOrder,
+          mealItems,
+          consumed: !!consumption,
+          consumedAt: consumption?.consumedAt,
+          macros: mealMacros,
+        }
+      })
+    const dayMacros = calculateMacrosForDay(mealsForDay.map(m => m.macros))
+    return { date, meals: mealsForDay, macros: dayMacros }
+  })
 }
 
 export async function getCurrentDietPlanForUser(
@@ -81,9 +236,8 @@ export async function getCurrentDietPlanForUser(
   const from = query.from ?? today
   const to = query.to ?? addDaysUTC(from, 6)
 
-  // Resolve member IDs linked to this user
+  // Resolve which assignment(s) the user can see (direct or via member).
   const memberIds = await getUserMemberIds(userId)
-
   const assigneeConditions: SQL<unknown>[] = [eq(dietPlanAssignment.userId, userId)]
   if (memberIds.length > 0) {
     assigneeConditions.push(inArray(dietPlanAssignment.memberId, memberIds))
@@ -106,11 +260,16 @@ export async function getCurrentDietPlanForUser(
     return { data: null }
   }
 
-  // Pick assignment that contains the first day of the range (from).
+  // Use the assignment that covers the range start (from), or fallback to first.
   const containing = rows.filter(r => r.startDate <= from && r.endDate >= from)
   const assignment = (containing.length > 0 ? containing : rows)[0]
 
-  const planFull = await getDietPlanById(assignment.dietPlanId)
+  // Fetch plan and overrides in parallel; neither depends on the other.
+  const [planFull, overrideRows] = await Promise.all([
+    getDietPlanById(assignment.dietPlanId),
+    getOverridesByAssignmentId(assignment.id),
+  ])
+
   if (!planFull) {
     return { data: null }
   }
@@ -121,6 +280,9 @@ export async function getCurrentDietPlanForUser(
     description: planFull.description,
   }
 
+  const dietPlanMeals = planFull.dietPlanMeals ?? []
+
+  // Build the list of dates in range that fall within the assignment window.
   const allDates: string[] = []
   let cursor = from
   while (cursor <= to) {
@@ -134,26 +296,23 @@ export async function getCurrentDietPlanForUser(
     return { data: null }
   }
 
-  const dietPlanMeals = planFull.dietPlanMeals ?? []
-
-  // Overrides and consumptions are independent; fetch in parallel.
-  const [overrideRows, consumptionRows] = await Promise.all([
-    getOverridesByAssignmentId(assignment.id),
-    allDates.length > 0
-      ? db
-          .select({
-            dietPlanMealId: dietPlanMealConsumption.dietPlanMealId,
-            consumedDate: dietPlanMealConsumption.consumedDate,
-            consumedAt: dietPlanMealConsumption.consumedAt,
-          })
-          .from(dietPlanMealConsumption)
-          .where(
-            and(
-              eq(dietPlanMealConsumption.dietPlanAssignmentId, assignment.id),
-              inArray(dietPlanMealConsumption.consumedDate, allDates)
-            )
-          )
-      : Promise.resolve([]),
+  // Fetch consumptions and nutrition in parallel; both only need assignment + plan/overrides data.
+  const foodItemIds = collectFoodItemIds(dietPlanMeals, overrideRows)
+  const [consumptionRows, nutritionMap] = await Promise.all([
+    db
+      .select({
+        dietPlanMealId: dietPlanMealConsumption.dietPlanMealId,
+        consumedDate: dietPlanMealConsumption.consumedDate,
+        consumedAt: dietPlanMealConsumption.consumedAt,
+      })
+      .from(dietPlanMealConsumption)
+      .where(
+        and(
+          eq(dietPlanMealConsumption.dietPlanAssignmentId, assignment.id),
+          inArray(dietPlanMealConsumption.consumedDate, allDates)
+        )
+      ),
+    getNutritionMapForFoodIds(foodItemIds),
   ])
 
   const consumptionMap = new Map<string, { consumedAt: string }>()
@@ -162,72 +321,17 @@ export async function getCurrentDietPlanForUser(
     consumptionMap.set(key, { consumedAt: row.consumedAt.toISOString() })
   }
 
-  // Build one day per date: resolve overrides for that date, then map plan meals to items (with override or default).
-  const days: CurrentDietPlanDay[] = allDates.map(date => {
-    const planDay = diffDaysInclusiveUTC(assignment.startDate, date) // 1-based
+  const ZERO_NUTRITION: NutritionPer100g = { calories: 0, protein: 0, carbs: 0, fat: 0 }
 
-    const resolvedOverrides = resolveOverridesForDate(overrideRows, date)
-    const overrideMapForDay = new Map<string, { foodItemId: string; foodName: string; quantity: number }>()
-    for (const [, row] of resolvedOverrides) {
-      overrideMapForDay.set(`${row.dietPlanMealId}:${row.mealItemId}`, {
-        foodItemId: row.foodItemId,
-        foodName: row.foodName,
-        quantity: Number(row.quantity),
-      })
-    }
-
-    const mealsForDay = dietPlanMeals
-      .filter(pm => pm.dayNumber === 0 || pm.dayNumber === planDay)
-      .sort((a, b) => {
-        if (a.mealType === b.mealType) {
-          return a.mealOrder - b.mealOrder
-        }
-        return a.mealType.localeCompare(b.mealType)
-      })
-      .map<CurrentDietPlanMeal>(pm => {
-        const key = `${pm.id}:${date}`
-        const consumption = consumptionMap.get(key)
-        const mealItems: CurrentDietPlanMealItem[] = (pm.mealItems ?? []).map(
-          (item: { mealItemId: string; foodItemId: string; foodName: string; quantity: number }) => {
-            const override = overrideMapForDay.get(`${pm.id}:${item.mealItemId}`)
-            if (override) {
-              return {
-                mealItemId: item.mealItemId,
-                foodItemId: override.foodItemId,
-                foodName: override.foodName,
-                quantity: override.quantity,
-                isOverridden: true,
-                originalFoodItemId: item.foodItemId,
-                originalFoodName: item.foodName,
-                originalQuantity: item.quantity,
-              }
-            }
-            return {
-              mealItemId: item.mealItemId,
-              foodItemId: item.foodItemId,
-              foodName: item.foodName,
-              quantity: item.quantity,
-              isOverridden: false,
-            }
-          }
-        )
-        return {
-          dietPlanMealId: pm.id,
-          mealId: pm.mealId,
-          mealName: pm.mealName,
-          mealType: pm.mealType,
-          mealOrder: pm.mealOrder,
-          mealItems,
-          consumed: !!consumption,
-          consumedAt: consumption?.consumedAt,
-        }
-      })
-
-    return {
-      date,
-      meals: mealsForDay,
-    }
-  })
+  const days = buildCurrentDietPlanDays(
+    allDates,
+    assignment,
+    dietPlanMeals,
+    overrideRows,
+    consumptionMap,
+    nutritionMap,
+    ZERO_NUTRITION
+  )
 
   return {
     data: {
