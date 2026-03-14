@@ -4,6 +4,7 @@ export const API_ENDPOINTS = {
     dietPlanAssignments: "/api/member/me/diet-plan-assignments",
     dietPlanMealConsumptions: "/api/member/me/diet-plan-meal-consumptions",
     foodItems: "/api/member/me/food-items",
+    foodCategories: "/api/member/me/food-categories",
     foodItemAlternatives: (foodItemId: string) =>
       `/api/member/me/food-items/${foodItemId}/alternatives`,
     mealItemOverride: (

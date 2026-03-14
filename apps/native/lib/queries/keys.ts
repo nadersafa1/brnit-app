@@ -10,4 +10,5 @@ export const memberKeys = {
     [...memberKeys.all, "food-items", filters] as const,
   foodItemAlternatives: (foodItemId: string, query?: object) =>
     [...memberKeys.all, "food-items", foodItemId, "alternatives", query] as const,
+  foodCategories: () => [...memberKeys.all, "food-categories"] as const,
 } as const;
