@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons'
-import { Pressable, View, StyleSheet } from 'react-native'
+import { View, StyleSheet } from 'react-native'
 import { Text } from '@/components/ui'
 import { useColors } from '@/hooks/use-theme-color'
 import type { CurrentDietPlanMealItem } from '@/lib/api/member-types'
@@ -20,48 +20,77 @@ export function MealCard({ title, calories, time, icon, items }: Readonly<MealCa
   const colors = useColors()
 
   return (
-    <Pressable
-      style={({ pressed }) => [
+    <View
+      style={[
         styles.container,
-        { backgroundColor: colors.card, transform: [{ scale: pressed ? 0.98 : 1 }], opacity: pressed ? 0.95 : 1 },
-        shadows.sm,
+        {
+          backgroundColor: colors.card
+        },
+        shadows.sm
       ]}
     >
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={[styles.iconContainer, { backgroundColor: colors.surfaceAlt }]}>
-            <Ionicons name={icon} size={20} color={colors.accent} />
+            <Ionicons
+              name={icon}
+              size={20}
+              color={colors.accent}
+            />
           </View>
           <View>
-            <Text size="base" weight="semibold">
+            <Text
+              size='base'
+              weight='semibold'
+            >
               {title}
             </Text>
-            <Text size="xs" weight="medium" muted>
+            <Text
+              size='xs'
+              weight='medium'
+              muted
+            >
               {time}
             </Text>
           </View>
         </View>
         <View style={styles.caloriesContainer}>
-          <Text size="base" weight="bold" accent>
+          <Text
+            size='base'
+            weight='bold'
+            accent
+          >
             {calories}
           </Text>
-          <Text size="xs" weight="medium" muted style={styles.kcalLabel}>
+          <Text
+            size='xs'
+            weight='medium'
+            muted
+            style={styles.kcalLabel}
+          >
             kcal
           </Text>
         </View>
       </View>
       {items.length === 0 ? (
-        <Text size="sm" weight="medium" muted>
+        <Text
+          size='sm'
+          weight='medium'
+          muted
+        >
           No items
         </Text>
       ) : (
         <View style={styles.itemsList}>
           {items.map(item => (
-            <MealItemRow key={item.mealItemId} item={item} />
+            <MealItemRow
+              key={item.mealItemId}
+              item={item}
+            />
           ))}
         </View>
       )}
-    </Pressable>
+    </View>
   )
 }
 
@@ -69,17 +98,17 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: radii.sm,
     padding: spacing[4],
-    marginBottom: spacing[3],
+    marginBottom: spacing[3]
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing[3],
+    marginBottom: spacing[3]
   },
   headerLeft: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   iconContainer: {
     width: 40,
@@ -87,16 +116,16 @@ const styles = StyleSheet.create({
     borderRadius: radii.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing[3],
+    marginRight: spacing[3]
   },
   caloriesContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   kcalLabel: {
-    marginLeft: spacing[0.5],
+    marginLeft: spacing[0.5]
   },
   itemsList: {
-    marginTop: spacing[1],
-  },
+    marginTop: spacing[1]
+  }
 })

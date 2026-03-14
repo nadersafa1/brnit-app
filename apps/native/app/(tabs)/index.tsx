@@ -143,14 +143,6 @@ export default function Home() {
           <Text size='lg' weight='bold'>
             {isToday ? "Today's Meals" : dayjs(selectedDate).format('MMMM D') + ' Meals'}
           </Text>
-          <Pressable style={styles.addMealButton}>
-            <Text size='sm' weight='semibold' accent>
-              Add Meal
-            </Text>
-            <View style={[styles.addIcon, { backgroundColor: colors.accent }]}>
-              <Ionicons name='add' size={16} color={colors.white} />
-            </View>
-          </Pressable>
         </View>
 
         {isLoading && (
