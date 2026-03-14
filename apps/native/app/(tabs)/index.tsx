@@ -1,7 +1,12 @@
 import { Ionicons } from '@expo/vector-icons'
+import BottomSheet, {
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
+  type BottomSheetBackdropProps,
+} from '@gorhom/bottom-sheet'
 import dayjs from 'dayjs'
-import { useMemo, useState } from 'react'
-import { Pressable, ScrollView, View, StyleSheet } from 'react-native'
+import { useCallback, useMemo, useRef, useState } from 'react'
+import { Alert, Pressable, ScrollView, View, StyleSheet } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BottomNav } from '@/components/bottom-nav'
@@ -9,11 +14,16 @@ import { CalorieRing } from '@/components/calorie-ring'
 import { CalendarStrip } from '@/components/calendar-strip'
 import { MacroBar } from '@/components/macro-bar'
 import { MealCard } from '@/components/meal-card'
-import { Spinner, Text } from '@/components/ui'
+import { Button, Spinner, Text } from '@/components/ui'
 import { useCurrentDietPlan } from '@/hooks/use-current-diet-plan'
+import { useLogMealConsumption } from '@/hooks/use-log-meal-consumption'
+import { useMealItemAlternatives } from '@/hooks/use-meal-item-alternatives'
+import { useSetMealItemOverride } from '@/hooks/use-set-meal-item-override'
 import { useColors } from '@/hooks/use-theme-color'
 import { authClient } from '@/lib/auth-client'
-import type { CurrentDietPlanMeal } from '@/lib/api/member-types'
+import type { FoodItemAlternative } from '@/lib/api/member-food-types'
+import type { CurrentDietPlanMeal, CurrentDietPlanMealItem } from '@/lib/api/member-types'
+import type { SelectedMeal, SelectedMealItemForDetails } from '@/store/meal-actions-store'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
 import { shadows } from '@/theme/shadows'
@@ -51,8 +61,11 @@ function getMealsForDate(data: ReturnType<typeof useCurrentDietPlan>['data'], da
 export default function Home() {
   const insets = useSafeAreaInsets()
   const colors = useColors()
+  const detailsSheetRef = useRef<BottomSheet>(null)
   const { data: session } = authClient.useSession()
   const [selectedDate, setSelectedDate] = useState(() => new Date())
+  const [showAlternatives, setShowAlternatives] = useState(false)
+  const [selectedMealItemForDetails, setSelectedMealItemForDetails] = useState<SelectedMealItemForDetails | null>(null)
 
   const dateStr = dayjs(selectedDate).format('YYYY-MM-DD')
   const {
@@ -64,7 +77,89 @@ export default function Home() {
     to: dateStr,
   })
 
+  const logConsumption = useLogMealConsumption()
+  const assignmentId = dietPlanData?.data?.assignment?.id ?? null
+
   const meals = useMemo(() => getMealsForDate(dietPlanData, dateStr), [dietPlanData, dateStr])
+
+  const {
+    data: alternativesData,
+    isLoading: alternativesLoading,
+    isError: alternativesError,
+  } = useMealItemAlternatives({
+    assignmentId: assignmentId ?? '',
+    dietPlanMealId: selectedMealItemForDetails?.meal.dietPlanMealId ?? '',
+    mealItemId: selectedMealItemForDetails?.item.mealItemId ?? '',
+    date: dateStr || undefined,
+    enabled: showAlternatives && !!selectedMealItemForDetails && !!assignmentId,
+  })
+  const setOverride = useSetMealItemOverride()
+
+  const handleCloseMealDetails = useCallback(() => {
+    detailsSheetRef.current?.close()
+    setShowAlternatives(false)
+    setSelectedMealItemForDetails(null)
+  }, [])
+
+  const renderDetailsBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />,
+    []
+  )
+
+  const handleShowAlternatives = useCallback(() => {
+    setShowAlternatives(true)
+    detailsSheetRef.current?.snapToIndex(2)
+  }, [])
+
+  const handleSetSubstitute = useCallback(
+    async (alt: FoodItemAlternative) => {
+      if (!selectedMealItemForDetails || !assignmentId) return
+      try {
+        await setOverride.mutateAsync({
+          assignmentId,
+          dietPlanMealId: selectedMealItemForDetails.meal.dietPlanMealId,
+          mealItemId: selectedMealItemForDetails.item.mealItemId,
+          body: {
+            foodItemId: alt.foodItemId,
+            quantity: alt.suggestedQuantityGrams,
+            date: dateStr,
+          },
+        })
+        handleCloseMealDetails()
+      } catch {
+        // Error handled by mutation
+      }
+    },
+    [selectedMealItemForDetails, assignmentId, dateStr, setOverride, handleCloseMealDetails]
+  )
+
+  const handleMealItemPress = useCallback((item: CurrentDietPlanMealItem, meal: SelectedMeal) => {
+    setSelectedMealItemForDetails({ item, meal })
+    detailsSheetRef.current?.snapToIndex(1)
+  }, [])
+
+  const handleMarkConsumed = useCallback(
+    (meal: CurrentDietPlanMeal) => {
+      if (assignmentId == null) {
+        Alert.alert('Cannot mark as done', 'No diet plan assignment for this date.')
+        return
+      }
+      logConsumption.mutate(
+        {
+          dietPlanAssignmentId: assignmentId,
+          dietPlanMealId: meal.dietPlanMealId,
+          consumedAt: new Date().toISOString(),
+          usePlannedItems: true,
+        },
+        {
+          onError: (err) => {
+            Alert.alert('Failed to mark meal as done', err instanceof Error ? err.message : 'Please try again.')
+          },
+        }
+      )
+    },
+    [assignmentId, logConsumption]
+  )
 
   const caloriesConsumed = 0
   const remainingCalories = caloriesGoal - caloriesConsumed
@@ -143,14 +238,6 @@ export default function Home() {
           <Text size='lg' weight='bold'>
             {isToday ? "Today's Meals" : dayjs(selectedDate).format('MMMM D') + ' Meals'}
           </Text>
-          <Pressable style={styles.addMealButton}>
-            <Text size='sm' weight='semibold' accent>
-              Add Meal
-            </Text>
-            <View style={[styles.addIcon, { backgroundColor: colors.accent }]}>
-              <Ionicons name='add' size={16} color={colors.white} />
-            </View>
-          </Pressable>
         </View>
 
         {isLoading && (
@@ -190,9 +277,102 @@ export default function Home() {
               time={formatMealTime(meal.mealType)}
               icon={MEAL_TYPE_ICONS[meal.mealType.toLowerCase()] ?? 'restaurant-outline'}
               items={meal.mealItems}
+              consumed={meal.consumed}
+              onMarkConsumed={assignmentId ? () => handleMarkConsumed(meal) : undefined}
+              meal={{ dietPlanMealId: meal.dietPlanMealId }}
+              onMealItemPress={handleMealItemPress}
             />
           ))}
       </ScrollView>
+
+      <BottomSheet
+        ref={detailsSheetRef}
+        index={-1}
+        snapPoints={['50%', '70%', '80%']}
+        enablePanDownToClose
+        backdropComponent={renderDetailsBackdrop}
+        onClose={handleCloseMealDetails}
+        backgroundStyle={{ backgroundColor: colors.appBg }}
+        handleIndicatorStyle={{ backgroundColor: colors.border }}
+      >
+        <BottomSheetScrollView contentContainerStyle={styles.detailsSheetContent} keyboardShouldPersistTaps='handled'>
+          {selectedMealItemForDetails && (
+            <>
+              <Text size='lg' weight='bold' style={styles.detailsSheetTitle}>
+                {selectedMealItemForDetails.item.foodName}
+              </Text>
+              <Text size='sm' muted style={styles.detailsSheetQuantity}>
+                Quantity: {selectedMealItemForDetails.item.quantity}
+              </Text>
+              {selectedMealItemForDetails.item.isOverridden === true &&
+                selectedMealItemForDetails.item.originalFoodName != null && (
+                  <Text size='xs' muted style={styles.detailsSheetOverride}>
+                    Replaced: {selectedMealItemForDetails.item.originalFoodName}
+                    {typeof selectedMealItemForDetails.item.originalQuantity === 'number'
+                      ? ` (${selectedMealItemForDetails.item.originalQuantity})`
+                      : ''}
+                  </Text>
+                )}
+              <View style={styles.detailsSheetActions}>
+                <Button onPress={handleShowAlternatives} variant='soft' style={styles.detailsSheetActionButton}>
+                  Show alternatives
+                </Button>
+              </View>
+              {showAlternatives && (
+                <View style={styles.alternativesSection}>
+                  <Text size='base' weight='semibold' style={styles.alternativesSectionTitle}>
+                    Alternatives for {selectedMealItemForDetails.item.foodName}
+                  </Text>
+                  {alternativesLoading && (
+                    <View style={styles.alternativesCentered}>
+                      <Spinner size='lg' />
+                      <Text muted style={styles.alternativesLoadingText}>
+                        Finding alternatives...
+                      </Text>
+                    </View>
+                  )}
+                  {!alternativesLoading && alternativesError && (
+                    <View style={styles.alternativesCentered}>
+                      <Text muted>Failed to load alternatives. Please try again.</Text>
+                    </View>
+                  )}
+                  {!alternativesLoading && !alternativesError && (alternativesData?.data ?? []).length === 0 && (
+                    <View style={styles.alternativesCentered}>
+                      <Text muted>No alternatives found with similar nutrition.</Text>
+                    </View>
+                  )}
+                  {!alternativesLoading &&
+                    !alternativesError &&
+                    (alternativesData?.data ?? []).map(alt => (
+                      <View key={alt.foodItemId} style={[styles.alternativeRow, { backgroundColor: colors.card }]}>
+                        <View style={styles.alternativeRowInfo}>
+                          <Text size='base' weight='semibold' numberOfLines={1}>
+                            {alt.name}
+                          </Text>
+                          <Text size='sm' muted>
+                            {alt.suggestedQuantityGrams}g · {alt.calories} kcal
+                          </Text>
+                        </View>
+                        <Pressable
+                          onPress={() => handleSetSubstitute(alt)}
+                          disabled={setOverride.isPending}
+                          style={({ pressed }) => [
+                            styles.alternativeUseButton,
+                            { backgroundColor: colors.accent, opacity: pressed ? 0.8 : 1 },
+                          ]}
+                        >
+                          <Text size='xs' weight='semibold' style={{ color: colors.white }}>
+                            Use
+                          </Text>
+                        </Pressable>
+                      </View>
+                    ))}
+                </View>
+              )}
+            </>
+          )}
+        </BottomSheetScrollView>
+      </BottomSheet>
 
       <BottomNav activeTab='home' />
     </View>
@@ -283,17 +463,54 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: spacing[3],
   },
-  addMealButton: {
+  detailsSheetContent: {
+    paddingHorizontal: spacing[4],
+    paddingBottom: spacing[6],
+  },
+  detailsSheetTitle: {
+    marginBottom: spacing[1],
+  },
+  detailsSheetQuantity: {
+    marginBottom: spacing[1],
+  },
+  detailsSheetOverride: {
+    marginBottom: spacing[4],
+  },
+  detailsSheetActions: {
+    flexDirection: 'row',
+    gap: spacing[2],
+  },
+  detailsSheetActionButton: {
+    flex: 1,
+  },
+  alternativesSection: {
+    marginTop: spacing[4],
+  },
+  alternativesSectionTitle: {
+    marginBottom: spacing[3],
+  },
+  alternativesCentered: {
+    alignItems: 'center',
+    paddingVertical: spacing[8],
+  },
+  alternativesLoadingText: {
+    marginTop: spacing[3],
+  },
+  alternativeRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: radii.sm,
+    padding: spacing[3],
+    marginBottom: spacing[2],
   },
-  addIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: radii.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: spacing[2],
+  alternativeRowInfo: {
+    flex: 1,
+  },
+  alternativeUseButton: {
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    borderRadius: radii.sm,
   },
   loadingState: {
     paddingVertical: spacing[8],

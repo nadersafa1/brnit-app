@@ -1,5 +1,6 @@
 import '@/polyfills'
 import { QueryClientProvider } from '@tanstack/react-query'
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { Stack } from 'expo-router'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
@@ -23,13 +24,15 @@ function RootNavigator() {
 export default function Layout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <KeyboardProvider>
-        <QueryClientProvider client={queryClient}>
-          <AppThemeProvider>
-            <RootNavigator />
-          </AppThemeProvider>
-        </QueryClientProvider>
-      </KeyboardProvider>
+      <BottomSheetModalProvider>
+        <KeyboardProvider>
+          <QueryClientProvider client={queryClient}>
+            <AppThemeProvider>
+              <RootNavigator />
+            </AppThemeProvider>
+          </QueryClientProvider>
+        </KeyboardProvider>
+      </BottomSheetModalProvider>
     </GestureHandlerRootView>
   )
 }
