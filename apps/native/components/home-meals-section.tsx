@@ -19,6 +19,8 @@ interface HomeMealsSectionProps {
   error: Error | null
   meals: CurrentDietPlanMeal[]
   selectedDate: Date
+  /** When present, meal cards show mark-as-consumed and pass it to the API. */
+  dietPlanAssignmentId?: string
 }
 
 export function HomeMealsSection({
@@ -26,9 +28,11 @@ export function HomeMealsSection({
   error,
   meals,
   selectedDate,
+  dietPlanAssignmentId,
 }: Readonly<HomeMealsSectionProps>) {
   const colors = useColors()
   const isToday = dayjs(selectedDate).isSame(dayjs(), 'day')
+  const consumedDate = dayjs(selectedDate).format('YYYY-MM-DD')
 
   return (
     <>
@@ -76,6 +80,10 @@ export function HomeMealsSection({
             icon={MEAL_TYPE_ICONS[meal.mealType.toLowerCase()] ?? 'restaurant-outline'}
             macros={meal.macros}
             items={meal.mealItems}
+            dietPlanAssignmentId={dietPlanAssignmentId}
+            dietPlanMealId={meal.dietPlanMealId}
+            consumed={meal.consumed}
+            consumedDate={consumedDate}
           />
         ))}
     </>

@@ -7,10 +7,12 @@ import { eq, or, inArray, sql } from 'drizzle-orm'
 import {
   logDietPlanMealConsumption,
   listDietPlanMealConsumptions,
+  deleteDietPlanMealConsumptionBySlot,
 } from '@/lib/services/diet-plan-meal-consumption'
 import {
   createDietPlanMealConsumptionSchema,
   dietPlanMealConsumptionQuerySchema,
+  deleteDietPlanMealConsumptionBySlotSchema,
 } from '@/types/api/diet-plan-meal-consumption.schemas'
 import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
 
@@ -65,6 +67,7 @@ function getGraceDays(): number {
   return Math.max(0, value)
 }
 
+/** Lists consumptions for the current user (optionally filtered by assignment and date range). */
 export const GET = async (request: NextRequest) => {
   const authResult = await requireAuth(request.headers)
   if (authResult.error) return authResult.error
@@ -88,6 +91,7 @@ export const GET = async (request: NextRequest) => {
     )
   }
 
+  // Restrict to assignments the user owns or is linked to (direct or via member).
   if (parseResult.data.dietPlanAssignmentId) {
     const assignment = await getAssignmentForUser(userId, parseResult.data.dietPlanAssignmentId)
     if (!assignment) {
@@ -118,6 +122,7 @@ export const GET = async (request: NextRequest) => {
   return NextResponse.json(createPaginatedResponse(items, page, perPage, totalItems))
 }
 
+/** Creates a meal consumption (mark as consumed). Validates assignment and date range before calling service. */
 export const POST = async (request: NextRequest) => {
   const authResult = await requireAuth(request.headers)
   if (authResult.error) return authResult.error
@@ -172,4 +177,40 @@ export const POST = async (request: NextRequest) => {
   }
 
   return NextResponse.json({ data: result.data }, { status: 201 })
+}
+
+/** Deletes a consumption by slot (assignment + meal + date). Used by member app to unmark consumed. */
+export const DELETE = async (request: NextRequest) => {
+  const authResult = await requireAuth(request.headers)
+  if (authResult.error) return authResult.error
+
+  const body = await request.json().catch(() => ({}))
+  const parseResult = deleteDietPlanMealConsumptionBySlotSchema.safeParse(body)
+
+  if (!parseResult.success) {
+    return NextResponse.json(
+      { error: 'Invalid request body', details: flattenError(parseResult.error) },
+      { status: 400 }
+    )
+  }
+
+  const assignment = await getAssignmentForUser(
+    authResult.session.user.id,
+    parseResult.data.dietPlanAssignmentId
+  )
+  if (!assignment) {
+    return NextResponse.json({ error: 'Forbidden: assignment not found or access denied' }, { status: 403 })
+  }
+
+  const deleted = await deleteDietPlanMealConsumptionBySlot(
+    parseResult.data.dietPlanAssignmentId,
+    parseResult.data.dietPlanMealId,
+    parseResult.data.consumedDate
+  )
+
+  if (!deleted) {
+    return NextResponse.json({ error: 'Consumption not found' }, { status: 404 })
+  }
+
+  return NextResponse.json({ data: { deleted: true } }, { status: 200 })
 }

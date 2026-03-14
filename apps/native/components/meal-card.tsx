@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons'
 import { useState } from 'react'
-import { LayoutAnimation, Pressable, View, StyleSheet } from 'react-native'
+import { ActivityIndicator, LayoutAnimation, Pressable, View, StyleSheet } from 'react-native'
 import { Text } from '@/components/ui'
+import { useMarkMealConsumed } from '@/hooks/use-mark-meal-consumed'
+import { useUnmarkMealConsumed } from '@/hooks/use-unmark-meal-consumed'
 import { useColors } from '@/hooks/use-theme-color'
 import type { CurrentDietPlanMealItem, Macros } from '@/lib/api/member-types'
 import { formatCalorieDisplay, roundUpToTenth } from '@/lib/utils/numbers'
@@ -17,11 +19,41 @@ interface MealCardProps {
   icon: keyof typeof Ionicons.glyphMap
   macros: Macros
   items: CurrentDietPlanMealItem[]
+  /** When provided, shows mark-as-consumed button. Omit when no plan for the day. */
+  dietPlanAssignmentId?: string
+  dietPlanMealId?: string
+  consumed?: boolean
+  consumedDate?: string
 }
 
-export function MealCard({ title, calories, time, icon, macros, items }: Readonly<MealCardProps>) {
+export function MealCard({
+  title,
+  calories,
+  time,
+  icon,
+  macros,
+  items,
+  dietPlanAssignmentId,
+  dietPlanMealId,
+  consumed = false,
+  consumedDate,
+}: Readonly<MealCardProps>) {
   const colors = useColors()
   const [expanded, setExpanded] = useState(false)
+  const markConsumed = useMarkMealConsumed()
+  const unmarkConsumed = useUnmarkMealConsumed()
+
+  const showConsumedControl = Boolean(dietPlanAssignmentId && dietPlanMealId && consumedDate)
+  const isConsumedActionPending = markConsumed.isPending || unmarkConsumed.isPending
+
+  const handleConsumedPress = () => {
+    if (!dietPlanAssignmentId || !dietPlanMealId || !consumedDate) return
+    if (consumed) {
+      unmarkConsumed.mutate({ dietPlanAssignmentId, dietPlanMealId, consumedDate })
+    } else {
+      markConsumed.mutate({ dietPlanAssignmentId, dietPlanMealId, consumedDate })
+    }
+  }
 
   const toggleExpanded = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
@@ -52,9 +84,33 @@ export function MealCard({ title, calories, time, icon, macros, items }: Readonl
             <Text size='xs' weight='medium' muted>{time}</Text>
           </View>
         </View>
-        <View style={styles.caloriesContainer}>
-          <Text size='base' weight='bold' accent>{formatCalorieDisplay(calories)}</Text>
-          <Text size='xs' weight='medium' muted style={styles.kcalLabel}>kcal</Text>
+        <View style={styles.headerRight}>
+          <View style={styles.caloriesContainer}>
+            <Text size='base' weight='bold' accent>{formatCalorieDisplay(calories)}</Text>
+            <Text size='xs' weight='medium' muted style={styles.kcalLabel}>kcal</Text>
+          </View>
+          {/* Mark/unmark consumed: one icon, toggles between outline (unconsumed) and filled (consumed). */}
+          {showConsumedControl && (
+            <Pressable
+              onPress={handleConsumedPress}
+              disabled={isConsumedActionPending}
+              style={({ pressed }) => [
+                styles.consumedButton,
+                pressed && { opacity: 0.7 },
+              ]}
+              hitSlop={8}
+            >
+              {isConsumedActionPending ? (
+                <ActivityIndicator size='small' color={colors.accent} />
+              ) : (
+                <Ionicons
+                  name={consumed ? 'checkmark-circle' : 'checkmark-circle-outline'}
+                  size={28}
+                  color={consumed ? colors.muted : colors.accent}
+                />
+              )}
+            </Pressable>
+          )}
         </View>
       </View>
 
@@ -116,12 +172,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: spacing[3]
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2]
+  },
   caloriesContainer: {
     flexDirection: 'row',
     alignItems: 'center'
   },
   kcalLabel: {
     marginLeft: spacing[0.5]
+  },
+  consumedButton: {
+    padding: spacing[1],
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 36,
+    minHeight: 36
   },
   macrosRow: {
     flexDirection: 'row',

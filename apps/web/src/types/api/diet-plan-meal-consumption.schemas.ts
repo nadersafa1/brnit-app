@@ -32,6 +32,13 @@ export const dietPlanMealConsumptionQuerySchema = z.object({
   consumedDateTo: dateStringSchema.optional(),
 })
 
+export const deleteDietPlanMealConsumptionBySlotSchema = z.object({
+  dietPlanAssignmentId: z.uuid('Invalid assignment ID'),
+  dietPlanMealId: z.uuid('Invalid diet plan meal ID'),
+  consumedDate: dateStringSchema,
+})
+
 export type ConsumedItemInput = z.infer<typeof consumedItemSchema>
 export type CreateDietPlanMealConsumption = z.infer<typeof createDietPlanMealConsumptionSchema>
 export type DietPlanMealConsumptionQuery = z.infer<typeof dietPlanMealConsumptionQuerySchema>
+export type DeleteDietPlanMealConsumptionBySlot = z.infer<typeof deleteDietPlanMealConsumptionBySlotSchema>

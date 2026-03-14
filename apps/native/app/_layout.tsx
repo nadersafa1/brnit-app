@@ -3,6 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { Stack } from 'expo-router'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
+import Toast from 'react-native-toast-message'
 
 import { AppThemeProvider } from '@/contexts/app-theme-context'
 import { queryClient } from '@/lib/query-client'
@@ -27,6 +28,7 @@ export default function Layout() {
         <QueryClientProvider client={queryClient}>
           <AppThemeProvider>
             <RootNavigator />
+            <Toast />
           </AppThemeProvider>
         </QueryClientProvider>
       </KeyboardProvider>

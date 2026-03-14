@@ -72,6 +72,7 @@ export default function Home() {
           error={error ?? null}
           meals={meals}
           selectedDate={selectedDate}
+          dietPlanAssignmentId={dietPlanData?.data?.assignment?.id}
         />
       </ScrollView>
 
