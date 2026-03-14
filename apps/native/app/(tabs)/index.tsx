@@ -189,7 +189,7 @@ export default function Home() {
               calories={0}
               time={formatMealTime(meal.mealType)}
               icon={MEAL_TYPE_ICONS[meal.mealType.toLowerCase()] ?? 'restaurant-outline'}
-              items={meal.mealItems.map(item => item.foodName)}
+              items={meal.mealItems}
             />
           ))}
       </ScrollView>

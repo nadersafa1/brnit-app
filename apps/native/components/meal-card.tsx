@@ -2,20 +2,21 @@ import { Ionicons } from '@expo/vector-icons'
 import { Pressable, View, StyleSheet } from 'react-native'
 import { Text } from '@/components/ui'
 import { useColors } from '@/hooks/use-theme-color'
-import { Colors } from '@/theme/colors'
+import type { CurrentDietPlanMealItem } from '@/lib/api/member-types'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
 import { shadows } from '@/theme/shadows'
+import { MealItemRow } from './meal-item-row'
 
 interface MealCardProps {
   title: string
   calories: number
   time: string
   icon: keyof typeof Ionicons.glyphMap
-  items: string[]
+  items: CurrentDietPlanMealItem[]
 }
 
-export function MealCard({ title, calories, time, icon, items }: MealCardProps) {
+export function MealCard({ title, calories, time, icon, items }: Readonly<MealCardProps>) {
   const colors = useColors()
 
   return (
@@ -49,9 +50,17 @@ export function MealCard({ title, calories, time, icon, items }: MealCardProps) 
           </Text>
         </View>
       </View>
-      <Text size="sm" weight="medium" muted numberOfLines={1}>
-        {items.join(' • ')}
-      </Text>
+      {items.length === 0 ? (
+        <Text size="sm" weight="medium" muted>
+          No items
+        </Text>
+      ) : (
+        <View style={styles.itemsList}>
+          {items.map(item => (
+            <MealItemRow key={item.mealItemId} item={item} />
+          ))}
+        </View>
+      )}
     </Pressable>
   )
 }
@@ -86,5 +95,8 @@ const styles = StyleSheet.create({
   },
   kcalLabel: {
     marginLeft: spacing[0.5],
+  },
+  itemsList: {
+    marginTop: spacing[1],
   },
 })
