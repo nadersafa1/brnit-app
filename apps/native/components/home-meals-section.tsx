@@ -74,6 +74,7 @@ export function HomeMealsSection({
             calories={roundUpToTenth(meal.macros.calories)}
             time={formatMealTime(meal.mealType)}
             icon={MEAL_TYPE_ICONS[meal.mealType.toLowerCase()] ?? 'restaurant-outline'}
+            macros={meal.macros}
             items={meal.mealItems}
           />
         ))}
