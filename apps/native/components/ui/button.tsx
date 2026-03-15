@@ -67,7 +67,11 @@ export function Button(props: Readonly<ButtonProps>) {
   const handlePress = () => {
     if (isDisabled) return
     if (haptic) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+      const impactStyle =
+        variant === 'solid'
+          ? Haptics.ImpactFeedbackStyle.Medium
+          : Haptics.ImpactFeedbackStyle.Light
+      Haptics.impactAsync(impactStyle)
     }
     onPress()
   }

@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import Toast from "react-native-toast-message";
 import { deleteMealConsumption } from "@/lib/api/delete-meal-consumption";
 import type { ConsumptionSlot } from "@/lib/api/consumption-slot";
 import { getApiErrorMessage } from "@/lib/api/error-message";
 import { ApiError } from "@/lib/api";
 import { memberKeys } from "@/lib/queries/keys";
+import { showError, showSuccess } from "@/lib/feedback";
 
 /** Mutation to unmark a meal (delete consumption). Invalidates member queries on success or 404. */
 export function useUnmarkMealConsumed() {
@@ -18,14 +18,14 @@ export function useUnmarkMealConsumed() {
         consumedDate: variables.consumedDate,
       }),
     onSuccess: () => {
-      Toast.show({ type: "success", text1: "Meal unmarked" });
+      showSuccess("Meal unmarked");
       queryClient.invalidateQueries({ queryKey: memberKeys.all });
     },
     onError: (error: unknown) => {
       const message = getApiErrorMessage(error, "Could not unmark meal", {
         404: "Consumption not found",
       });
-      Toast.show({ type: "error", text1: message });
+      showError(message);
       if (error instanceof ApiError && error.status === 404) {
         queryClient.invalidateQueries({ queryKey: memberKeys.all });
       }

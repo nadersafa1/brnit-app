@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import type BottomSheet from "@gorhom/bottom-sheet";
 import { FlashList } from "@shopify/flash-list";
-import { useCallback, useDeferredValue, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useDeferredValue, useMemo, useRef, useState } from "react";
 import { Pressable, View, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -14,6 +14,7 @@ import { Input, Spinner, Text } from "@/components/ui";
 import { useFoodCategories } from "@/hooks/use-food-categories";
 import { useFoodItems } from "@/hooks/use-food-items";
 import { useColors } from "@/hooks/use-theme-color";
+import { showError } from "@/lib/feedback";
 import {
   useSearchFilterStore,
   useHasActiveFilters,
@@ -62,6 +63,11 @@ export default function Search() {
     () => data?.pages.flatMap((page) => page.data) ?? [],
     [data]
   );
+
+  // Toast when search fails so user sees feedback even if they scroll
+  useEffect(() => {
+    if (isError) showError("Failed to load food items");
+  }, [isError]);
 
   const handleEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {

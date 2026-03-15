@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { AuthSuccessScreen, PrimaryButton, TextInput } from '@/components'
 import { FieldError, Text } from '@/components/ui'
+import { showError, showSuccess } from '@/lib/feedback'
 import { DEEP_LINKS } from '@/constants/deep-links'
 import { authClient } from '@/lib/auth-client'
 import { useColors } from '@/hooks/use-theme-color'
@@ -32,7 +33,9 @@ export default function ForgotPasswordScreen() {
 
   async function handleSendResetLink() {
     if (!email.trim()) {
-      setError('Please enter your email')
+      const message = 'Please enter your email'
+      setError(message)
+      showError(message)
       return
     }
     setIsLoading(true)
@@ -45,9 +48,12 @@ export default function ForgotPasswordScreen() {
 
     setIsLoading(false)
     if (err) {
-      setError(err.message || 'Failed to send reset link')
+      const message = err.message || 'Failed to send reset link'
+      setError(message)
+      showError(message)
       return
     }
+    showSuccess('Reset link sent', 'Check your email')
     setSent(true)
   }
 

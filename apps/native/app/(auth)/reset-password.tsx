@@ -7,16 +7,23 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PasswordInput, PrimaryButton } from '@/components'
 import { FieldError, Text } from '@/components/ui'
 import { authClient } from '@/lib/auth-client'
+import { showError, showSuccess } from '@/lib/feedback'
 import { useColors } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
 import { shadows } from '@/theme/shadows'
 
+function getTokenFromParams(params: { token?: string | string[] }): string | undefined {
+  const raw = params.token
+  if (typeof raw === 'string') return raw
+  if (Array.isArray(raw) && raw.length > 0) return raw[0]
+  return undefined
+}
+
 export default function ResetPasswordScreen() {
   const insets = useSafeAreaInsets()
   const colors = useColors()
-  const rawToken = useLocalSearchParams<{ token?: string | string[] }>().token
-  const token = typeof rawToken === 'string' ? rawToken : Array.isArray(rawToken) ? rawToken[0] : undefined
+  const token = getTokenFromParams(useLocalSearchParams<{ token?: string | string[] }>())
   const { data: session, isPending } = authClient.useSession()
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -61,11 +68,15 @@ export default function ResetPasswordScreen() {
 
   async function handleResetPassword() {
     if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters')
+      const message = 'Password must be at least 8 characters'
+      setError(message)
+      showError(message)
       return
     }
     if (newPassword !== confirmPassword) {
-      setError('Passwords do not match')
+      const message = 'Passwords do not match'
+      setError(message)
+      showError(message)
       return
     }
     setIsLoading(true)
@@ -78,13 +89,17 @@ export default function ResetPasswordScreen() {
 
     setIsLoading(false)
     if (err) {
+      let message: string
       if (err.code === 'INVALID_TOKEN') {
-        setError('Reset link is invalid or expired')
+        message = 'Reset link is invalid or expired'
       } else {
-        setError(err.message || 'Failed to reset password')
+        message = err.message || 'Failed to reset password'
       }
+      setError(message)
+      showError(message)
       return
     }
+    showSuccess('Password reset')
     const { router } = await import('expo-router')
     router.replace('/(auth)/login')
   }

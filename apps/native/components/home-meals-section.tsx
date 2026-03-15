@@ -4,10 +4,12 @@
 
 import { Ionicons } from '@expo/vector-icons'
 import dayjs from 'dayjs'
+import { useEffect } from 'react'
 import { View, StyleSheet } from 'react-native'
 import { MealCard } from '@/components/meal-card'
 import { Spinner, Text } from '@/components/ui'
 import { useColors } from '@/hooks/use-theme-color'
+import { showError } from '@/lib/feedback'
 import type { CurrentDietPlanMeal } from '@/lib/api/member-types'
 import { formatMealTime, MEAL_TYPE_ICONS } from '@/lib/constants/meals'
 import { roundUpToTenth } from '@/lib/utils/numbers'
@@ -33,6 +35,11 @@ export function HomeMealsSection({
   const colors = useColors()
   const isToday = dayjs(selectedDate).isSame(dayjs(), 'day')
   const consumedDate = dayjs(selectedDate).format('YYYY-MM-DD')
+
+  // Toast so the user sees the error even if the section is off-screen
+  useEffect(() => {
+    if (error) showError(error.message)
+  }, [error])
 
   return (
     <>
