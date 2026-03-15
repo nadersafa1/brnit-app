@@ -37,6 +37,7 @@ export default function Home() {
   const progress = useDayProgress(day, meals)
 
   const userName = session?.user?.name?.split(' ')[0] || 'there'
+  const userImageUrl = session?.user?.image ?? undefined
   const isToday = dayjs(selectedDate).isSame(dayjs(), 'day')
 
   return (
@@ -48,7 +49,7 @@ export default function Home() {
         contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 96 }]}
         showsVerticalScrollIndicator={false}
       >
-        <HomeHeader userName={userName} />
+        <HomeHeader userName={userName} userImageUrl={userImageUrl} />
         <CalendarStrip
           selectedDate={selectedDate}
           onDateSelect={setSelectedDate}

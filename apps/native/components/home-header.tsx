@@ -3,7 +3,7 @@
  */
 
 import { Ionicons } from '@expo/vector-icons'
-import { Pressable, View, StyleSheet } from 'react-native'
+import { Pressable, View, StyleSheet, Image } from 'react-native'
 import { Text } from '@/components/ui'
 import { useColors } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
@@ -12,22 +12,27 @@ import { shadows } from '@/theme/shadows'
 
 interface HomeHeaderProps {
   userName: string
+  userImageUrl?: string | null
 }
 
-export function HomeHeader({ userName }: Readonly<HomeHeaderProps>) {
+export function HomeHeader({ userName, userImageUrl }: Readonly<HomeHeaderProps>) {
   const colors = useColors()
 
   return (
     <View style={styles.header}>
       <View style={styles.headerLeft}>
         <View style={[styles.avatar, { backgroundColor: colors.accent }]}>
-          <Text
-            size='lg'
-            weight='bold'
-            style={{ color: colors.white }}
-          >
-            {userName.charAt(0).toUpperCase()}
-          </Text>
+          {userImageUrl ? (
+            <Image source={{ uri: userImageUrl }} style={styles.avatarImage} />
+          ) : (
+            <Text
+              size='lg'
+              weight='bold'
+              style={{ color: colors.white }}
+            >
+              {userName.charAt(0).toUpperCase()}
+            </Text>
+          )}
         </View>
         <View>
           <Text
@@ -73,7 +78,12 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     marginRight: spacing[3],
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    overflow: 'hidden'
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%'
   },
   notificationButton: {
     width: 44,
