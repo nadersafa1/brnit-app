@@ -1,99 +1,84 @@
-import { Ionicons } from "@expo/vector-icons";
-import type BottomSheet from "@gorhom/bottom-sheet";
-import { FlashList } from "@shopify/flash-list";
-import { useCallback, useEffect, useDeferredValue, useMemo, useRef, useState } from "react";
-import { Pressable, View, StyleSheet } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from '@expo/vector-icons'
+import { FlashList } from '@shopify/flash-list'
+import { useCallback, useEffect, useDeferredValue, useMemo, useRef, useState } from 'react'
+import { Pressable, View, StyleSheet } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { BottomNav } from "@/components/bottom-nav";
-import { FoodItemCard } from "@/components/food-item-card";
-import { FoodAlternativesSheet } from "@/components/food-alternatives-sheet";
-import { SearchFilterSheet } from "@/components/search-filter-sheet";
-import type { FoodItem } from "@/lib/api/member-food-types";
-import { Input, Spinner, Text } from "@/components/ui";
-import { useFoodCategories } from "@/hooks/use-food-categories";
-import { useFoodItems } from "@/hooks/use-food-items";
-import { useColors } from "@/hooks/use-theme-color";
-import { showError } from "@/lib/feedback";
-import {
-  useSearchFilterStore,
-  useHasActiveFilters,
-} from "@/store/search-filter-store";
-import { spacing } from "@/theme/spacing";
-import { radii } from "@/theme/radii";
-import { shadows } from "@/theme/shadows";
+import { BottomNav } from '@/components/bottom-nav'
+import { FoodItemCard } from '@/components/food-item-card'
+import { FoodAlternativesSheet } from '@/components/food-alternatives-sheet'
+import { SearchFilterSheet } from '@/components/search-filter-sheet'
+import type { AppBottomSheetRef } from '@/components/bottom-sheet'
+import type { FoodItem } from '@/lib/api/member-food-types'
+import { Input, Spinner, Text } from '@/components/ui'
+import { useFoodCategories } from '@/hooks/use-food-categories'
+import { useFoodItems } from '@/hooks/use-food-items'
+import { useColors } from '@/hooks/use-theme-color'
+import { showError } from '@/lib/feedback'
+import { useSearchFilterStore, useHasActiveFilters } from '@/store/search-filter-store'
+import { spacing } from '@/theme/spacing'
+import { radii } from '@/theme/radii'
+import { shadows } from '@/theme/shadows'
 
 export default function Search() {
-  const insets = useSafeAreaInsets();
-  const colors = useColors();
-  const bottomSheetRef = useRef<BottomSheet>(null);
+  const insets = useSafeAreaInsets()
+  const colors = useColors()
+  const bottomSheetRef = useRef<AppBottomSheetRef>(null)
 
-  const [inputValue, setInputValue] = useState("");
-  const deferredQuery = useDeferredValue(inputValue);
-  const [selectedFoodForAlternatives, setSelectedFoodForAlternatives] =
-    useState<FoodItem | null>(null);
+  const [inputValue, setInputValue] = useState('')
+  const deferredQuery = useDeferredValue(inputValue)
+  const [selectedFoodForAlternatives, setSelectedFoodForAlternatives] = useState<FoodItem | null>(null)
 
-  const { categoryId, sortBy, sortOrder, setQuery } = useSearchFilterStore();
-  const hasActiveFilters = useHasActiveFilters();
+  const { categoryId, sortBy, sortOrder, setQuery } = useSearchFilterStore()
+  const hasActiveFilters = useHasActiveFilters()
 
-  const { data: categoriesData } = useFoodCategories();
-  const categories = categoriesData?.data ?? [];
+  const { data: categoriesData } = useFoodCategories()
+  const categories = categoriesData?.data ?? []
 
   const selectedCategoryName = useMemo(() => {
-    if (!categoryId) return null;
-    return categories.find((c) => c.id === categoryId)?.name ?? null;
-  }, [categoryId, categories]);
+    if (!categoryId) return null
+    return categories.find(c => c.id === categoryId)?.name ?? null
+  }, [categoryId, categories])
 
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading,
-    isError,
-    refetch,
-  } = useFoodItems({
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, refetch } = useFoodItems({
     q: deferredQuery || undefined,
     categoryId: categoryId ?? undefined,
     sortBy,
-    sortOrder,
-  });
+    sortOrder
+  })
 
-  const foodItems = useMemo(
-    () => data?.pages.flatMap((page) => page.data) ?? [],
-    [data]
-  );
+  const foodItems = useMemo(() => data?.pages.flatMap(page => page.data) ?? [], [data])
 
   // Toast when search fails so user sees feedback even if they scroll
   useEffect(() => {
-    if (isError) showError("Failed to load food items");
-  }, [isError]);
+    if (isError) showError('Failed to load food items')
+  }, [isError])
 
   const handleEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
+      fetchNextPage()
     }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const handleInputChange = useCallback(
     (text: string) => {
-      setInputValue(text);
-      setQuery(text);
+      setInputValue(text)
+      setQuery(text)
     },
     [setQuery]
-  );
+  )
 
   const openFilterSheet = useCallback(() => {
-    bottomSheetRef.current?.expand();
-  }, []);
+    bottomSheetRef.current?.open(2)
+  }, [])
 
   const handleAlternativesPress = useCallback((item: FoodItem) => {
-    setSelectedFoodForAlternatives(item);
-  }, []);
+    setSelectedFoodForAlternatives(item)
+  }, [])
 
   const handleCloseAlternatives = useCallback(() => {
-    setSelectedFoodForAlternatives(null);
-  }, []);
+    setSelectedFoodForAlternatives(null)
+  }, [])
 
   const renderContent = () => {
     if (isLoading) {
@@ -101,7 +86,7 @@ export default function Search() {
         <View style={styles.centered}>
           <Spinner />
         </View>
-      );
+      )
     }
 
     if (isError) {
@@ -112,7 +97,7 @@ export default function Search() {
             <Text accent>Tap to retry</Text>
           </Pressable>
         </View>
-      );
+      )
     }
 
     return (
@@ -124,49 +109,44 @@ export default function Search() {
             onAlternativesPress={() => handleAlternativesPress(item)}
           />
         )}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.centered}>
-            <Text muted>
-              {deferredQuery ? "No results found" : "Start searching for food items"}
-            </Text>
+            <Text muted>{deferredQuery ? 'No results found' : 'Start searching for food items'}</Text>
           </View>
         }
         ListFooterComponent={
           isFetchingNextPage ? (
             <View style={styles.footer}>
-              <Spinner size="sm" />
+              <Spinner size='sm' />
             </View>
           ) : undefined
         }
       />
-    );
-  };
+    )
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.appBg }]}>
-      <View
-        style={[styles.decorativeBlob, { backgroundColor: colors.pastelPurple }]}
-      />
+      <View style={[styles.decorativeBlob, { backgroundColor: colors.pastelPurple }]} />
 
-      <View
-        style={[
-          styles.header,
-          { paddingTop: insets.top + 16, paddingBottom: spacing[3] },
-        ]}
-      >
-        <Text size="2xl" weight="bold" style={styles.title}>
+      <View style={[styles.header, { paddingTop: insets.top + 16, paddingBottom: spacing[3] }]}>
+        <Text
+          size='2xl'
+          weight='bold'
+          style={styles.title}
+        >
           Search Foods
         </Text>
 
         <View style={styles.searchRow}>
           <Input
-            icon="search-outline"
-            variant="pill"
-            placeholder="Search for a food..."
+            icon='search-outline'
+            variant='pill'
+            placeholder='Search for a food...'
             value={inputValue}
             onChangeText={handleInputChange}
             containerStyle={{ ...styles.searchInput, ...shadows.sm }}
@@ -177,13 +157,13 @@ export default function Search() {
               styles.filterButton,
               {
                 backgroundColor: hasActiveFilters ? colors.accent : colors.card,
-                opacity: pressed ? 0.8 : 1,
+                opacity: pressed ? 0.8 : 1
               },
-              shadows.sm,
+              shadows.sm
             ]}
           >
             <Ionicons
-              name="options-outline"
+              name='options-outline'
               size={20}
               color={hasActiveFilters ? colors.white : colors.ink}
             />
@@ -194,22 +174,31 @@ export default function Search() {
           <View style={styles.activeFilters}>
             {selectedCategoryName && (
               <View style={[styles.filterChip, { backgroundColor: colors.surfaceAlt }]}>
-                <Text size="xs" weight="medium">
+                <Text
+                  size='xs'
+                  weight='medium'
+                >
                   {selectedCategoryName}
                 </Text>
               </View>
             )}
-            {sortBy !== "name" && (
+            {sortBy !== 'name' && (
               <View style={[styles.filterChip, { backgroundColor: colors.surfaceAlt }]}>
-                <Text size="xs" weight="medium">
+                <Text
+                  size='xs'
+                  weight='medium'
+                >
                   Sort: {sortBy}
                 </Text>
               </View>
             )}
-            {sortOrder !== "asc" && (
+            {sortOrder !== 'asc' && (
               <View style={[styles.filterChip, { backgroundColor: colors.surfaceAlt }]}>
-                <Text size="xs" weight="medium">
-                  {sortOrder === "desc" ? "Descending" : "Ascending"}
+                <Text
+                  size='xs'
+                  weight='medium'
+                >
+                  {sortOrder === 'desc' ? 'Descending' : 'Ascending'}
                 </Text>
               </View>
             )}
@@ -219,76 +208,76 @@ export default function Search() {
 
       <View style={styles.listContainer}>{renderContent()}</View>
 
-      <BottomNav activeTab="search" />
+      <BottomNav activeTab='search' />
       <SearchFilterSheet ref={bottomSheetRef} />
       <FoodAlternativesSheet
         foodItem={selectedFoodForAlternatives}
         onClose={handleCloseAlternatives}
       />
     </View>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flex: 1
   },
   decorativeBlob: {
-    position: "absolute",
+    position: 'absolute',
     top: -80,
     right: -80,
     width: 256,
     height: 256,
-    borderRadius: radii.pill,
+    borderRadius: radii.pill
   },
   header: {
-    paddingHorizontal: spacing[4],
+    paddingHorizontal: spacing[4]
   },
   title: {
-    marginBottom: spacing[4],
+    marginBottom: spacing[4]
   },
   searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing[3],
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3]
   },
   searchInput: {
-    flex: 1,
+    flex: 1
   },
   filterButton: {
     width: 48,
     height: 48,
     borderRadius: radii.pill,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   activeFilters: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing[2],
-    marginTop: spacing[3],
+    marginTop: spacing[3]
   },
   filterChip: {
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[1],
-    borderRadius: radii.pill,
+    borderRadius: radii.pill
   },
   listContainer: {
-    flex: 1,
+    flex: 1
   },
   listContent: {
     paddingHorizontal: spacing[4],
-    paddingBottom: 96,
+    paddingBottom: 96
   },
   centered: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: spacing[8],
-    gap: spacing[2],
+    gap: spacing[2]
   },
   footer: {
     paddingVertical: spacing[4],
-    alignItems: "center",
-  },
-});
+    alignItems: 'center'
+  }
+})

@@ -10,7 +10,7 @@ export function getApiErrorMessage(
   statusMessages?: Partial<Record<number, string>>
 ): string {
   if (error instanceof ApiError && statusMessages?.[error.status] !== undefined) {
-    return statusMessages[error.status];
+    return statusMessages[error.status] as string;
   }
   if (error instanceof Error) return error.message;
   return fallback;

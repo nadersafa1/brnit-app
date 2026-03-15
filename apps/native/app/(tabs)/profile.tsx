@@ -25,7 +25,7 @@ export default function Profile() {
   const userImage = session?.user?.image ?? null
 
   const openEditSheet = useCallback(() => {
-    editSheetRef.current?.open()
+    editSheetRef.current?.open(2)
   }, [])
 
   const handleEditSaveSuccess = useCallback(() => {
