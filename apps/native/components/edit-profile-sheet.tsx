@@ -36,13 +36,13 @@ export const EditProfileSheet = forwardRef<EditProfileSheetRef, EditProfileSheet
     initialName,
     initialImageUrl,
     onSaveSuccess,
-    closeSheet,
+    closeSheet
   })
 
   const renderFooter = useCallback(
     (props: BottomSheetFooterProps) => (
       <SheetFooter {...props}>
-        <View style={styles.footerRow}>
+        <View style={styles.footer}>
           <Button
             variant='outline'
             onPress={closeSheet}
@@ -190,9 +190,9 @@ function AvatarSection({ displayImageUri, displayName, canRemovePhoto, onChangeP
 // --- Styles ---
 
 const styles = StyleSheet.create({
-  footerRow: {
-    flexDirection: 'row',
-    gap: spacing[3],
+  footer: {
+    flexDirection: 'column',
+    gap: spacing[3]
   },
   footerButton: {
     flex: 1

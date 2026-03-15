@@ -32,15 +32,15 @@ export type AppBottomSheetProps = {
   keyboardShouldPersistTaps?: boolean
 }
 
-function renderHeaderContent(
-  headerTitle?: string,
-  renderHeader?: () => React.ReactNode
-): React.ReactNode {
+function renderHeaderContent(headerTitle?: string, renderHeader?: () => React.ReactNode): React.ReactNode {
   if (renderHeader) return renderHeader()
   if (headerTitle != null) {
     return (
       <View style={styles.header}>
-        <Text size="lg" weight="bold">
+        <Text
+          size='lg'
+          weight='bold'
+        >
           {headerTitle}
         </Text>
       </View>
@@ -50,15 +50,7 @@ function renderHeaderContent(
 }
 
 export const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(function AppBottomSheet(
-  {
-    snapPoints,
-    onClose,
-    headerTitle,
-    renderHeader,
-    footerComponent,
-    children,
-    keyboardShouldPersistTaps = false,
-  },
+  { snapPoints, onClose, headerTitle, renderHeader, footerComponent, children, keyboardShouldPersistTaps = false },
   ref
 ) {
   const colors = useColors()
@@ -86,7 +78,7 @@ export const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>
       footerComponent={footerComponent}
       onClose={onClose}
       backgroundStyle={{ backgroundColor: colors.appBg }}
-      handleIndicatorStyle={{ backgroundColor: colors.border }}
+      handleIndicatorStyle={{ backgroundColor: colors.pastelPurple }}
     >
       {renderHeaderContent(headerTitle, renderHeader)}
       <BottomSheetScrollView
@@ -109,13 +101,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing[4],
-    paddingBottom: spacing[2],
+    paddingBottom: spacing[2]
   },
   content: {
-    flex: 1,
+    flex: 1
   },
   scrollContent: {
     paddingHorizontal: spacing[4],
-    paddingBottom: spacing[4],
-  },
+    paddingBottom: spacing[4]
+  }
 })

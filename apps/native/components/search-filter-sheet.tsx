@@ -43,7 +43,7 @@ export const SearchFilterSheet = forwardRef<AppBottomSheetRef>((_, ref) => {
   const renderFooter = useCallback(
     (props: BottomSheetFooterProps) => (
       <SheetFooter {...props}>
-        <View style={styles.footerRow}>
+        <View style={styles.footer}>
           <Button
             variant='outline'
             onPress={handleReset}
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[2],
     borderRadius: radii.pill
   },
-  footerRow: {
+  footer: {
     flexDirection: 'column',
     gap: spacing[3]
   },
