@@ -1,19 +1,30 @@
 'use client'
 
-import { Redirect, useLocalSearchParams } from 'expo-router'
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { View, StyleSheet } from 'react-native'
 
 import { Spinner, Text } from '@/components/ui'
 import { authClient } from '@/lib/auth-client'
 import { useColors } from '@/hooks/use-theme-color'
+import { showError } from '@/lib/feedback'
 import { spacing } from '@/theme/spacing'
+
+const REDIRECT_DELAY_MS = 1500
 
 const AcceptInvitationScreen = () => {
   const colors = useColors()
+  const router = useRouter()
   const { invitationId } = useLocalSearchParams<{ invitationId?: string }>()
   const { data: session, isPending: sessionPending } = authClient.useSession()
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
+
+  useEffect(() => {
+    if (status !== 'error') return
+    showError('Could not join organization')
+    const t = setTimeout(() => router.replace('/(tabs)'), REDIRECT_DELAY_MS)
+    return () => clearTimeout(t)
+  }, [status, router])
 
   useEffect(() => {
     if (sessionPending || !invitationId) return
@@ -62,18 +73,18 @@ const AcceptInvitationScreen = () => {
     return <Redirect href='/(tabs)' />
   }
 
-  if (status === 'loading' || status === 'idle') {
+  if (status === 'loading' || status === 'idle' || status === 'error') {
     return (
       <View style={[styles.container, { backgroundColor: colors.appBg }]}>
         <Spinner size='lg' />
         <Text muted style={styles.text}>
-          Joining organization…
+          {status === 'error' ? 'Redirecting…' : 'Joining organization…'}
         </Text>
       </View>
     )
   }
 
-  return <Redirect href='/(tabs)' />
+  return null
 }
 
 const styles = StyleSheet.create({

@@ -4,16 +4,14 @@ import { View, StyleSheet } from 'react-native'
 import { authClient } from '@/lib/auth-client'
 import { PasswordInput, TextInput } from '@/components'
 import { Button, Surface, FieldError, Text } from '@/components/ui'
-import { useColors } from '@/hooks/use-theme-color'
+import { showError, showSuccess } from '@/lib/feedback'
 import { spacing } from '@/theme/spacing'
-import { radii } from '@/theme/radii'
 
 function SignIn() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const colors = useColors()
 
   async function handleLogin() {
     setIsLoading(true)
@@ -26,12 +24,15 @@ function SignIn() {
       },
       {
         onError(error) {
-          setError(error.error?.message || 'Failed to sign in')
+          const message = error.error?.message || 'Failed to sign in'
+          setError(message)
+          showError(message)
           setIsLoading(false)
         },
         onSuccess() {
           setEmail('')
           setPassword('')
+          showSuccess('Signed in')
         },
         onFinished() {
           setIsLoading(false)

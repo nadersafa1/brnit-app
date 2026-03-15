@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { View, StyleSheet, Alert, Pressable } from 'react-native'
+import { View, StyleSheet, Pressable } from 'react-native'
 import BottomSheet, {
   BottomSheetBackdrop,
   BottomSheetFooter,
@@ -13,6 +13,7 @@ import * as Clipboard from 'expo-clipboard'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button, Text } from '@/components/ui'
+import { showError, showSuccess } from '@/lib/feedback'
 import { useColors } from '@/hooks/use-theme-color'
 import { useFoodItemAlternatives } from '@/hooks/use-food-item-alternatives'
 import { spacing } from '@/theme/spacing'
@@ -41,6 +42,11 @@ export function FoodAlternativesSheet({ foodItem, onClose }: Readonly<FoodAltern
     quantity,
     enabled: sheetState === 'results' && quantity > 0,
   })
+
+  // Toast when alternatives fail to load so user gets feedback in addition to inline message
+  useEffect(() => {
+    if (sheetState === 'results' && isError) showError('Failed to load alternatives')
+  }, [sheetState, isError])
 
   useEffect(() => {
     if (foodItem) {
@@ -76,7 +82,7 @@ export function FoodAlternativesSheet({ foodItem, onClose }: Readonly<FoodAltern
   const handleCopy = useCallback(async (alt: FoodItemAlternative) => {
     const text = `${alt.name}: ${alt.suggestedQuantityGrams}g (${alt.calories} kcal, P: ${alt.protein}g, C: ${alt.carbs}g, F: ${alt.fat}g)`
     await Clipboard.setStringAsync(text)
-    Alert.alert('Copied', 'Alternative copied to clipboard')
+    showSuccess('Copied', 'Alternative copied to clipboard')
   }, [])
 
   const renderFooter = useCallback(

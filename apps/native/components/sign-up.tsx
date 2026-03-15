@@ -4,6 +4,7 @@ import { View, StyleSheet } from 'react-native'
 import { authClient } from '@/lib/auth-client'
 import { PasswordInput, TextInput } from '@/components'
 import { Button, Surface, FieldError, Text } from '@/components/ui'
+import { showError, showSuccess } from '@/lib/feedback'
 import { spacing } from '@/theme/spacing'
 
 function signUpHandler({
@@ -36,13 +37,16 @@ function signUpHandler({
     },
     {
       onError(error) {
-        setError(error.error?.message || 'Failed to sign up')
+        const message = error.error?.message || 'Failed to sign up'
+        setError(message)
+        showError(message)
         setIsLoading(false)
       },
       onSuccess() {
         setName('')
         setEmail('')
         setPassword('')
+        showSuccess('Account created')
       },
       onFinished() {
         setIsLoading(false)

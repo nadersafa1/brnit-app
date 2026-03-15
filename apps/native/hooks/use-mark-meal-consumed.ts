@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import Toast from "react-native-toast-message";
 import type { ConsumptionSlot } from "@/lib/api/consumption-slot";
 import { getApiErrorMessage } from "@/lib/api/error-message";
 import { markMealConsumed } from "@/lib/api/mark-meal-consumed";
 import { memberKeys } from "@/lib/queries/keys";
+import { showError, showSuccess } from "@/lib/feedback";
 
 /** Mutation to mark a meal as consumed for a given day. Invalidates member queries on success. */
 export function useMarkMealConsumed() {
@@ -24,14 +24,14 @@ export function useMarkMealConsumed() {
       });
     },
     onSuccess: () => {
-      Toast.show({ type: "success", text1: "Meal marked as consumed" });
+      showSuccess("Meal marked as consumed");
       queryClient.invalidateQueries({ queryKey: memberKeys.all });
     },
     onError: (error: unknown) => {
       const message = getApiErrorMessage(error, "Could not mark meal", {
         409: "Already marked for this day",
       });
-      Toast.show({ type: "error", text1: message });
+      showError(message);
     },
   });
 }
