@@ -1,3 +1,5 @@
+export type FoodUnit = '100g' | 'piece'
+
 export type FoodItem = {
   id: string
   name: string
@@ -8,6 +10,8 @@ export type FoodItem = {
   carbs: number
   fat: number
   servingSize: number | null
+  unit: FoodUnit
+  gramsPerUnit: number | null
   imageUrl: string | null
   createdAt: string
   updatedAt: string
@@ -51,7 +55,9 @@ export type FoodItemAlternative = {
   name: string
   categoryId: string
   categoryName: string
-  suggestedQuantityGrams: number
+  /** Suggested quantity in this alternative food's unit (e.g. 10 for "10 eggs", 150 for "150g"). */
+  suggestedQuantity: number
+  unit: FoodUnit
   calories: number
   protein: number
   carbs: number
@@ -60,6 +66,8 @@ export type FoodItemAlternative = {
   deltaProtein: number
   deltaCarbs: number
   deltaFat: number
+  /** @deprecated Use suggestedQuantity + unit for display. */
+  suggestedQuantityGrams?: number
 }
 
 export type FoodItemAlternativesResponse = {

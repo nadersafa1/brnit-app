@@ -25,7 +25,7 @@ export function BulkSetQuantityDialog({
   onOpenChange,
   selectedCount,
   onConfirm,
-}: BulkSetQuantityDialogProps) {
+}: Readonly<BulkSetQuantityDialogProps>) {
   const [quantity, setQuantity] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -61,25 +61,25 @@ export function BulkSetQuantityDialog({
         <DialogHeader>
           <DialogTitle>Bulk set quantity</DialogTitle>
           <DialogDescription>
-            Set quantity for {selectedCount} item{selectedCount !== 1 ? 's' : ''} (grams)
+            Set quantity for {selectedCount} item{selectedCount === 1 ? '' : 's'}.
           </DialogDescription>
         </DialogHeader>
         <Field>
-          <FieldLabel htmlFor="bulk-quantity">Quantity (g)</FieldLabel>
+          <FieldLabel htmlFor='bulk-quantity'>Quantity</FieldLabel>
           <Input
-            id="bulk-quantity"
-            type="number"
+            id='bulk-quantity'
+            type='number'
             min={0.1}
             step={1}
             value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-            placeholder="e.g. 100"
+            onChange={e => setQuantity(e.target.value)}
+            placeholder='e.g. 100'
             disabled={isLoading}
           />
           <FieldError errors={error ? [{ message: error }] : undefined} />
         </Field>
         <DialogFooter>
-          <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={isLoading}>
+          <Button variant='outline' onClick={() => handleOpenChange(false)} disabled={isLoading}>
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={isLoading || !quantity.trim()}>

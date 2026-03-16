@@ -2,6 +2,7 @@ import { db } from '@burn-app/db'
 import { foodItem, foodCategory } from '@burn-app/db/schema'
 import { and, eq, ne, isNotNull } from 'drizzle-orm'
 import { getAlternativesToleranceConfig } from '@/lib/config/alternatives-tolerance'
+import type { FoodUnit } from '@/lib/helpers/macros'
 
 const MAX_PER_PAGE = 20
 
@@ -16,7 +17,9 @@ export interface FoodItemAlternativeItem {
   name: string
   categoryId: string
   categoryName: string
-  suggestedQuantityGrams: number
+  /** Suggested quantity in this food's unit (e.g. 10 for "10 eggs", 150 for "150g"). */
+  suggestedQuantity: number
+  unit: FoodUnit
   calories: number
   protein: number
   carbs: number
@@ -25,15 +28,50 @@ export interface FoodItemAlternativeItem {
   deltaProtein: number
   deltaCarbs: number
   deltaFat: number
+  /** @deprecated Use suggestedQuantity + unit for display. */
+  suggestedQuantityGrams?: number
 }
 
 export type GetAlternativesResult =
   | { ok: true; items: FoodItemAlternativeItem[]; totalItems: number }
   | { ok: false; error: string; code: 'REFERENCE_INVALID' | 'REFERENCE_NOT_FOUND' }
 
+/**
+ * Computes reference macros from quantity in the reference food's unit.
+ * For 100g: factor = quantity/100. For piece: factor = quantity.
+ */
+function referenceMacros(
+  quantity: number,
+  unit: FoodUnit,
+  cal: number,
+  prot: number,
+  carb: number,
+  fat: number
+): { R_cal: number; R_prot: number; R_carb: number; R_fat: number } {
+  const factor = unit === '100g' ? quantity / 100 : quantity
+  return {
+    R_cal: factor * cal,
+    R_prot: factor * prot,
+    R_carb: factor * carb,
+    R_fat: factor * fat,
+  }
+}
+
+/**
+ * Quantity in the candidate's unit that matches reference calories: factor = R_cal / c_cal;
+ * for 100g suggestedQuantity = factor * 100 (grams); for piece suggestedQuantity = factor (count).
+ */
+function suggestedQuantityInUnit(
+  factor: number,
+  candidateUnit: FoodUnit
+): number {
+  if (candidateUnit === '100g') return Math.round(factor * 1000) / 10
+  return Math.round(factor * 10) / 10
+}
+
 export async function getFoodItemAlternatives(
   foodItemId: string,
-  quantityGrams: number,
+  quantity: number,
   page: number,
   perPage: number
 ): Promise<GetAlternativesResult> {
@@ -49,6 +87,8 @@ export async function getFoodItemAlternatives(
       protein: foodItem.protein,
       carbs: foodItem.carbs,
       fat: foodItem.fat,
+      unit: foodItem.unit,
+      gramsPerUnit: foodItem.gramsPerUnit,
     })
     .from(foodItem)
     .where(eq(foodItem.id, foodItemId))
@@ -62,6 +102,7 @@ export async function getFoodItemAlternatives(
   const prot = toNum(refRow.protein)
   const carb = toNum(refRow.carbs)
   const fat = toNum(refRow.fat)
+  const refUnit = (refRow.unit ?? '100g') as FoodUnit
 
   if (
     refRow.calories === null ||
@@ -77,10 +118,14 @@ export async function getFoodItemAlternatives(
     }
   }
 
-  const R_cal = (cal * quantityGrams) / 100
-  const R_prot = (prot * quantityGrams) / 100
-  const R_carb = (carb * quantityGrams) / 100
-  const R_fat = (fat * quantityGrams) / 100
+  const { R_cal, R_prot, R_carb, R_fat } = referenceMacros(
+    quantity,
+    refUnit,
+    cal,
+    prot,
+    carb,
+    fat
+  )
 
   const tol = getAlternativesToleranceConfig()
   const protMin = R_prot * (1 - tol.proteinPct / 100)
@@ -100,6 +145,8 @@ export async function getFoodItemAlternatives(
       protein: foodItem.protein,
       carbs: foodItem.carbs,
       fat: foodItem.fat,
+      unit: foodItem.unit,
+      gramsPerUnit: foodItem.gramsPerUnit,
     })
     .from(foodItem)
     .innerJoin(foodCategory, eq(foodItem.categoryId, foodCategory.id))
@@ -121,29 +168,40 @@ export async function getFoodItemAlternatives(
     const c_prot = toNum(row.protein)
     const c_carb = toNum(row.carbs)
     const c_fat = toNum(row.fat)
+    const candidateUnit = (row.unit ?? '100g') as FoodUnit
+    const gramsPerUnit = row.gramsPerUnit != null ? Number(row.gramsPerUnit) : null
 
     if (c_cal <= 0) continue
 
-    const Q = (R_cal * 100) / c_cal
-    const C_prot = (c_prot * Q) / 100
-    const C_carb = (c_carb * Q) / 100
-    const C_fat = (c_fat * Q) / 100
+    const factor = R_cal / c_cal
+    const C_prot = factor * c_prot
+    const C_carb = factor * c_carb
+    const C_fat = factor * c_fat
 
     if (C_prot < protMin || C_prot > protMax) continue
     if (C_carb < carbMin || C_carb > carbMax) continue
     if (C_fat < fatMin || C_fat > fatMax) continue
 
-    const totalCal = (c_cal * Q) / 100
+    const suggestedQ = suggestedQuantityInUnit(factor, candidateUnit)
+    const totalCal = factor * c_cal
     const totalProt = C_prot
     const totalCarb = C_carb
     const totalFat = C_fat
+
+    const suggestedQuantityGrams =
+      candidateUnit === '100g'
+        ? suggestedQ
+        : gramsPerUnit != null
+          ? suggestedQ * gramsPerUnit
+          : undefined
 
     results.push({
       foodItemId: row.id,
       name: row.name,
       categoryId: row.categoryId,
       categoryName: row.categoryName,
-      suggestedQuantityGrams: Math.round(Q * 10) / 10,
+      suggestedQuantity: suggestedQ,
+      unit: candidateUnit,
       calories: Math.round(totalCal * 10) / 10,
       protein: Math.round(totalProt * 10) / 10,
       carbs: Math.round(totalCarb * 10) / 10,
@@ -152,6 +210,7 @@ export async function getFoodItemAlternatives(
       deltaProtein: Math.round((totalProt - R_prot) * 10) / 10,
       deltaCarbs: Math.round((totalCarb - R_carb) * 10) / 10,
       deltaFat: Math.round((totalFat - R_fat) * 10) / 10,
+      ...(suggestedQuantityGrams !== undefined && { suggestedQuantityGrams }),
     })
   }
 

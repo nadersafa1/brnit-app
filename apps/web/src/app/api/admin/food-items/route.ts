@@ -18,6 +18,8 @@ const CREATE_FORM_FIELDS = [
   'carbs',
   'fat',
   'servingSize',
+  'unit',
+  'gramsPerUnit',
 ] as const
 
 /** List food items (admin). Uses shared query parsing and listFoodItems service. */

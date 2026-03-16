@@ -19,6 +19,8 @@ const FORM_FIELDS = [
   'carbs',
   'fat',
   'servingSize',
+  'unit',
+  'gramsPerUnit',
 ] as const
 
 export const GET = async (request: NextRequest, { params }: Params) => {

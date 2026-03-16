@@ -3,8 +3,9 @@ import { dietPlan, dietPlanAssignment, dietPlanMealConsumption, foodItem, member
 import { and, asc, eq, inArray, or, SQL } from 'drizzle-orm'
 import {
   calculateMacrosForDay,
-  calculateMacrosForMealItem,
+  calculateMacrosForMealItemWithUnit,
   type NutritionPer100g,
+  type FoodUnit,
 } from '@/lib/helpers/macros'
 import { getDietPlanById } from '@/lib/services/diet-plans'
 import {
@@ -104,15 +105,21 @@ function collectFoodItemIds(
   return ids
 }
 
+export type FoodDetails = {
+  nutrition: NutritionPer100g
+  unit: FoodUnit
+  gramsPerUnit: number | null
+}
+
 /**
- * Fetches nutrition (per 100g) for the given food item IDs.
+ * Fetches nutrition (per 1 unit), unit, and gramsPerUnit for the given food item IDs.
  * Null/undefined DB values are coerced to 0 so macro math never produces NaN.
- * Missing IDs are simply absent from the map; callers use ZERO_NUTRITION for those.
+ * Missing IDs are absent from the map; callers use ZERO_NUTRITION and default unit '100g'.
  */
-async function getNutritionMapForFoodIds(
+async function getFoodDetailsForIds(
   foodItemIds: Set<string>
-): Promise<Map<string, NutritionPer100g>> {
-  const map = new Map<string, NutritionPer100g>()
+): Promise<Map<string, FoodDetails>> {
+  const map = new Map<string, FoodDetails>()
   if (foodItemIds.size === 0) return map
 
   const toNum = (v: string | null | undefined): number =>
@@ -125,24 +132,37 @@ async function getNutritionMapForFoodIds(
       protein: foodItem.protein,
       carbs: foodItem.carbs,
       fat: foodItem.fat,
+      unit: foodItem.unit,
+      gramsPerUnit: foodItem.gramsPerUnit,
     })
     .from(foodItem)
     .where(inArray(foodItem.id, [...foodItemIds]))
 
   for (const row of rows) {
+    const unit = (row.unit ?? '100g') as FoodUnit
     map.set(row.id, {
-      calories: toNum(row.calories),
-      protein: toNum(row.protein),
-      carbs: toNum(row.carbs),
-      fat: toNum(row.fat),
+      nutrition: {
+        calories: toNum(row.calories),
+        protein: toNum(row.protein),
+        carbs: toNum(row.carbs),
+        fat: toNum(row.fat),
+      },
+      unit,
+      gramsPerUnit: row.gramsPerUnit == null ? null : Number(row.gramsPerUnit),
     })
   }
   return map
 }
 
+const DEFAULT_FOOD_DETAILS: FoodDetails = {
+  nutrition: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+  unit: '100g',
+  gramsPerUnit: null,
+}
+
 /**
  * Builds the days array: for each date, resolves overrides and consumptions,
- * attaches per-item and per-meal macros from the nutrition map, and per-day macros.
+ * attaches per-item and per-meal macros from the food details map, and per-day macros.
  * Pure/synchronous; all data is already loaded.
  */
 function buildCurrentDietPlanDays(
@@ -159,8 +179,7 @@ function buildCurrentDietPlanDays(
   }>,
   overrideRows: OverrideRow[],
   consumptionMap: Map<string, { consumedAt: string }>,
-  nutritionMap: Map<string, NutritionPer100g>,
-  ZERO_NUTRITION: NutritionPer100g
+  foodDetailsMap: Map<string, FoodDetails>
 ): CurrentDietPlanDay[] {
   return allDates.map(date => {
     const planDay = diffDaysInclusiveUTC(assignment.startDate, date)
@@ -186,18 +205,27 @@ function buildCurrentDietPlanDays(
           const override = overrideMapForDay.get(`${pm.id}:${item.mealItemId}`)
           const foodItemId = override?.foodItemId ?? item.foodItemId
           const quantity = override?.quantity ?? item.quantity
-          const nutrition = nutritionMap.get(foodItemId) ?? ZERO_NUTRITION
-          const macros = calculateMacrosForMealItem(quantity, nutrition)
+          const details = foodDetailsMap.get(foodItemId) ?? DEFAULT_FOOD_DETAILS
+          const macros = calculateMacrosForMealItemWithUnit(
+            quantity,
+            details.nutrition,
+            details.unit
+          )
           if (override) {
+            const overrideDetails = foodDetailsMap.get(override.foodItemId) ?? DEFAULT_FOOD_DETAILS
+            const originalDetails = foodDetailsMap.get(item.foodItemId) ?? DEFAULT_FOOD_DETAILS
             return {
               mealItemId: item.mealItemId,
               foodItemId: override.foodItemId,
               foodName: override.foodName,
               quantity: override.quantity,
+              unit: overrideDetails.unit,
+              gramsPerUnit: overrideDetails.gramsPerUnit,
               isOverridden: true,
               originalFoodItemId: item.foodItemId,
               originalFoodName: item.foodName,
               originalQuantity: item.quantity,
+              originalUnit: originalDetails.unit,
               macros,
             }
           }
@@ -206,6 +234,8 @@ function buildCurrentDietPlanDays(
             foodItemId: item.foodItemId,
             foodName: item.foodName,
             quantity: item.quantity,
+            unit: details.unit,
+            gramsPerUnit: details.gramsPerUnit,
             isOverridden: false,
             macros,
           }
@@ -296,9 +326,9 @@ export async function getCurrentDietPlanForUser(
     return { data: null }
   }
 
-  // Fetch consumptions and nutrition in parallel; both only need assignment + plan/overrides data.
+  // Fetch consumptions and food details (nutrition + unit) in parallel.
   const foodItemIds = collectFoodItemIds(dietPlanMeals, overrideRows)
-  const [consumptionRows, nutritionMap] = await Promise.all([
+  const [consumptionRows, foodDetailsMap] = await Promise.all([
     db
       .select({
         dietPlanMealId: dietPlanMealConsumption.dietPlanMealId,
@@ -312,7 +342,7 @@ export async function getCurrentDietPlanForUser(
           inArray(dietPlanMealConsumption.consumedDate, allDates)
         )
       ),
-    getNutritionMapForFoodIds(foodItemIds),
+    getFoodDetailsForIds(foodItemIds),
   ])
 
   const consumptionMap = new Map<string, { consumedAt: string }>()
@@ -321,16 +351,13 @@ export async function getCurrentDietPlanForUser(
     consumptionMap.set(key, { consumedAt: row.consumedAt.toISOString() })
   }
 
-  const ZERO_NUTRITION: NutritionPer100g = { calories: 0, protein: 0, carbs: 0, fat: 0 }
-
   const days = buildCurrentDietPlanDays(
     allDates,
     assignment,
     dietPlanMeals,
     overrideRows,
     consumptionMap,
-    nutritionMap,
-    ZERO_NUTRITION
+    foodDetailsMap
   )
 
   return {

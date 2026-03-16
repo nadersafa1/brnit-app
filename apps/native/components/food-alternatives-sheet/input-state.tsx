@@ -5,6 +5,14 @@ import { spacing } from "@/theme/spacing";
 import type { FoodItem } from "@/lib/api/member-food-types";
 import type { QuantityFormValues } from "./schema";
 
+function quantityLabel(unit: '100g' | 'piece'): string {
+  return unit === '100g' ? 'Enter amount (grams)' : 'Enter amount (pieces)';
+}
+
+function quantityPlaceholder(unit: '100g' | 'piece'): string {
+  return unit === '100g' ? 'e.g. 100' : 'e.g. 2';
+}
+
 interface InputStateProps {
   foodItem: FoodItem | null;
   form: UseFormReturn<QuantityFormValues>;
@@ -15,6 +23,7 @@ export function InputState({ foodItem, form }: Readonly<InputStateProps>) {
     control,
     formState: { errors },
   } = form;
+  const unit = foodItem?.unit ?? '100g';
 
   return (
     <View style={styles.container}>
@@ -30,7 +39,7 @@ export function InputState({ foodItem, form }: Readonly<InputStateProps>) {
       )}
 
       <Text size="sm" weight="medium" style={styles.label}>
-        Enter quantity (grams)
+        {quantityLabel(unit)}
       </Text>
 
       <Controller
@@ -38,7 +47,7 @@ export function InputState({ foodItem, form }: Readonly<InputStateProps>) {
         name="quantity"
         render={({ field: { onChange, onBlur, value } }) => (
           <Input
-            placeholder="e.g. 100"
+            placeholder={quantityPlaceholder(unit)}
             keyboardType="numeric"
             value={value}
             onChangeText={onChange}

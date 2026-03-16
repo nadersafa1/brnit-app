@@ -15,6 +15,8 @@ export interface MealItem {
   protein: number | null
   carbs: number | null
   fat: number | null
+  unit: '100g' | 'piece'
+  gramsPerUnit: number | null
 }
 
 export interface Meal {

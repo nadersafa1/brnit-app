@@ -1,6 +1,9 @@
 import { relations } from 'drizzle-orm'
-import { pgTable, text, timestamp, integer, numeric, index } from 'drizzle-orm/pg-core'
+import { pgEnum, pgTable, text, timestamp, integer, numeric, index } from 'drizzle-orm/pg-core'
 import { foodCategory } from './food-category'
+
+/** Unit for food quantity and per-unit nutrition (100g = quantity in grams; piece = count). */
+export const foodItemUnitEnum = pgEnum('food_item_unit', ['100g', 'piece'])
 
 export const foodItem = pgTable(
   'food_item',
@@ -18,6 +21,10 @@ export const foodItem = pgTable(
     carbs: numeric('carbs'),
     fat: numeric('fat'),
     servingSize: numeric('serving_size'),
+    /** Reference unit for stored macros (per 1 unit). Default 100g = nutrition per 100g, quantity in grams. */
+    unit: foodItemUnitEnum('unit').notNull().default('100g'),
+    /** Grams per 1 unit. For 100g use 100; for piece required (e.g. 50 for one egg). */
+    gramsPerUnit: numeric('grams_per_unit'),
     imagePublicId: text('image_public_id'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
