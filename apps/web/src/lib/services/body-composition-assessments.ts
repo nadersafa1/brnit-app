@@ -2,8 +2,9 @@ import { db } from '@burn-app/db'
 import {
   bodyCompositionAssessment,
   member,
+  organization,
 } from '@burn-app/db/schema'
-import { count, asc, desc, eq, and } from 'drizzle-orm'
+import { count, asc, desc, eq, and, inArray } from 'drizzle-orm'
 import { calculateOffset } from '@/lib/api-helpers/query-builders'
 import {
   buildCloudinaryUrl,
@@ -190,11 +191,54 @@ export type MemberRecentAssessmentItem = {
   imageUrl: string | null
   createdAt: Date
   updatedAt: Date
+  /** Organization this assessment belongs to (so client can show "for which org"). */
+  organization: { id: string; name: string }
 }
 
 export type MemberRecentAssessmentsResult = {
-  organization: { id: string; name: string }
+  /** Single org when scoped by orgId; null when no orgId (assessments from all user's memberships). */
+  organization: { id: string; name: string } | null
   assessments: MemberRecentAssessmentItem[]
+}
+
+/** Fallback when member–org mapping is missing (should not happen for valid data). */
+const UNKNOWN_ORGANIZATION: { id: string; name: string } = { id: '', name: 'Unknown' }
+
+type AssessmentLikeRow = {
+  id: string
+  assessedAt: Date
+  bodyFatPercent: string | null
+  weightKg: string | null
+  heightCm: string | null
+  bmi: string | null
+  muscleMassKg: string | null
+  visceralFatAreaCm2: string | null
+  bodyWaterL: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+/** Maps a DB/API assessment row plus org and image URL into the member-facing response item. */
+function toMemberRecentItem(
+  row: AssessmentLikeRow,
+  organization: { id: string; name: string },
+  imageUrl: string | null
+): MemberRecentAssessmentItem {
+  return {
+    id: row.id,
+    assessedAt: row.assessedAt,
+    bodyFatPercent: parseNumeric(row.bodyFatPercent),
+    weightKg: parseNumeric(row.weightKg),
+    heightCm: parseNumeric(row.heightCm),
+    bmi: parseNumeric(row.bmi),
+    muscleMassKg: parseNumeric(row.muscleMassKg),
+    visceralFatAreaCm2: parseNumeric(row.visceralFatAreaCm2),
+    bodyWaterL: parseNumeric(row.bodyWaterL),
+    imageUrl,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    organization,
+  }
 }
 
 /**
@@ -218,27 +262,101 @@ export async function getRecentAssessmentsForMember(
     context.organizationId
   )
 
-  const assessments: MemberRecentAssessmentItem[] = items.map(a => ({
-    id: a.id,
-    assessedAt: a.assessedAt,
-    bodyFatPercent: parseNumeric(a.bodyFatPercent),
-    weightKg: parseNumeric(a.weightKg),
-    heightCm: parseNumeric(a.heightCm),
-    bmi: parseNumeric(a.bmi),
-    muscleMassKg: parseNumeric(a.muscleMassKg),
-    visceralFatAreaCm2: parseNumeric(a.visceralFatAreaCm2),
-    bodyWaterL: parseNumeric(a.bodyWaterL),
-    imageUrl: a.imageUrl,
-    createdAt: a.createdAt,
-    updatedAt: a.updatedAt,
-  }))
-  return {
-    organization: {
-      id: context.organizationId,
-      name: context.organizationName,
-    },
-    assessments,
+  const org = { id: context.organizationId, name: context.organizationName }
+  const assessments = items.map(a =>
+    toMemberRecentItem(
+      {
+        id: a.id,
+        assessedAt: a.assessedAt,
+        bodyFatPercent: a.bodyFatPercent,
+        weightKg: a.weightKg,
+        heightCm: a.heightCm,
+        bmi: a.bmi,
+        muscleMassKg: a.muscleMassKg,
+        visceralFatAreaCm2: a.visceralFatAreaCm2,
+        bodyWaterL: a.bodyWaterL,
+        createdAt: a.createdAt,
+        updatedAt: a.updatedAt,
+      },
+      org,
+      a.imageUrl
+    )
+  )
+  return { organization: org, assessments }
+}
+
+/**
+ * Returns recent body-composition assessments for every member linked to the given user
+ * (across all organizations). Used when no orgId is sent. Each assessment includes its
+ * organization so the client can show which org it belongs to.
+ */
+export async function getRecentAssessmentsForUserAllOrgs(
+  userId: string,
+  limit: number
+): Promise<MemberRecentAssessmentsResult> {
+  // Load all memberships for the user with org id and name (needed to attach org per assessment).
+  const membersWithOrg = await db
+    .select({
+      memberId: member.id,
+      organizationId: organization.id,
+      organizationName: organization.name,
+    })
+    .from(member)
+    .innerJoin(organization, eq(member.organizationId, organization.id))
+    .where(eq(member.userId, userId))
+
+  if (membersWithOrg.length === 0) {
+    return { organization: null, assessments: [] }
   }
+
+  const memberIds = membersWithOrg.map(m => m.memberId)
+  const memberToOrg = new Map(
+    membersWithOrg.map(m => [m.memberId, { id: m.organizationId, name: m.organizationName }])
+  )
+
+  // Single query: assessments for any of the user's members, most recent first.
+  const rows = await db
+    .select({
+      id: bodyCompositionAssessment.id,
+      memberId: bodyCompositionAssessment.memberId,
+      assessedAt: bodyCompositionAssessment.assessedAt,
+      heightCm: bodyCompositionAssessment.heightCm,
+      bodyFatPercent: bodyCompositionAssessment.bodyFatPercent,
+      weightKg: bodyCompositionAssessment.weightKg,
+      bmi: bodyCompositionAssessment.bmi,
+      muscleMassKg: bodyCompositionAssessment.muscleMassKg,
+      visceralFatAreaCm2: bodyCompositionAssessment.visceralFatAreaCm2,
+      bodyWaterL: bodyCompositionAssessment.bodyWaterL,
+      imagePublicId: bodyCompositionAssessment.imagePublicId,
+      createdAt: bodyCompositionAssessment.createdAt,
+      updatedAt: bodyCompositionAssessment.updatedAt,
+    })
+    .from(bodyCompositionAssessment)
+    .where(inArray(bodyCompositionAssessment.memberId, memberIds))
+    .orderBy(desc(bodyCompositionAssessment.assessedAt))
+    .limit(limit)
+
+  const assessments = rows.map(a =>
+    toMemberRecentItem(
+      {
+        id: a.id,
+        assessedAt: a.assessedAt,
+        bodyFatPercent: a.bodyFatPercent,
+        weightKg: a.weightKg,
+        heightCm: a.heightCm,
+        bmi: a.bmi,
+        muscleMassKg: a.muscleMassKg,
+        visceralFatAreaCm2: a.visceralFatAreaCm2,
+        bodyWaterL: a.bodyWaterL,
+        createdAt: a.createdAt,
+        updatedAt: a.updatedAt,
+      },
+      memberToOrg.get(a.memberId) ?? UNKNOWN_ORGANIZATION,
+      a.imagePublicId ? buildCloudinaryUrl(a.imagePublicId) : null
+    )
+  )
+
+  return { organization: null, assessments }
 }
 
 export async function getBodyCompositionAssessmentById(id: string) {

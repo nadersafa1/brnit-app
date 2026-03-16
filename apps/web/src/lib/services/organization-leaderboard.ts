@@ -8,6 +8,8 @@ import { and, eq, asc, inArray } from 'drizzle-orm'
 
 const TOP_COUNT = 3
 const MEMBER_ROLE = 'member'
+/** Fallback when user name is missing (DB allows null). */
+const DISPLAY_NAME_UNKNOWN = 'Unknown'
 
 /** Parses DB numeric string to number; returns 0 for invalid or empty (used for ranking only). */
 function parseNum(value: string | null | undefined): number {
@@ -150,7 +152,7 @@ export async function getOrganizationLeaderboard(
 
     entries.push({
       memberId: m.memberId,
-      name: m.userName ?? 'Unknown',
+      name: m.userName ?? DISPLAY_NAME_UNKNOWN,
       fatLossPoints,
       startBodyFatPercent: startPct,
       endBodyFatPercent: endPct,
