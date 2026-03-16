@@ -45,7 +45,7 @@ function SelfRow({ data }: Readonly<{ data: OrganizationLeaderboardResponse }>) 
   if (rank == null) return null
 
   let pointsPart: ReactNode = null
-  if (self.fatLossPoints !== null && self.fatLossPoints !== undefined) {
+  if (self.fatLossPoints != null) {
     pointsPart = (
       <Text size="sm" muted>
         {' '}
@@ -87,7 +87,7 @@ export function LeaderboardSection({
         <ActivityIndicator size="small" color={colors.muted} />
       </View>
     )
-  } else if (showContent && leaderboardData) {
+  } else if (showContent) {
     const topList =
       leaderboardData.top.length === 0 ? (
         <Text size="sm" muted>

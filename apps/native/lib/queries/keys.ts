@@ -35,4 +35,7 @@ export const memberKeys = {
     [...memberKeys.all, "recent-assessments", params] as const,
   organizationLeaderboard: (params?: { orgId?: string }) =>
     [...memberKeys.all, "organization-leaderboard", params] as const,
+  /** Prefix key to invalidate all organization-leaderboard queries (e.g. after profile name change). */
+  organizationLeaderboardAll: () =>
+    [...memberKeys.all, "organization-leaderboard"] as const,
 } as const;

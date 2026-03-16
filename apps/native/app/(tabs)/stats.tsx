@@ -65,6 +65,7 @@ export default function Stats() {
     orgId: selectedOrgId,
     enabled: !!selectedOrgId,
   })
+  // 400 from leaderboard API means user is not a member of the selected org.
   const isNoOrgError =
     leaderboardIsError &&
     leaderboardError instanceof ApiError &&

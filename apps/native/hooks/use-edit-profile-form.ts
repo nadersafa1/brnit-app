@@ -1,9 +1,11 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useState } from 'react'
 import * as ImagePicker from 'expo-image-picker'
 
 import { updateProfile, getProfileErrorMessage } from '@/lib/api/profile'
 import { toIsoDateString } from '@/lib/date-utils'
 import { showError, showSuccess } from '@/lib/feedback'
+import { memberKeys } from '@/lib/queries/keys'
 
 const NAME_MAX_LENGTH = 200
 
@@ -21,6 +23,7 @@ export type UseEditProfileFormParams = {
  * Resets local state when initial values change (e.g. when sheet is opened with fresh session data).
  */
 export function useEditProfileForm({ initialName, initialDob, initialImageUrl, onSaveSuccess, closeSheet }: UseEditProfileFormParams) {
+  const queryClient = useQueryClient()
   const [name, setName] = useState(initialName)
   const [dob, setDob] = useState(() => toIsoDateString(initialDob))
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null)
@@ -98,6 +101,8 @@ export function useEditProfileForm({ initialName, initialDob, initialImageUrl, o
         imageUri: selectedImageUri ?? undefined,
         clearImage: userChoseRemove ? true : undefined
       })
+      // Leaderboard shows user name; refetch so it stays in sync after profile update.
+      queryClient.invalidateQueries({ queryKey: memberKeys.organizationLeaderboardAll() })
       onSaveSuccess()
       showSuccess('Profile updated', 'Your changes have been saved.')
       closeSheet()
@@ -106,7 +111,7 @@ export function useEditProfileForm({ initialName, initialDob, initialImageUrl, o
     } finally {
       setIsSaving(false)
     }
-  }, [name, dob, initialName, initialDob, selectedImageUri, userChoseRemove, hasImageChange, onSaveSuccess, closeSheet])
+  }, [name, dob, initialName, initialDob, selectedImageUri, userChoseRemove, hasImageChange, onSaveSuccess, closeSheet, queryClient])
 
   return {
     name,

@@ -17,8 +17,7 @@ type AssessmentDetailSheetProps = Readonly<{
   onClose: () => void
 }>
 
-// --- Helpers: metric list from assessment (only non-null values) ---
-
+/** Build metric list from assessment (only non-null values). */
 type MetricEntry = { label: string; value: number; unit?: string }
 
 function getMetricEntries(assessment: RecentAssessmentItem): MetricEntry[] {
@@ -42,8 +41,6 @@ function formatMetricValue(value: number, unit?: string): string {
   return `${value} ${unit}`
 }
 
-// --- Presentational: single metric row ---
-
 function MetricRow({ label, value, unit }: Readonly<MetricEntry>) {
   return (
     <View style={styles.metricRow}>
@@ -52,8 +49,6 @@ function MetricRow({ label, value, unit }: Readonly<MetricEntry>) {
     </View>
   )
 }
-
-// --- Presentational: sheet body when an assessment is selected ---
 
 function AssessmentDetailContent({ assessment }: Readonly<{ assessment: RecentAssessmentItem }>) {
   const colors = useColors()
@@ -84,8 +79,6 @@ function AssessmentDetailContent({ assessment }: Readonly<{ assessment: RecentAs
     </View>
   )
 }
-
-// --- Main sheet (open/close + header) ---
 
 export function AssessmentDetailSheet({ assessment, onClose }: AssessmentDetailSheetProps) {
   const ref = useRef<AppBottomSheetRef>(null)

@@ -67,6 +67,7 @@ function AssessmentRow({
   return rowContent
 }
 
+/** Lists recent body-composition assessments; supports opening a detail sheet on tap. */
 export function RecentAssessmentsSection({
   assessments,
   isLoading,
