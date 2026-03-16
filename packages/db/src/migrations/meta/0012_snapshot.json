@@ -1,6 +1,6 @@
 {
-  "id": "9d5e8816-32a0-488f-a009-93bad3245318",
-  "prevId": "b2c3d4e5-f6a7-4890-b1c2-d3e4f5678901",
+  "id": "b2c3d4e5-f6a7-4890-b1c2-d3e4f5678901",
+  "prevId": "eea0d4c9-08bf-4b17-b8b3-eb261eff94c1",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1656,20 +1656,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "unit": {
-          "name": "unit",
-          "type": "food_item_unit",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'100g'"
-        },
-        "grams_per_unit": {
-          "name": "grams_per_unit",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": false
-        },
         "image_public_id": {
           "name": "image_public_id",
           "type": "text",
@@ -1885,16 +1871,7 @@
       "isRLSEnabled": false
     }
   },
-  "enums": {
-    "public.food_item_unit": {
-      "name": "food_item_unit",
-      "schema": "public",
-      "values": [
-        "100g",
-        "piece"
-      ]
-    }
-  },
+  "enums": {},
   "schemas": {},
   "sequences": {},
   "roles": {},
