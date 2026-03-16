@@ -6,9 +6,10 @@ import { spacing } from '@/theme/spacing'
 
 interface MealItemRowProps {
   item: CurrentDietPlanMealItem
+  onPress?: () => void
 }
 
-export function MealItemRow({ item }: Readonly<MealItemRowProps>) {
+export function MealItemRow({ item, onPress }: Readonly<MealItemRowProps>) {
   const unit = item.unit ?? '100g'
   const primary = `${item.foodName} (${formatQuantityWithUnit(item.quantity, unit)})`
   const hasReplacement = item.isOverridden && item.originalFoodName != null
@@ -17,9 +18,6 @@ export function MealItemRow({ item }: Readonly<MealItemRowProps>) {
       ? ` (${formatQuantityWithUnit(item.originalQuantity, item.originalUnit ?? '100g')})`
       : ''
   const caloriesText = formatCalorieDisplay(roundUpToTenth(item.macros?.calories ?? 0))
-
-  // Reserved for meal item details bottom sheet
-  const onPress = () => {}
 
   return (
     <Pressable

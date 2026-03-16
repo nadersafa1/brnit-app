@@ -8,9 +8,10 @@ import { useEffect } from 'react'
 import { View, StyleSheet } from 'react-native'
 import { MealCard } from '@/components/meal-card'
 import { Spinner, Text } from '@/components/ui'
+import type { MealItemDetailPayload } from '@/components/meal-item-detail-sheet'
 import { useColors } from '@/hooks/use-theme-color'
 import { showError } from '@/lib/feedback'
-import type { CurrentDietPlanMeal } from '@/lib/api/member-types'
+import type { CurrentDietPlanMeal, CurrentDietPlanMealItem } from '@/lib/api/member-types'
 import { formatMealTime, MEAL_TYPE_ICONS } from '@/lib/constants/meals'
 import { roundUpToTenth } from '@/lib/utils/numbers'
 import { spacing } from '@/theme/spacing'
@@ -23,6 +24,7 @@ interface HomeMealsSectionProps {
   selectedDate: Date
   /** When present, meal cards show mark-as-consumed and pass it to the API. */
   dietPlanAssignmentId?: string
+  onMealItemPress?: (params: MealItemDetailPayload) => void
 }
 
 export function HomeMealsSection({
@@ -31,6 +33,7 @@ export function HomeMealsSection({
   meals,
   selectedDate,
   dietPlanAssignmentId,
+  onMealItemPress,
 }: Readonly<HomeMealsSectionProps>) {
   const colors = useColors()
   const isToday = dayjs(selectedDate).isSame(dayjs(), 'day')
@@ -40,6 +43,16 @@ export function HomeMealsSection({
   useEffect(() => {
     if (error) showError(error.message)
   }, [error])
+
+  const handleMealItemPress = (item: CurrentDietPlanMealItem, dietPlanMealId: string) => {
+    if (!dietPlanAssignmentId) return
+    onMealItemPress?.({
+      item,
+      dietPlanAssignmentId,
+      dietPlanMealId,
+      consumedDate,
+    })
+  }
 
   return (
     <>
@@ -91,6 +104,7 @@ export function HomeMealsSection({
             dietPlanMealId={meal.dietPlanMealId}
             consumed={meal.consumed}
             consumedDate={consumedDate}
+            onMealItemPress={item => handleMealItemPress(item, meal.dietPlanMealId)}
           />
         ))}
     </>
