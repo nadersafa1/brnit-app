@@ -4,13 +4,7 @@ import type { PaginationConfig } from '@/lib/table-core'
 import { BaseDataTable, TableControls, TableFilter, TablePagination, useTableSorting } from '@/lib/table-core'
 import type { VisibilityState } from '@tanstack/react-table'
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import * as React from 'react'
 import type { FoodItem } from '@/lib/queries/food-items'
 import type { FoodCategory } from '@/lib/queries/food-categories'
@@ -54,7 +48,7 @@ export function FoodItemsTable({
   onEdit,
   onDelete,
   readOnly = false,
-}: FoodItemsTableProps) {
+}: Readonly<FoodItemsTableProps>) {
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
     createdAt: false,
     calories: false,
@@ -74,7 +68,7 @@ export function FoodItemsTable({
       createFoodItemsColumns({
         sortBy,
         sortOrder,
-        onSort: (id) => handleSort(id as FoodItemsSortBy),
+        onSort: id => handleSort(id as FoodItemsSortBy),
         onEdit,
         onDelete,
         readOnly,
@@ -93,6 +87,7 @@ export function FoodItemsTable({
   const getColumnLabel = React.useCallback((id: string) => {
     const labels: Record<string, string> = {
       name: 'Name',
+      unit: 'Unit',
       categoryName: 'Category',
       calories: 'Calories',
       protein: 'Protein',
@@ -105,28 +100,25 @@ export function FoodItemsTable({
   }, [])
 
   return (
-    <div className="w-full space-y-4">
+    <div className='w-full space-y-4'>
       <TableControls<FoodItem>
         searchValue={searchValue}
         onSearchChange={onSearchChange}
-        searchPlaceholder="Search by name..."
+        searchPlaceholder='Search by name...'
         searchDebounceMs={300}
         table={table}
         getColumnLabel={getColumnLabel}
         columnVisibility={columnVisibility}
         hasActiveFilters={!!(searchValue.trim() || categoryId)}
         filters={
-          <TableFilter label="Category" htmlFor="food-item-category" className="w-full md:w-[200px]">
-            <Select
-              value={categoryId ?? 'all'}
-              onValueChange={(v) => onCategoryChange(v === 'all' ? undefined : v)}
-            >
-              <SelectTrigger id="food-item-category" className="w-full">
-                <SelectValue placeholder="All categories" />
+          <TableFilter label='Category' htmlFor='food-item-category' className='w-full md:w-[200px]'>
+            <Select value={categoryId ?? 'all'} onValueChange={v => onCategoryChange(v === 'all' ? undefined : v)}>
+              <SelectTrigger id='food-item-category' className='w-full'>
+                <SelectValue placeholder='All categories' />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
-                {categories.map((c) => (
+                <SelectItem value='all'>All categories</SelectItem>
+                {categories.map(c => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
                   </SelectItem>
@@ -146,7 +138,7 @@ export function FoodItemsTable({
         columns={columns}
         pagination={pagination}
         isLoading={isLoading}
-        emptyMessage="No food items found."
+        emptyMessage='No food items found.'
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
       />

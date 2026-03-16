@@ -1,6 +1,6 @@
 /**
  * Macro calculation helpers for meal items, meals, and days.
- * All calculations assume food nutrition is stored per 100g and quantity is in grams.
+ * Nutrition is stored per 1 unit; quantity is in that unit (grams for 100g, count for piece).
  */
 
 export type Macros = {
@@ -10,12 +10,15 @@ export type Macros = {
   fat: number
 }
 
+/** Nutrition per 1 unit (per 100g or per 1 piece depending on food.unit). */
 export type NutritionPer100g = {
   calories: number
   protein: number
   carbs: number
   fat: number
 }
+
+export type FoodUnit = '100g' | 'piece'
 
 /** Used when summing or when no nutrition data exists (e.g. missing food item). */
 export const ZERO_MACROS: Macros = { calories: 0, protein: 0, carbs: 0, fat: 0 }
@@ -26,32 +29,75 @@ function roundUpToTenth(value: number): number {
 }
 
 /**
- * Computes macros for a single meal item from quantity (grams) and nutrition per 100g.
+ * Factor for macro calculation: for 100g, quantity is in grams so factor = quantity/100;
+ * for piece, quantity is count so factor = quantity.
+ */
+export function getMacroFactor(quantity: number, unit: FoodUnit): number {
+  return unit === '100g' ? quantity / 100 : quantity
+}
+
+/**
+ * Equivalent grams for a quantity in the given unit (for alternatives comparison).
+ * For 100g, quantity is already grams. For piece, quantity * gramsPerUnit (default 100 if null).
+ */
+export function toEquivalentGrams(
+  quantity: number,
+  unit: FoodUnit,
+  gramsPerUnit: number | null | undefined
+): number {
+  if (unit === '100g') return quantity
+  const gpu = gramsPerUnit != null && Number.isFinite(Number(gramsPerUnit)) ? Number(gramsPerUnit) : 100
+  return quantity * gpu
+}
+
+/**
+ * Computes macros for a single meal item from quantity (in food's unit), nutrition per 1 unit, and unit.
  * Missing or invalid nutrition values are treated as 0.
+ */
+export function calculateMacrosForMealItemWithUnit(
+  quantity: number,
+  nutrition: NutritionPer100g,
+  unit: FoodUnit
+): Macros {
+  const factor = getMacroFactor(quantity, unit)
+  return {
+    calories: roundUpToTenth(factor * (nutrition.calories ?? 0)),
+    protein: roundUpToTenth(factor * (nutrition.protein ?? 0)),
+    carbs: roundUpToTenth(factor * (nutrition.carbs ?? 0)),
+    fat: roundUpToTenth(factor * (nutrition.fat ?? 0)),
+  }
+}
+
+/**
+ * Computes macros for a single meal item from quantity (grams) and nutrition per 100g.
+ * @deprecated Prefer calculateMacrosForMealItemWithUnit when food has a unit.
  */
 export function calculateMacrosForMealItem(
   quantityGrams: number,
   nutritionPer100g: NutritionPer100g
 ): Macros {
-  const factor = quantityGrams / 100
-  return {
-    calories: roundUpToTenth(factor * (nutritionPer100g.calories ?? 0)),
-    protein: roundUpToTenth(factor * (nutritionPer100g.protein ?? 0)),
-    carbs: roundUpToTenth(factor * (nutritionPer100g.carbs ?? 0)),
-    fat: roundUpToTenth(factor * (nutritionPer100g.fat ?? 0)),
-  }
+  return calculateMacrosForMealItemWithUnit(quantityGrams, nutritionPer100g, '100g')
+}
+
+export type MealItemForMacros = {
+  quantity: number
+  nutrition: NutritionPer100g
+  unit: FoodUnit
 }
 
 /**
- * Sums macros across multiple meal items (each with quantity and nutrition per 100g).
- * Use when you have raw item data but not pre-computed item macros.
+ * Sums macros across multiple meal items (each with quantity, nutrition per 1 unit, and unit).
  */
 export function calculateMacrosForMeal(
-  items: Array<{ quantity: number; nutritionPer100g: NutritionPer100g }>
+  items: Array<MealItemForMacros>
 ): Macros {
   return items.reduce<Macros>(
     (acc, item) => {
-      const itemMacros = calculateMacrosForMealItem(item.quantity, item.nutritionPer100g)
+      const itemMacros = calculateMacrosForMealItemWithUnit(
+        item.quantity,
+        item.nutrition,
+        item.unit
+      )
       return {
         calories: roundUpToTenth(acc.calories + itemMacros.calories),
         protein: roundUpToTenth(acc.protein + itemMacros.protein),

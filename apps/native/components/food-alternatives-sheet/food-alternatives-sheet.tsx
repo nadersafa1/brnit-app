@@ -24,9 +24,10 @@ export function FoodAlternativesSheet({ foodItem, onClose }: Readonly<FoodAltern
   const [sheetState, setSheetState] = useState<SheetState>('input')
   const [quantity, setQuantity] = useState(0)
 
+  const defaultQty = foodItem?.unit === 'piece' ? '1' : '100'
   const form = useForm<QuantityFormValues>({
     resolver: zodResolver(quantitySchema),
-    defaultValues: { quantity: '100' },
+    defaultValues: { quantity: defaultQty },
   })
 
   const { data, isLoading, isError } = useFoodItemAlternatives({
@@ -43,7 +44,8 @@ export function FoodAlternativesSheet({ foodItem, onClose }: Readonly<FoodAltern
     if (foodItem) {
       sheetRef.current?.open(1)
       setSheetState('input')
-      form.reset({ quantity: '100' })
+      const defaultQty = foodItem.unit === 'piece' ? '1' : '100'
+      form.reset({ quantity: defaultQty })
     } else {
       sheetRef.current?.close()
     }
@@ -66,7 +68,9 @@ export function FoodAlternativesSheet({ foodItem, onClose }: Readonly<FoodAltern
   }, [])
 
   const handleCopy = useCallback(async (alt: FoodItemAlternative) => {
-    const text = `${alt.name}: ${alt.suggestedQuantityGrams}g (${alt.calories} kcal, P: ${alt.protein}g, C: ${alt.carbs}g, F: ${alt.fat}g)`
+    const qtyText =
+      alt.unit === '100g' ? `${alt.suggestedQuantity}g` : `${alt.suggestedQuantity} piece${alt.suggestedQuantity === 1 ? '' : 's'}`
+    const text = `${alt.name}: ${qtyText} (${alt.calories} kcal, P: ${alt.protein}g, C: ${alt.carbs}g, F: ${alt.fat}g)`
     await Clipboard.setStringAsync(text)
     showSuccess('Copied', 'Alternative copied to clipboard')
   }, [])
@@ -114,6 +118,7 @@ export function FoodAlternativesSheet({ foodItem, onClose }: Readonly<FoodAltern
           isLoading={isLoading}
           isError={isError}
           quantity={quantity}
+          quantityUnit={foodItem?.unit ?? '100g'}
           foodItemName={foodItem?.name ?? ''}
           onCopy={handleCopy}
         />

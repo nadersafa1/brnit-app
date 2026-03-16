@@ -113,6 +113,8 @@ export async function listFoodItems(query: FoodItemsQuery) {
         carbs: foodItem.carbs,
         fat: foodItem.fat,
         servingSize: foodItem.servingSize,
+        unit: foodItem.unit,
+        gramsPerUnit: foodItem.gramsPerUnit,
         imagePublicId: foodItem.imagePublicId,
         createdAt: foodItem.createdAt,
         updatedAt: foodItem.updatedAt,
@@ -136,6 +138,8 @@ export async function listFoodItems(query: FoodItemsQuery) {
     carbs: row.carbs,
     fat: row.fat,
     servingSize: row.servingSize,
+    unit: row.unit,
+    gramsPerUnit: row.gramsPerUnit != null ? Number(row.gramsPerUnit) : null,
     imageUrl: row.imagePublicId ? buildCloudinaryUrl(row.imagePublicId) : null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -161,6 +165,8 @@ export async function getFoodItemById(id: string) {
       carbs: foodItem.carbs,
       fat: foodItem.fat,
       servingSize: foodItem.servingSize,
+      unit: foodItem.unit,
+      gramsPerUnit: foodItem.gramsPerUnit,
       imagePublicId: foodItem.imagePublicId,
       createdAt: foodItem.createdAt,
       updatedAt: foodItem.updatedAt,
@@ -172,6 +178,7 @@ export async function getFoodItemById(id: string) {
   if (!row) return null
   return {
     ...row,
+    gramsPerUnit: row.gramsPerUnit != null ? Number(row.gramsPerUnit) : null,
     imageUrl: row.imagePublicId ? buildCloudinaryUrl(row.imagePublicId) : null,
   }
 }
@@ -219,6 +226,8 @@ export async function createFoodItem(
     carbs?: number
     fat?: number
     servingSize?: number
+    unit?: '100g' | 'piece'
+    gramsPerUnit?: number | null
   },
   options?: { file?: File }
 ) {
@@ -238,12 +247,15 @@ export async function createFoodItem(
       carbs: data.carbs?.toString(),
       fat: data.fat?.toString(),
       servingSize: data.servingSize?.toString(),
+      unit: data.unit ?? '100g',
+      gramsPerUnit: data.gramsPerUnit?.toString() ?? null,
       imagePublicId,
     })
     .returning()
   if (!created) return null
   return {
     ...created,
+    gramsPerUnit: created.gramsPerUnit != null ? Number(created.gramsPerUnit) : null,
     imageUrl: created.imagePublicId ? buildCloudinaryUrl(created.imagePublicId) : null,
   }
 }
@@ -263,6 +275,8 @@ export async function updateFoodItem(
     carbs?: number | null
     fat?: number | null
     servingSize?: number | null
+    unit?: '100g' | 'piece' | null
+    gramsPerUnit?: number | null
   },
   options?: { file?: File; clearImage?: boolean }
 ) {
@@ -289,6 +303,9 @@ export async function updateFoodItem(
   if (data.fat !== undefined) updateData.fat = data.fat?.toString() ?? null
   if (data.servingSize !== undefined)
     updateData.servingSize = data.servingSize?.toString() ?? null
+  if (data.unit !== undefined) updateData.unit = data.unit
+  if (data.gramsPerUnit !== undefined)
+    updateData.gramsPerUnit = data.gramsPerUnit?.toString() ?? null
   if (newImagePublicId !== undefined) updateData.imagePublicId = newImagePublicId
 
   if (Object.keys(updateData).length === 0) return null
@@ -301,6 +318,7 @@ export async function updateFoodItem(
   if (!updated) return null
   return {
     ...updated,
+    gramsPerUnit: updated.gramsPerUnit != null ? Number(updated.gramsPerUnit) : null,
     imageUrl: updated.imagePublicId ? buildCloudinaryUrl(updated.imagePublicId) : null,
   }
 }

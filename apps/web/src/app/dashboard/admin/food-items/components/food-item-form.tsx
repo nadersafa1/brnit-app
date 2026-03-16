@@ -41,6 +41,8 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
     carbs: number
     fat: number
     servingSize?: number
+    unit: '100g' | 'piece'
+    gramsPerUnit?: number | null
   }
   const form = useForm<FormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -53,8 +55,12 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
       carbs: item?.carbs ? Number.parseFloat(item.carbs) : 0,
       fat: item?.fat ? Number.parseFloat(item.fat) : 0,
       servingSize: item?.servingSize ? Number.parseFloat(item.servingSize) : undefined,
+      unit: item?.unit ?? '100g',
+      gramsPerUnit: item?.gramsPerUnit ?? undefined,
     },
   })
+
+  const unit = form.watch('unit')
 
   // Build API payload: coerce numbers; for update, send null for omitted macros.
   const handleSubmit = form.handleSubmit(async raw => {
@@ -66,6 +72,8 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
       carbs: asNum(raw.carbs),
       fat: asNum(raw.fat),
       servingSize: asNum(raw.servingSize),
+      unit: raw.unit,
+      gramsPerUnit: asNum(raw.gramsPerUnit) ?? null,
     }
     if (isEdit) {
       const u = payload as UpdateFormData
@@ -171,6 +179,43 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
           disabled={isLoading}
         />
       </Field>
+
+      <Field>
+        <FieldLabel htmlFor='item-unit'>Unit</FieldLabel>
+        <Select
+          value={form.watch('unit')}
+          onValueChange={v => {
+            form.setValue('unit', v as '100g' | 'piece')
+            if (v === '100g') form.setValue('gramsPerUnit', undefined)
+          }}
+          disabled={isLoading}
+        >
+          <SelectTrigger id='item-unit'>
+            <SelectValue placeholder='Select unit' />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='100g'>100g (per 100 grams)</SelectItem>
+            <SelectItem value='piece'>Piece (per 1 item)</SelectItem>
+          </SelectContent>
+        </Select>
+        <FieldError errors={form.formState.errors.unit ? [form.formState.errors.unit] : undefined} />
+      </Field>
+
+      {unit === 'piece' && (
+        <Field>
+          <FieldLabel htmlFor='item-grams-per-unit'>Grams per unit (required for piece)</FieldLabel>
+          <Input
+            id='item-grams-per-unit'
+            type='number'
+            step='0.1'
+            min={0.1}
+            {...form.register('gramsPerUnit', { valueAsNumber: true })}
+            placeholder='e.g. 50 for one egg'
+            disabled={isLoading}
+          />
+          <FieldError errors={form.formState.errors.gramsPerUnit ? [form.formState.errors.gramsPerUnit] : undefined} />
+        </Field>
+      )}
 
       <Field>
         <FieldLabel htmlFor='item-image'>

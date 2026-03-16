@@ -13,3 +13,14 @@ export function roundUpToTenth(value: number): number {
 export function formatCalorieDisplay(value: number): string {
   return value % 1 === 0 ? String(value) : value.toFixed(1)
 }
+
+export type FoodUnit = '100g' | 'piece'
+
+/**
+ * Formats quantity with unit for display (e.g. "150g", "2 pieces").
+ */
+export function formatQuantityWithUnit(quantity: number, unit: FoodUnit): string {
+  if (unit === '100g') return `${quantity}g`
+  const q = quantity % 1 === 0 ? String(quantity) : quantity.toFixed(1)
+  return `${q} piece${quantity === 1 ? '' : 's'}`
+}

@@ -111,6 +111,8 @@ export async function getDietPlanById(id: string) {
     foodItemId: string
     foodName: string
     quantity: number
+    unit: '100g' | 'piece'
+    gramsPerUnit: number | null
   }
   const mealItemsByMealId = new Map<string, MealItemRow[]>()
 
@@ -122,6 +124,8 @@ export async function getDietPlanById(id: string) {
         foodItemId: mealItem.foodItemId,
         foodName: foodItem.name,
         quantity: mealItem.quantity,
+        unit: foodItem.unit,
+        gramsPerUnit: foodItem.gramsPerUnit,
       })
       .from(mealItem)
       .innerJoin(foodItem, eq(mealItem.foodItemId, foodItem.id))
@@ -134,6 +138,8 @@ export async function getDietPlanById(id: string) {
         foodItemId: row.foodItemId,
         foodName: row.foodName,
         quantity: Number(row.quantity),
+        unit: (row.unit ?? '100g') as '100g' | 'piece',
+        gramsPerUnit: row.gramsPerUnit != null ? Number(row.gramsPerUnit) : null,
       })
       mealItemsByMealId.set(row.mealId, list)
     }

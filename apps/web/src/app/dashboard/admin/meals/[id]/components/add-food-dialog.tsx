@@ -1,22 +1,10 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Field, FieldLabel, FieldError } from '@/components/ui/field'
 import { useFoodItems } from '@/hooks/use-food-items'
 import { useFoodCategories } from '@/hooks/use-food-categories'
@@ -37,7 +25,7 @@ export function AddFoodDialog({
   onAdd,
   excludeFoodIds = [],
   source = 'admin',
-}: AddFoodDialogProps) {
+}: Readonly<AddFoodDialogProps>) {
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [categoryId, setCategoryId] = useState<string | undefined>(undefined)
@@ -64,7 +52,7 @@ export function AddFoodDialog({
   const { data: categories } = useFoodCategories({ page: 1, perPage: 100 }, source)
 
   const filteredItems = useMemo(() => {
-    return foodItems.filter((f) => !excludeFoodIds.includes(f.id))
+    return foodItems.filter(f => !excludeFoodIds.includes(f.id))
   }, [foodItems, excludeFoodIds])
 
   const reset = () => {
@@ -99,32 +87,63 @@ export function AddFoodDialog({
     }
   }
 
+  let quantitySuffix = ''
+  if (selectedFood) {
+    quantitySuffix = selectedFood.unit === 'piece' ? ' (pieces)' : ' (g)'
+  }
+
+  let listContent: React.ReactNode
+  if (isLoading) {
+    listContent = <div className='p-4 text-sm text-muted-foreground'>Loading…</div>
+  } else if (filteredItems.length === 0) {
+    listContent = <div className='p-4 text-sm text-muted-foreground'>No food items found.</div>
+  } else {
+    listContent = (
+      <div className='divide-y'>
+        {filteredItems.map(item => (
+          <button
+            key={item.id}
+            type='button'
+            className={`w-full px-4 py-2 text-left text-sm hover:bg-muted/50 ${
+              selectedFood?.id === item.id ? 'bg-muted' : ''
+            }`}
+            onClick={() => setSelectedFood(item)}
+          >
+            <span className='font-medium'>{item.name}</span>
+            {item.categoryName && <span className='text-muted-foreground ml-2'>({item.categoryName})</span>}
+          </button>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] flex flex-col max-w-lg">
+      <DialogContent className='max-h-[90vh] flex flex-col max-w-lg'>
         <DialogHeader>
           <DialogTitle>Add food item</DialogTitle>
           <DialogDescription>
-            Search and select a food item, then enter the quantity in grams.
+            Search and select a food item, then enter the quantity in the food&apos;s unit (grams for 100g items, pieces
+            for piece-based items).
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 flex-1 min-h-0 flex flex-col">
-          <div className="flex gap-2">
-            <div className="flex-1">
+        <div className='space-y-4 flex-1 min-h-0 flex flex-col'>
+          <div className='flex gap-2'>
+            <div className='flex-1'>
               <Input
-                placeholder="Search by name..."
+                placeholder='Search by name...'
                 value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
+                onChange={e => setSearchInput(e.target.value)}
               />
             </div>
-            <Select value={categoryId ?? 'all'} onValueChange={(v) => setCategoryId(v === 'all' ? undefined : v)}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Category" />
+            <Select value={categoryId ?? 'all'} onValueChange={v => setCategoryId(v === 'all' ? undefined : v)}>
+              <SelectTrigger className='w-[140px]'>
+                <SelectValue placeholder='Category' />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {categories?.map((c) => (
+                <SelectItem value='all'>All</SelectItem>
+                {categories?.map(c => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
                   </SelectItem>
@@ -133,56 +152,29 @@ export function AddFoodDialog({
             </Select>
           </div>
 
-          <div className="flex-1 overflow-auto rounded-md border min-h-[120px] max-h-[200px]">
-            {isLoading ? (
-              <div className="p-4 text-sm text-muted-foreground">Loading…</div>
-            ) : filteredItems.length === 0 ? (
-              <div className="p-4 text-sm text-muted-foreground">No food items found.</div>
-            ) : (
-              <div className="divide-y">
-                {filteredItems.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={`w-full px-4 py-2 text-left text-sm hover:bg-muted/50 ${
-                      selectedFood?.id === item.id ? 'bg-muted' : ''
-                    }`}
-                    onClick={() => setSelectedFood(item)}
-                  >
-                    <span className="font-medium">{item.name}</span>
-                    {item.categoryName && (
-                      <span className="text-muted-foreground ml-2">({item.categoryName})</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <div className='flex-1 overflow-auto rounded-md border min-h-[120px] max-h-[200px]'>{listContent}</div>
 
           <Field>
-            <FieldLabel htmlFor="add-quantity">Quantity (g)</FieldLabel>
+            <FieldLabel htmlFor='add-quantity'>Quantity{quantitySuffix}</FieldLabel>
             <Input
-              id="add-quantity"
-              type="number"
+              id='add-quantity'
+              type='number'
               min={0.1}
               step={1}
               value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              placeholder="e.g. 100"
+              onChange={e => setQuantity(e.target.value)}
+              placeholder={selectedFood?.unit === 'piece' ? 'e.g. 2' : 'e.g. 100'}
               disabled={!selectedFood || isSubmitting}
             />
             <FieldError errors={quantityError ? [{ message: quantityError }] : undefined} />
           </Field>
         </div>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <Button variant="outline" onClick={() => handleOpenChange(false)}>
+        <div className='flex justify-end gap-2 pt-2'>
+          <Button variant='outline' onClick={() => handleOpenChange(false)}>
             Close
           </Button>
-          <Button
-            onClick={handleAdd}
-            disabled={!selectedFood || !quantity.trim() || isSubmitting}
-          >
+          <Button onClick={handleAdd} disabled={!selectedFood || !quantity.trim() || isSubmitting}>
             {isSubmitting ? 'Adding…' : 'Add'}
           </Button>
         </div>

@@ -41,16 +41,21 @@ export type Macros = {
   fat: number
 }
 
+export type FoodUnit = '100g' | 'piece'
+
 /** Meal item as returned in current-diet-plan (with override support). */
 export type CurrentDietPlanMealItem = {
   mealItemId: string
   foodItemId: string
   foodName: string
   quantity: number
+  unit: FoodUnit
+  gramsPerUnit: number | null
   isOverridden: boolean
   originalFoodItemId?: string
   originalFoodName?: string
   originalQuantity?: number
+  originalUnit?: FoodUnit
   macros: Macros
 }
 

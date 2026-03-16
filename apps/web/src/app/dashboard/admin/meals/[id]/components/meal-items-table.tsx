@@ -1,23 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import type { MealItem } from '@/lib/queries/meals'
 
@@ -41,13 +29,13 @@ export function MealItemsTable({
   onRemove,
   selectedIds,
   onSelectionChange,
-}: MealItemsTableProps) {
+}: Readonly<MealItemsTableProps>) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
 
   const toggleSelect = (id: string) => {
     if (selectedIds.includes(id)) {
-      onSelectionChange(selectedIds.filter((x) => x !== id))
+      onSelectionChange(selectedIds.filter(x => x !== id))
     } else {
       onSelectionChange([...selectedIds, id])
     }
@@ -57,7 +45,7 @@ export function MealItemsTable({
     if (selectedIds.length === mealItems.length) {
       onSelectionChange([])
     } else {
-      onSelectionChange(mealItems.map((m) => m.id))
+      onSelectionChange(mealItems.map(m => m.id))
     }
   }
 
@@ -83,18 +71,18 @@ export function MealItemsTable({
 
   if (mealItems.length === 0) {
     return (
-      <div className="rounded-md border p-8">
-        <p className="text-sm text-muted-foreground">No food items. Add your first food item.</p>
+      <div className='rounded-md border p-8'>
+        <p className='text-sm text-muted-foreground'>No food items. Add your first food item.</p>
       </div>
     )
   }
 
   return (
-    <div className="rounded-md border overflow-x-auto">
+    <div className='rounded-md border overflow-x-auto'>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-12">
+            <TableHead className='w-12'>
               <Checkbox
                 checked={selectedIds.length === mealItems.length && mealItems.length > 0}
                 onCheckedChange={toggleSelectAll}
@@ -102,37 +90,34 @@ export function MealItemsTable({
             </TableHead>
             <TableHead>Food name</TableHead>
             <TableHead>Category</TableHead>
-            <TableHead>Quantity (g)</TableHead>
+            <TableHead>Quantity</TableHead>
             <TableHead>Cal</TableHead>
             <TableHead>P</TableHead>
             <TableHead>C</TableHead>
             <TableHead>F</TableHead>
-            <TableHead className="w-12" />
+            <TableHead className='w-12' />
           </TableRow>
         </TableHeader>
         <TableBody>
-          {mealItems.map((item) => (
+          {mealItems.map(item => (
             <TableRow key={item.id}>
               <TableCell>
-                <Checkbox
-                  checked={selectedIds.includes(item.id)}
-                  onCheckedChange={() => toggleSelect(item.id)}
-                />
+                <Checkbox checked={selectedIds.includes(item.id)} onCheckedChange={() => toggleSelect(item.id)} />
               </TableCell>
-              <TableCell className="font-medium">{item.foodName}</TableCell>
-              <TableCell className="text-muted-foreground">{item.categoryName ?? '–'}</TableCell>
+              <TableCell className='font-medium'>{item.foodName}</TableCell>
+              <TableCell className='text-muted-foreground'>{item.categoryName ?? '–'}</TableCell>
               <TableCell>
                 {editingId === item.id ? (
-                  <div className="flex items-center gap-1">
+                  <div className='flex items-center gap-1'>
                     <Input
-                      type="number"
+                      type='number'
                       min={0.1}
                       step={1}
                       value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      className="w-20 h-8"
+                      onChange={e => setEditValue(e.target.value)}
+                      className='w-20 h-8'
                       onBlur={submitEdit}
-                      onKeyDown={(e) => {
+                      onKeyDown={e => {
                         if (e.key === 'Enter') submitEdit()
                         if (e.key === 'Escape') cancelEdit()
                       }}
@@ -140,12 +125,9 @@ export function MealItemsTable({
                     />
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    className="hover:underline text-left"
-                    onClick={() => startEdit(item)}
-                  >
+                  <button type='button' className='hover:underline text-left' onClick={() => startEdit(item)}>
                     {item.quantity}
+                    {item.unit === 'piece' ? ' pcs' : ' g'}
                   </button>
                 )}
               </TableCell>
@@ -156,21 +138,21 @@ export function MealItemsTable({
               <TableCell>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Actions</span>
+                    <Button variant='ghost' size='icon' className='h-8 w-8'>
+                      <MoreHorizontal className='h-4 w-4' />
+                      <span className='sr-only'>Actions</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align='end'>
                     <DropdownMenuItem onClick={() => startEdit(item)}>
-                      <Pencil className="mr-2 h-4 w-4" />
+                      <Pencil className='mr-2 h-4 w-4' />
                       Edit quantity
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => onRemove(item.id)}
-                      className="text-destructive focus:text-destructive"
+                      className='text-destructive focus:text-destructive'
                     >
-                      <Trash2 className="mr-2 h-4 w-4" />
+                      <Trash2 className='mr-2 h-4 w-4' />
                       Remove from meal
                     </DropdownMenuItem>
                   </DropdownMenuContent>

@@ -2,6 +2,8 @@ import { View, StyleSheet } from "react-native";
 import { Spinner, Text } from "@/components/ui";
 import { spacing } from "@/theme/spacing";
 import type { FoodItemAlternative } from "@/lib/api/member-food-types";
+import type { FoodUnit } from "@/lib/utils/numbers";
+import { formatQuantityWithUnit } from "@/lib/utils/numbers";
 import { AlternativeItem } from "./alternative-item";
 
 interface ResultsStateProps {
@@ -9,6 +11,7 @@ interface ResultsStateProps {
   isLoading: boolean;
   isError: boolean;
   quantity: number;
+  quantityUnit: FoodUnit;
   foodItemName: string;
   onCopy: (alternative: FoodItemAlternative) => void;
 }
@@ -18,6 +21,7 @@ export function ResultsState({
   isLoading,
   isError,
   quantity,
+  quantityUnit,
   foodItemName,
   onCopy,
 }: Readonly<ResultsStateProps>) {
@@ -43,7 +47,7 @@ export function ResultsState({
   return (
     <View style={styles.container}>
       <Text size="sm" muted style={styles.summary}>
-        Alternatives for {quantity}g of {foodItemName}
+        Alternatives for {formatQuantityWithUnit(quantity, quantityUnit)} of {foodItemName}
       </Text>
       <Text size="xs" muted style={styles.hint}>
         Tap to copy

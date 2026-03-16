@@ -4,10 +4,15 @@ import { Text } from "@/components/ui";
 import { useColors } from "@/hooks/use-theme-color";
 import { spacing } from "@/theme/spacing";
 import { radii } from "@/theme/radii";
+import { formatQuantityWithUnit } from "@/lib/utils/numbers";
 import type { AlternativeItemProps } from "./types";
 
 export function AlternativeItem({ alternative, onCopy }: Readonly<AlternativeItemProps>) {
   const colors = useColors();
+  const quantityText = formatQuantityWithUnit(
+    alternative.suggestedQuantity,
+    alternative.unit ?? '100g'
+  );
 
   return (
     <Pressable
@@ -23,7 +28,7 @@ export function AlternativeItem({ alternative, onCopy }: Readonly<AlternativeIte
             {alternative.name}
           </Text>
           <Text size="sm" accent weight="medium">
-            {alternative.suggestedQuantityGrams}g
+            {quantityText}
           </Text>
           <View style={styles.macros}>
             <Text size="xs" muted>

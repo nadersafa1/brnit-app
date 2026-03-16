@@ -78,6 +78,7 @@ export function createFoodItemsColumns({
         )
       },
     },
+    createTextColumn<FoodItem>('unit', 'Unit', (row) => row.unit ?? '100g', {}),
     createTextColumn<FoodItem>('categoryName', 'Category', (row) => row.categoryName ?? '–', {}),
     createTextColumn<FoodItem>('calories', 'Calories', (row) => row.calories ?? '–', {
       sortable: true,
