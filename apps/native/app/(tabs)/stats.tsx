@@ -16,10 +16,12 @@ import { authClient } from '@/lib/auth-client'
 import { useConsumptionStreak } from '@/hooks/use-consumption-streak'
 import { useRecentAssessments } from '@/hooks/use-recent-assessments'
 import { useOrganizationLeaderboard } from '@/hooks/use-organization-leaderboard'
+import { AssessmentDetailSheet } from '@/components/stats/assessment-detail-sheet'
 import { OrgPickerModal } from '@/components/stats/org-picker-modal'
 import { RecentAssessmentsSection } from '@/components/stats/recent-assessments-section'
 import { LeaderboardSection } from '@/components/stats/leaderboard-section'
 import { CurrentStreakCard } from '@/components/stats/current-streak-card'
+import type { RecentAssessmentItem } from '@/lib/api/recent-assessments'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
 import { shadows } from '@/theme/shadows'
@@ -35,6 +37,7 @@ export default function Stats() {
   const insets = useSafeAreaInsets()
   const colors = useColors()
   const [orgPickerVisible, setOrgPickerVisible] = useState(false)
+  const [selectedAssessment, setSelectedAssessment] = useState<RecentAssessmentItem | null>(null)
 
   const { data: activeOrg } = authClient.useActiveOrganization()
   const { data: orgsList, isPending: orgsLoading } = authClient.useListOrganizations()
@@ -131,6 +134,7 @@ export default function Stats() {
         <RecentAssessmentsSection
           assessments={assessmentsData?.assessments ?? []}
           isLoading={assessmentsLoading}
+          onSelectAssessment={setSelectedAssessment}
         />
 
         <LeaderboardSection
@@ -149,6 +153,10 @@ export default function Stats() {
       </ScrollView>
 
       <BottomNav activeTab="stats" />
+      <AssessmentDetailSheet
+        assessment={selectedAssessment}
+        onClose={() => setSelectedAssessment(null)}
+      />
     </View>
   )
 }

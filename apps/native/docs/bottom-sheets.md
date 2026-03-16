@@ -21,6 +21,7 @@ All bottom sheets in the app use the shared **AppBottomSheet** wrapper so behavi
 
 ## Existing sheets
 
+- **AssessmentDetailSheet** — Stats tab; controlled by selected assessment; shows full InBody metrics (date, org, weight, height, BMI, body fat %, muscle mass, visceral fat area, body water, optional image); opens at snap index 1.
 - **EditProfileSheet** — Profile tab; custom ref type (same as `AppBottomSheetRef`); header + footer with Cancel/Save.
 - **FoodAlternativesSheet** — Search tab; controlled by `foodItem`; custom header (back + title), conditional footer; opens at snap index 1.
 - **SearchFilterSheet** — Search tab; ref for open/close; header “Filters”, footer Reset/Apply.

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import dayjs from 'dayjs'
-import { View, StyleSheet, ActivityIndicator } from 'react-native'
+import { View, StyleSheet, ActivityIndicator, Pressable } from 'react-native'
 import { Text } from '@/components/ui'
 import { useColors } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
@@ -11,9 +11,10 @@ import type { RecentAssessmentItem } from '@/lib/api/recent-assessments'
 type RecentAssessmentsSectionProps = Readonly<{
   assessments: RecentAssessmentItem[]
   isLoading: boolean
+  onSelectAssessment?: (assessment: RecentAssessmentItem) => void
 }>
 
-/** Formats body fat and weight for display, e.g. "Body fat: 22% · 75 kg". */
+/** Formats body fat and weight for list subtitle, e.g. "Body fat: 22% · 75 kg". */
 function formatAssessmentMeta(a: RecentAssessmentItem): string {
   const parts: string[] = []
   if (a.bodyFatPercent != null) parts.push(`Body fat: ${a.bodyFatPercent}%`)
@@ -21,9 +22,55 @@ function formatAssessmentMeta(a: RecentAssessmentItem): string {
   return parts.join(' · ')
 }
 
+/** Single assessment row: date, meta, org badge. Pressable when onSelect is provided. */
+function AssessmentRow({
+  assessment,
+  onSelect,
+}: Readonly<{
+  assessment: RecentAssessmentItem
+  onSelect?: (assessment: RecentAssessmentItem) => void
+}>) {
+  const colors = useColors()
+  const meta = formatAssessmentMeta(assessment)
+
+  const rowContent = (
+    <View style={[styles.assessmentRow, { borderBottomColor: colors.border }]}>
+      <View style={styles.assessmentMain}>
+        <Text size="base" weight="semibold">
+          {dayjs(assessment.assessedAt).format('MMM D, YYYY')}
+        </Text>
+        {meta ? (
+          <View style={styles.assessmentMeta}>
+            <Text size="sm" muted>{meta}</Text>
+          </View>
+        ) : null}
+      </View>
+      <View style={[styles.orgBadge, { backgroundColor: colors.surfaceAlt }]}>
+        <Text size="xs" muted numberOfLines={1}>
+          {assessment.organization.name}
+        </Text>
+      </View>
+    </View>
+  )
+
+  if (onSelect) {
+    return (
+      <Pressable
+        onPress={() => onSelect(assessment)}
+        style={({ pressed }) => (pressed ? styles.assessmentRowPressed : undefined)}
+      >
+        {rowContent}
+      </Pressable>
+    )
+  }
+
+  return rowContent
+}
+
 export function RecentAssessmentsSection({
   assessments,
   isLoading,
+  onSelectAssessment,
 }: RecentAssessmentsSectionProps) {
   const colors = useColors()
 
@@ -43,33 +90,9 @@ export function RecentAssessmentsSection({
   } else {
     body = (
       <View style={styles.assessmentList}>
-        {assessments.map((a) => {
-          const meta = formatAssessmentMeta(a)
-          return (
-            <View
-              key={a.id}
-              style={[styles.assessmentRow, { borderBottomColor: colors.border }]}
-            >
-              <View style={styles.assessmentMain}>
-                <Text size="base" weight="semibold">
-                  {dayjs(a.assessedAt).format('MMM D, YYYY')}
-                </Text>
-                {meta ? (
-                  <View style={styles.assessmentMeta}>
-                    <Text size="sm" muted>
-                      {meta}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-              <View style={[styles.orgBadge, { backgroundColor: colors.surfaceAlt }]}>
-                <Text size="xs" muted numberOfLines={1}>
-                  {a.organization.name}
-                </Text>
-              </View>
-            </View>
-          )
-        })}
+        {assessments.map((a) => (
+          <AssessmentRow key={a.id} assessment={a} onSelect={onSelectAssessment} />
+        ))}
       </View>
     )
   }
@@ -118,5 +141,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[1],
     borderRadius: radii.sm,
     maxWidth: 120,
+  },
+  assessmentRowPressed: {
+    opacity: 0.7,
   },
 })
