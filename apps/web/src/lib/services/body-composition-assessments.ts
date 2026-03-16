@@ -13,6 +13,7 @@ import {
 import type {
   BodyCompositionAssessmentsQuery,
   CreateBodyCompositionAssessment,
+  MemberRecentAssessmentsQuery,
   UpdateBodyCompositionAssessment,
 } from '@/types/api/body-composition-assessment.schemas'
 
@@ -163,6 +164,80 @@ export async function listBodyCompositionAssessments(
   return {
     items,
     totalItems: countResult[0]?.count ?? 0,
+  }
+}
+
+/**
+ * Normalizes DB numeric strings to numbers for API responses.
+ * Returns null for empty or invalid values so clients can distinguish missing data.
+ */
+function parseNumeric(value: string | null | undefined): number | null {
+  if (value == null || value === '') return null
+  const n = Number.parseFloat(value)
+  return Number.isNaN(n) ? null : n
+}
+
+export type MemberRecentAssessmentItem = {
+  id: string
+  assessedAt: Date
+  bodyFatPercent: number | null
+  weightKg: number | null
+  heightCm: number | null
+  bmi: number | null
+  muscleMassKg: number | null
+  visceralFatAreaCm2: number | null
+  bodyWaterL: number | null
+  imageUrl: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export type MemberRecentAssessmentsResult = {
+  organization: { id: string; name: string }
+  assessments: MemberRecentAssessmentItem[]
+}
+
+/**
+ * Returns the current member's most recent body-composition assessments in the given org.
+ * Used by the member-facing recent-assessments endpoint; response includes org info and normalized numerics.
+ */
+export async function getRecentAssessmentsForMember(
+  query: MemberRecentAssessmentsQuery,
+  context: { memberId: string; organizationId: string; organizationName: string }
+): Promise<MemberRecentAssessmentsResult> {
+  const { limit } = query
+
+  const { items } = await listBodyCompositionAssessments(
+    {
+      memberId: context.memberId,
+      page: 1,
+      perPage: limit,
+      sortBy: 'assessedAt',
+      sortOrder: 'desc',
+    },
+    context.organizationId
+  )
+
+  const assessments: MemberRecentAssessmentItem[] = items.map(a => ({
+    id: a.id,
+    assessedAt: a.assessedAt,
+    bodyFatPercent: parseNumeric(a.bodyFatPercent),
+    weightKg: parseNumeric(a.weightKg),
+    heightCm: parseNumeric(a.heightCm),
+    bmi: parseNumeric(a.bmi),
+    muscleMassKg: parseNumeric(a.muscleMassKg),
+    visceralFatAreaCm2: parseNumeric(a.visceralFatAreaCm2),
+    bodyWaterL: parseNumeric(a.bodyWaterL),
+    imageUrl: a.imageUrl,
+    createdAt: a.createdAt,
+    updatedAt: a.updatedAt,
+  }))
+  return {
+    organization: {
+      id: context.organizationId,
+      name: context.organizationName,
+    },
+    assessments,
   }
 }
 

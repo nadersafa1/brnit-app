@@ -72,6 +72,17 @@ export const bodyCompositionAssessmentsQuerySchema = z.object({
   memberId: memberIdSchema.optional(),
 })
 
+/** Member-facing recent assessments list: optional orgId, optional limit (default 5, max 20). */
+export const memberRecentAssessmentsQuerySchema = z.object({
+  orgId: z.string().min(1).max(64).optional(),
+  limit: z
+    .string()
+    .optional()
+    .transform(val => (val ? Number.parseInt(val, 10) : 5))
+    .pipe(z.number().min(1).max(20)),
+})
+
 export type CreateBodyCompositionAssessment = z.infer<typeof createBodyCompositionAssessmentSchema>
 export type UpdateBodyCompositionAssessment = z.infer<typeof updateBodyCompositionAssessmentSchema>
 export type BodyCompositionAssessmentsQuery = z.infer<typeof bodyCompositionAssessmentsQuerySchema>
+export type MemberRecentAssessmentsQuery = z.infer<typeof memberRecentAssessmentsQuerySchema>
