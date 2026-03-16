@@ -82,7 +82,13 @@ export const memberRecentAssessmentsQuerySchema = z.object({
     .pipe(z.number().min(1).max(20)),
 })
 
+/** Member-facing single assessment: orgId required to resolve member and enforce ownership. */
+export const memberSingleAssessmentQuerySchema = z.object({
+  orgId: z.string().min(1, 'orgId is required').max(64),
+})
+
 export type CreateBodyCompositionAssessment = z.infer<typeof createBodyCompositionAssessmentSchema>
 export type UpdateBodyCompositionAssessment = z.infer<typeof updateBodyCompositionAssessmentSchema>
 export type BodyCompositionAssessmentsQuery = z.infer<typeof bodyCompositionAssessmentsQuerySchema>
 export type MemberRecentAssessmentsQuery = z.infer<typeof memberRecentAssessmentsQuerySchema>
+export type MemberSingleAssessmentQuery = z.infer<typeof memberSingleAssessmentQuerySchema>

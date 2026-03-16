@@ -36,6 +36,7 @@ export type DeleteAssessmentResult =
   | { ok: true }
   | { ok: false; error: string; code: 'NOT_FOUND' | 'WRONG_ORG' }
 
+/** Resolves the organization id for a member (used for org-scoped validation). */
 async function getMemberOrgId(memberId: string): Promise<string | null> {
   const [m] = await db
     .select({ organizationId: member.organizationId })
@@ -45,6 +46,7 @@ async function getMemberOrgId(memberId: string): Promise<string | null> {
   return m?.organizationId ?? null
 }
 
+/** Returns whether the assessment's member belongs to the given organization (for admin ownership checks). */
 export async function assessmentBelongsToOrg(
   assessmentId: string,
   organizationId: string
@@ -62,6 +64,9 @@ export async function assessmentBelongsToOrg(
 
 const BODY_ASSESSMENT_IMAGE_FOLDER = 'body-composition-assessments'
 
+/**
+ * Creates a body-composition assessment for a member. Validates member belongs to org; optional image upload.
+ */
 export async function createBodyCompositionAssessment(
   data: CreateBodyCompositionAssessment,
   recordedById: string,
@@ -109,6 +114,10 @@ export async function createBodyCompositionAssessment(
   }
 }
 
+/**
+ * Lists body-composition assessments for an org with pagination and optional member filter.
+ * Count and data fetch run in parallel for performance.
+ */
 export async function listBodyCompositionAssessments(
   query: BodyCompositionAssessmentsQuery,
   organizationId: string
@@ -218,12 +227,14 @@ type AssessmentLikeRow = {
   updatedAt: Date
 }
 
-/** Maps a DB/API assessment row plus org and image URL into the member-facing response item. */
-function toMemberRecentItem(
+/** DB row shape when we have imagePublicId (e.g. from select()); used for single-assessment normalization. */
+type AssessmentRowWithImage = AssessmentLikeRow & { imagePublicId: string | null }
+
+/** Single source of truth: normalized metrics + imageUrl (no organization). Used by list and single-get. */
+function normalizedAssessmentFields(
   row: AssessmentLikeRow,
-  organization: { id: string; name: string },
   imageUrl: string | null
-): MemberRecentAssessmentItem {
+): Omit<MemberRecentAssessmentItem, 'organization'> {
   return {
     id: row.id,
     assessedAt: row.assessedAt,
@@ -237,8 +248,22 @@ function toMemberRecentItem(
     imageUrl,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
-    organization,
   }
+}
+
+/** Maps a DB/API assessment row plus org and image URL into the member-facing list item. */
+function toMemberRecentItem(
+  row: AssessmentLikeRow,
+  organization: { id: string; name: string },
+  imageUrl: string | null
+): MemberRecentAssessmentItem {
+  return { ...normalizedAssessmentFields(row, imageUrl), organization }
+}
+
+/** Builds normalized member-facing assessment from a full DB row (for single-get endpoint). */
+function rowToNormalizedAssessment(row: AssessmentRowWithImage): Omit<MemberRecentAssessmentItem, 'organization'> {
+  const imageUrl = row.imagePublicId ? buildCloudinaryUrl(row.imagePublicId) : null
+  return normalizedAssessmentFields(row, imageUrl)
 }
 
 /**
@@ -359,6 +384,7 @@ export async function getRecentAssessmentsForUserAllOrgs(
   return { organization: null, assessments }
 }
 
+/** Fetches an assessment by id with no ownership check (admin/cross-org use). */
 export async function getBodyCompositionAssessmentById(id: string) {
   const [row] = await db
     .select()
@@ -372,43 +398,70 @@ export async function getBodyCompositionAssessmentById(id: string) {
   }
 }
 
-export async function updateBodyCompositionAssessment(
-  id: string,
-  data: UpdateBodyCompositionAssessment,
-  organizationId: string,
-  options?: { file?: File; clearImage?: boolean }
-): Promise<UpdateAssessmentResult> {
-  const belongs = await assessmentBelongsToOrg(id, organizationId)
-  if (!belongs) {
-    const existing = await getBodyCompositionAssessmentById(id)
-    if (!existing) {
-      return { ok: false, error: 'Assessment not found', code: 'NOT_FOUND' }
-    }
-    return { ok: false, error: 'Assessment does not belong to this organization', code: 'WRONG_ORG' }
-  }
+/** Single assessment for member endpoint: same shape as list item but organization added by route. */
+export type SingleAssessmentForMember = Omit<MemberRecentAssessmentItem, 'organization'>
 
-  const existing = await db
+/**
+ * Returns a single body-composition assessment only if it belongs to the given member.
+ * Used by the member-facing single-assessment endpoint. Returns null when not found or not owned
+ * (404 in both cases to avoid leaking existence). Route adds organization from context.
+ */
+export async function getBodyCompositionAssessmentByIdForMember(
+  assessmentId: string,
+  memberId: string
+): Promise<SingleAssessmentForMember | null> {
+  const [row] = await db
     .select()
     .from(bodyCompositionAssessment)
-    .where(eq(bodyCompositionAssessment.id, id))
+    .where(
+      and(
+        eq(bodyCompositionAssessment.id, assessmentId),
+        eq(bodyCompositionAssessment.memberId, memberId)
+      )
+    )
     .limit(1)
-    .then(rows => rows[0] ?? null)
-  if (!existing) return { ok: false, error: 'Assessment not found', code: 'NOT_FOUND' }
+  if (!row) return null
+  return rowToNormalizedAssessment(row)
+}
 
-  let newImagePublicId: string | null | undefined = undefined
-  if (options?.clearImage) {
-    if (existing.imagePublicId) {
-      await deleteCloudinaryImage(existing.imagePublicId)
-    }
-    newImagePublicId = null
-  } else if (options?.file) {
-    if (existing.imagePublicId) {
-      await deleteCloudinaryImage(existing.imagePublicId)
-    }
-    const { publicId } = await uploadFileToCloudinary(options.file, BODY_ASSESSMENT_IMAGE_FOLDER)
-    newImagePublicId = publicId
+/**
+ * Returns an error result when mutation (update/delete) is not allowed (wrong org or missing);
+ * otherwise null so caller can proceed. Shared by update and delete to avoid duplication.
+ */
+function mutationOwnershipError(
+  belongs: boolean,
+  existing: { imagePublicId: string | null } | null
+): UpdateAssessmentResult | DeleteAssessmentResult | null {
+  if (!belongs) {
+    return existing
+      ? { ok: false, error: 'Assessment does not belong to this organization', code: 'WRONG_ORG' }
+      : { ok: false, error: 'Assessment not found', code: 'NOT_FOUND' }
   }
+  return existing ? null : { ok: false, error: 'Assessment not found', code: 'NOT_FOUND' }
+}
 
+/** Handles clearImage and file upload; returns new imagePublicId (undefined = leave unchanged). */
+async function resolveImagePublicIdForUpdate(
+  existingImagePublicId: string | null,
+  options?: { file?: File; clearImage?: boolean }
+): Promise<string | null | undefined> {
+  if (options?.clearImage) {
+    if (existingImagePublicId) await deleteCloudinaryImage(existingImagePublicId)
+    return null
+  }
+  if (options?.file) {
+    if (existingImagePublicId) await deleteCloudinaryImage(existingImagePublicId)
+    const { publicId } = await uploadFileToCloudinary(options.file, BODY_ASSESSMENT_IMAGE_FOLDER)
+    return publicId
+  }
+  return undefined
+}
+
+/** Builds the DB update record from request data and optional new imagePublicId. */
+function buildAssessmentUpdateValues(
+  data: UpdateBodyCompositionAssessment,
+  newImagePublicId: string | null | undefined
+): Record<string, unknown> {
   const updateValues: Record<string, unknown> = {}
   if (data.assessedAt !== undefined) updateValues.assessedAt = new Date(data.assessedAt)
   if (data.heightCm !== undefined) updateValues.heightCm = String(data.heightCm)
@@ -420,6 +473,37 @@ export async function updateBodyCompositionAssessment(
     updateValues.visceralFatAreaCm2 = String(data.visceralFatAreaCm2)
   if (data.bodyWaterL !== undefined) updateValues.bodyWaterL = String(data.bodyWaterL)
   if (newImagePublicId !== undefined) updateValues.imagePublicId = newImagePublicId
+  return updateValues
+}
+
+/**
+ * Updates a body-composition assessment. Verifies org ownership then applies field/image updates.
+ * Cloudinary delete/upload are sequential; DB update is a single write (no transaction with external ops).
+ */
+export async function updateBodyCompositionAssessment(
+  id: string,
+  data: UpdateBodyCompositionAssessment,
+  organizationId: string,
+  options?: { file?: File; clearImage?: boolean }
+): Promise<UpdateAssessmentResult> {
+  const [belongs, existingRows] = await Promise.all([
+    assessmentBelongsToOrg(id, organizationId),
+    db
+      .select()
+      .from(bodyCompositionAssessment)
+      .where(eq(bodyCompositionAssessment.id, id))
+      .limit(1),
+  ])
+  const existing = existingRows[0] ?? null
+
+  const ownershipErr = mutationOwnershipError(belongs, existing)
+  if (ownershipErr) return ownershipErr as UpdateAssessmentResult
+
+  const newImagePublicId = await resolveImagePublicIdForUpdate(
+    existing.imagePublicId,
+    options,
+  )
+  const updateValues = buildAssessmentUpdateValues(data, newImagePublicId)
 
   const [updated] = await db
     .update(bodyCompositionAssessment)
@@ -437,26 +521,26 @@ export async function updateBodyCompositionAssessment(
   }
 }
 
+/**
+ * Deletes a body-composition assessment after verifying org ownership. Removes Cloudinary image if present.
+ * Ownership check and row fetch run in parallel; no transaction (single delete + optional external Cloudinary call).
+ */
 export async function deleteBodyCompositionAssessment(
   id: string,
   organizationId: string
 ): Promise<DeleteAssessmentResult> {
-  const belongs = await assessmentBelongsToOrg(id, organizationId)
-  if (!belongs) {
-    const existing = await getBodyCompositionAssessmentById(id)
-    if (!existing) {
-      return { ok: false, error: 'Assessment not found', code: 'NOT_FOUND' }
-    }
-    return { ok: false, error: 'Assessment does not belong to this organization', code: 'WRONG_ORG' }
-  }
+  const [belongs, existingRows] = await Promise.all([
+    assessmentBelongsToOrg(id, organizationId),
+    db
+      .select({ imagePublicId: bodyCompositionAssessment.imagePublicId })
+      .from(bodyCompositionAssessment)
+      .where(eq(bodyCompositionAssessment.id, id))
+      .limit(1),
+  ])
+  const existing = existingRows[0] ?? null
 
-  const existing = await db
-    .select({ imagePublicId: bodyCompositionAssessment.imagePublicId })
-    .from(bodyCompositionAssessment)
-    .where(eq(bodyCompositionAssessment.id, id))
-    .limit(1)
-    .then(rows => rows[0] ?? null)
-  if (!existing) return { ok: false, error: 'Assessment not found', code: 'NOT_FOUND' }
+  const ownershipErr = mutationOwnershipError(belongs, existing)
+  if (ownershipErr) return ownershipErr as DeleteAssessmentResult
 
   if (existing.imagePublicId) {
     await deleteCloudinaryImage(existing.imagePublicId)
