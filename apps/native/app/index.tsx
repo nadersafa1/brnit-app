@@ -24,6 +24,9 @@ export default function Index() {
   }
 
   if (session?.user) {
+    if (!session.user.dob) {
+      return <Redirect href='/(auth)/complete-profile' />
+    }
     return <Redirect href="/(tabs)" />
   }
 

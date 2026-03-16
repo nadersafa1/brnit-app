@@ -31,6 +31,9 @@ export default function LoginScreen() {
   }
 
   if (session?.user) {
+    if (!session.user.dob) {
+      return <Redirect href='/(auth)/complete-profile' />
+    }
     if (invitationId) {
       return <Redirect href={{ pathname: '/accept-invitation', params: { invitationId } }} />
     }

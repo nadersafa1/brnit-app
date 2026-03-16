@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import * as ImagePicker from 'expo-image-picker'
 
-import { showError, showSuccess } from '@/lib/feedback'
 import { updateProfile, getProfileErrorMessage } from '@/lib/api/profile'
+import { toIsoDateString } from '@/lib/date-utils'
+import { showError, showSuccess } from '@/lib/feedback'
 
 const NAME_MAX_LENGTH = 200
 
 export type UseEditProfileFormParams = {
   initialName: string
+  /** ISO date string or Date (e.g. from session). */
+  initialDob: string | Date | null
   initialImageUrl: string | null
   onSaveSuccess: () => void
   closeSheet: () => void
@@ -17,8 +20,9 @@ export type UseEditProfileFormParams = {
  * Form state and handlers for the edit profile bottom sheet.
  * Resets local state when initial values change (e.g. when sheet is opened with fresh session data).
  */
-export function useEditProfileForm({ initialName, initialImageUrl, onSaveSuccess, closeSheet }: UseEditProfileFormParams) {
+export function useEditProfileForm({ initialName, initialDob, initialImageUrl, onSaveSuccess, closeSheet }: UseEditProfileFormParams) {
   const [name, setName] = useState(initialName)
+  const [dob, setDob] = useState(() => toIsoDateString(initialDob))
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null)
   const [userChoseRemove, setUserChoseRemove] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -29,9 +33,10 @@ export function useEditProfileForm({ initialName, initialImageUrl, onSaveSuccess
 
   useEffect(() => {
     setName(initialName)
+    setDob(toIsoDateString(initialDob))
     setSelectedImageUri(null)
     setUserChoseRemove(false)
-  }, [initialName, initialImageUrl])
+  }, [initialName, initialDob, initialImageUrl])
 
   const requestMediaPermission = useCallback(async (): Promise<boolean> => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
@@ -77,7 +82,9 @@ export function useEditProfileForm({ initialName, initialImageUrl, onSaveSuccess
       return
     }
 
-    const hasChange = trimmedName !== initialName || hasImageChange
+    const trimmedDob = dob.trim()
+    const initialDobStr = toIsoDateString(initialDob)
+    const hasChange = trimmedName !== initialName || (trimmedDob || null) !== (initialDobStr || null) || hasImageChange
     if (!hasChange) {
       closeSheet()
       return
@@ -87,6 +94,7 @@ export function useEditProfileForm({ initialName, initialImageUrl, onSaveSuccess
     try {
       await updateProfile({
         name: trimmedName,
+        dob: trimmedDob || null,
         imageUri: selectedImageUri ?? undefined,
         clearImage: userChoseRemove ? true : undefined
       })
@@ -98,11 +106,13 @@ export function useEditProfileForm({ initialName, initialImageUrl, onSaveSuccess
     } finally {
       setIsSaving(false)
     }
-  }, [name, initialName, selectedImageUri, userChoseRemove, hasImageChange, onSaveSuccess, closeSheet])
+  }, [name, dob, initialName, initialDob, selectedImageUri, userChoseRemove, hasImageChange, onSaveSuccess, closeSheet])
 
   return {
     name,
     setName,
+    dob,
+    setDob,
     displayImageUri,
     displayName,
     hasImageChange,

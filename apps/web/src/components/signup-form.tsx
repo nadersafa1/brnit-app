@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 
 import { authClient } from '@/lib/auth-client'
+import { isPastDate } from '@/lib/date-utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
@@ -36,6 +37,7 @@ const signupSchema = z
   .object({
     name: z.string().min(1, 'Name is required'),
     email: z.email('Invalid email address'),
+    dob: z.string().min(1, 'Date of birth is required').refine(isPastDate, 'Enter a valid past date'),
     password: z.string().min(8, 'Password must be at least 8 characters'),
     confirmPassword: z.string(),
   })
@@ -61,7 +63,7 @@ export const SignupForm = (
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
-    defaultValues: { name: '', email: '', password: '', confirmPassword: '' },
+    defaultValues: { name: '', email: '', dob: '', password: '', confirmPassword: '' },
   })
 
   const onSubmit = form.handleSubmit(async values => {
@@ -70,6 +72,7 @@ export const SignupForm = (
         email: values.email,
         password: values.password,
         name: values.name,
+        dob: values.dob,
         callbackURL: redirectTo,
       },
       {
@@ -126,6 +129,13 @@ export const SignupForm = (
               <Input id='email' type='email' placeholder='m@example.com' {...form.register('email')} />
               {form.formState.errors.email && (
                 <p className='text-sm text-destructive'>{form.formState.errors.email.message}</p>
+              )}
+            </Field>
+            <Field>
+              <FieldLabel htmlFor='dob'>Date of Birth</FieldLabel>
+              <Input id='dob' type='date' {...form.register('dob')} />
+              {form.formState.errors.dob && (
+                <p className='text-sm text-destructive'>{form.formState.errors.dob.message}</p>
               )}
             </Field>
             <Field>

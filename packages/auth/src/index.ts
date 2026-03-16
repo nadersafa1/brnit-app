@@ -51,6 +51,15 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24, // 24 hours
     autoSignInAfterVerification: true,
   },
+  user: {
+    additionalFields: {
+      dob: {
+        type: 'date',
+        required: false,
+        input: true,
+      },
+    },
+  },
   plugins: [
     nextCookies(),
     openAPI(),

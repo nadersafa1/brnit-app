@@ -1,6 +1,6 @@
 import { expoClient } from '@better-auth/expo/client'
 import { env } from '@burn-app/env/native'
-import { adminClient, organizationClient } from 'better-auth/client/plugins'
+import { adminClient, inferAdditionalFields, organizationClient } from 'better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/react'
 import Constants from 'expo-constants'
 import * as SecureStore from 'expo-secure-store'
@@ -27,6 +27,14 @@ export const authClient = createAuthClient({
         nutritionist,
         coach,
         member,
+      },
+    }),
+    inferAdditionalFields({
+      user: {
+        dob: {
+          type: 'date',
+          required: false,
+        },
       },
     }),
     expoClient({

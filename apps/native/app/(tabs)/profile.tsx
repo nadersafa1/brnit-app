@@ -23,6 +23,7 @@ export default function Profile() {
   const userName = session?.user?.name || 'User'
   const userEmail = session?.user?.email || ''
   const userImage = session?.user?.image ?? null
+  const userDob = session?.user?.dob ?? null
 
   const openEditSheet = useCallback(() => {
     editSheetRef.current?.open(2)
@@ -143,6 +144,7 @@ export default function Profile() {
       <EditProfileSheet
         ref={editSheetRef}
         initialName={userName}
+        initialDob={userDob}
         initialImageUrl={userImage}
         onSaveSuccess={handleEditSaveSuccess}
         onClose={() => {}}

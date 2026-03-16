@@ -6,20 +6,16 @@ import { spacing } from '@/theme/spacing'
 
 interface MealItemRowProps {
   item: CurrentDietPlanMealItem
+  onPress?: () => void
 }
 
-export function MealItemRow({ item }: Readonly<MealItemRowProps>) {
+export function MealItemRow({ item, onPress }: Readonly<MealItemRowProps>) {
   const unit = item.unit ?? '100g'
   const primary = `${item.foodName} (${formatQuantityWithUnit(item.quantity, unit)})`
   const hasReplacement = item.isOverridden && item.originalFoodName != null
   const originalQtyText =
-    typeof item.originalQuantity === 'number'
-      ? ` (${formatQuantityWithUnit(item.originalQuantity, item.originalUnit ?? '100g')})`
-      : ''
+    typeof item.originalQuantity === 'number' ? ` (${formatQuantityWithUnit(item.originalQuantity, item.originalUnit ?? '100g')})` : ''
   const caloriesText = formatCalorieDisplay(roundUpToTenth(item.macros?.calories ?? 0))
-
-  // Reserved for meal item details bottom sheet
-  const onPress = () => {}
 
   return (
     <Pressable
@@ -30,6 +26,8 @@ export function MealItemRow({ item }: Readonly<MealItemRowProps>) {
         <Text
           size='sm'
           weight='medium'
+          numberOfLines={1}
+          style={styles.mealItemName}
         >
           {primary}
         </Text>
@@ -70,5 +68,8 @@ const styles = StyleSheet.create({
   override: {
     marginTop: spacing[0.5],
     marginLeft: spacing[2]
+  },
+  mealItemName: {
+    flex: 0.8
   }
 })

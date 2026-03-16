@@ -13,6 +13,9 @@ export default async function HomePage() {
   })
 
   if (session?.user) {
+    if (!session.user.dob) {
+      redirect('/complete-profile')
+    }
     redirect('/dashboard')
   }
 

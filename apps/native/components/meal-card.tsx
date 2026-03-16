@@ -24,6 +24,7 @@ interface MealCardProps {
   dietPlanMealId?: string
   consumed?: boolean
   consumedDate?: string
+  onMealItemPress?: (item: CurrentDietPlanMealItem) => void
 }
 
 export function MealCard({
@@ -37,6 +38,7 @@ export function MealCard({
   dietPlanMealId,
   consumed = false,
   consumedDate,
+  onMealItemPress,
 }: Readonly<MealCardProps>) {
   const colors = useColors()
   const [expanded, setExpanded] = useState(false)
@@ -140,7 +142,11 @@ export function MealCard({
       {expanded && items.length > 0 && (
         <View style={styles.itemsList}>
           {items.map(item => (
-            <MealItemRow key={item.mealItemId} item={item} />
+            <MealItemRow
+              key={item.mealItemId}
+              item={item}
+              onPress={() => onMealItemPress?.(item)}
+            />
           ))}
         </View>
       )}

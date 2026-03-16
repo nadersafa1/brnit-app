@@ -8,6 +8,7 @@ import { CalendarStrip } from '@/components/calendar-strip'
 import { HomeHeader } from '@/components/home-header'
 import { HomeMealsSection } from '@/components/home-meals-section'
 import { HomeProgressCard } from '@/components/home-progress-card'
+import { MealItemDetailSheet, type MealItemDetailPayload } from '@/components/meal-item-detail-sheet'
 import { useCurrentDietPlan } from '@/hooks/use-current-diet-plan'
 import { useDayProgress } from '@/hooks/use-day-progress'
 import { useColors } from '@/hooks/use-theme-color'
@@ -21,6 +22,7 @@ export default function Home() {
   const colors = useColors()
   const { data: session } = authClient.useSession()
   const [selectedDate, setSelectedDate] = useState(() => new Date())
+  const [selectedMealItem, setSelectedMealItem] = useState<MealItemDetailPayload | null>(null)
 
   const dateStr = dayjs(selectedDate).format('YYYY-MM-DD')
   const {
@@ -74,10 +76,14 @@ export default function Home() {
           meals={meals}
           selectedDate={selectedDate}
           dietPlanAssignmentId={dietPlanData?.data?.assignment?.id}
+          onMealItemPress={setSelectedMealItem}
         />
       </ScrollView>
 
       <BottomNav activeTab='home' />
+      {selectedMealItem ? (
+        <MealItemDetailSheet payload={selectedMealItem} onClose={() => setSelectedMealItem(null)} />
+      ) : null}
     </View>
   )
 }
