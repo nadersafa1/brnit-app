@@ -1,17 +1,26 @@
 import { Ionicons } from '@expo/vector-icons'
-import { View, StyleSheet } from 'react-native'
+import { View, StyleSheet, ActivityIndicator } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BottomNav } from '@/components/bottom-nav'
 import { Text } from '@/components/ui'
 import { useColors } from '@/hooks/use-theme-color'
+import { useConsumptionStreak } from '@/hooks/use-consumption-streak'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
 import { shadows } from '@/theme/shadows'
 
+const FLAME_SIZE_ACTIVE = 28
+const FLAME_SIZE_ZERO = 18
+
 export default function Stats() {
   const insets = useSafeAreaInsets()
   const colors = useColors()
+  const { data, isLoading, error } = useConsumptionStreak()
+  const streak = data?.streak ?? 0
+  const isZeroStreak = streak === 0
+  const flameSize = isZeroStreak ? FLAME_SIZE_ZERO : FLAME_SIZE_ACTIVE
+  const flameColor = isZeroStreak ? colors.muted : colors.accent
 
   return (
     <View style={[styles.container, { backgroundColor: colors.appBg }]}>
@@ -59,6 +68,7 @@ export default function Stats() {
           </View>
         </View>
 
+        {/* Current Streak: consecutive days with ≥1 logged meal (ending today). Zero streak = smaller, grey flame. */}
         <View style={[styles.card, { backgroundColor: colors.card }, shadows.md]}>
           <View style={styles.streakRow}>
             <View>
@@ -70,9 +80,20 @@ export default function Stats() {
               </Text>
             </View>
             <View style={styles.streakValue}>
-              <Ionicons name="flame" size={28} color={colors.accent} />
-              <Text size="3xl" weight="bold" accent style={styles.streakNumber}>
-                7
+              {isLoading ? (
+                <ActivityIndicator size="small" color={colors.muted} />
+              ) : (
+                <Ionicons name="flame" size={flameSize} color={flameColor} />
+              )}
+              <Text
+                size="3xl"
+                weight="bold"
+                style={[
+                  styles.streakNumber,
+                  { color: isZeroStreak ? colors.muted : colors.accent },
+                ]}
+              >
+                {isLoading || error ? '—' : streak}
               </Text>
             </View>
           </View>

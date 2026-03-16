@@ -1,5 +1,7 @@
 export const memberKeys = {
   all: ["member"] as const,
+  consumptionStreak: () =>
+    [...memberKeys.all, "consumption-streak"] as const,
   currentDietPlanRoot: () => [...memberKeys.all, "current-diet-plan"] as const,
   currentDietPlan: (query?: { from?: string; to?: string }) =>
     [...memberKeys.currentDietPlanRoot(), query] as const,
