@@ -31,4 +31,8 @@ export const memberKeys = {
       query,
     ] as const,
   foodCategories: () => [...memberKeys.all, "food-categories"] as const,
+  recentAssessments: (params?: { limit?: number; orgId?: string }) =>
+    [...memberKeys.all, "recent-assessments", params] as const,
+  organizationLeaderboard: (params?: { orgId?: string }) =>
+    [...memberKeys.all, "organization-leaderboard", params] as const,
 } as const;

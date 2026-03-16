@@ -1,104 +1,152 @@
 import { Ionicons } from '@expo/vector-icons'
-import { View, StyleSheet, ActivityIndicator } from 'react-native'
+import { useCallback, useEffect, useState } from 'react'
+import {
+  View,
+  StyleSheet,
+  ActivityIndicator,
+  ScrollView,
+  Pressable,
+} from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BottomNav } from '@/components/bottom-nav'
 import { Text } from '@/components/ui'
 import { useColors } from '@/hooks/use-theme-color'
+import { authClient } from '@/lib/auth-client'
 import { useConsumptionStreak } from '@/hooks/use-consumption-streak'
+import { useRecentAssessments } from '@/hooks/use-recent-assessments'
+import { useOrganizationLeaderboard } from '@/hooks/use-organization-leaderboard'
+import { OrgPickerModal } from '@/components/stats/org-picker-modal'
+import { RecentAssessmentsSection } from '@/components/stats/recent-assessments-section'
+import { LeaderboardSection } from '@/components/stats/leaderboard-section'
+import { CurrentStreakCard } from '@/components/stats/current-streak-card'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
 import { shadows } from '@/theme/shadows'
+import { ApiError } from '@/lib/api/types'
 
-const FLAME_SIZE_ACTIVE = 28
-const FLAME_SIZE_ZERO = 18
+const RECENT_ASSESSMENTS_LIMIT = 5
 
+/**
+ * Stats tab: organization picker, recent assessments, leaderboard (by body-fat % drop),
+ * and current consumption streak. Uses session active org from Better Auth.
+ */
 export default function Stats() {
   const insets = useSafeAreaInsets()
   const colors = useColors()
-  const { data, isLoading, error } = useConsumptionStreak()
-  const streak = data?.streak ?? 0
-  const isZeroStreak = streak === 0
-  const flameSize = isZeroStreak ? FLAME_SIZE_ZERO : FLAME_SIZE_ACTIVE
-  const flameColor = isZeroStreak ? colors.muted : colors.accent
+  const [orgPickerVisible, setOrgPickerVisible] = useState(false)
+
+  const { data: activeOrg } = authClient.useActiveOrganization()
+  const { data: orgsList, isPending: orgsLoading } = authClient.useListOrganizations()
+  const organizations = (orgsList ?? []).map((o) => ({ id: o.id, name: o.name }))
+  const selectedOrgId = activeOrg?.id ?? null
+
+  // When user has only one org, set it as active so leaderboard and assessments load.
+  useEffect(() => {
+    if (organizations.length === 1 && selectedOrgId === null) {
+      authClient.organization.setActive({ organizationId: organizations[0].id })
+    }
+  }, [organizations, selectedOrgId])
+
+  const { data: assessmentsData, isLoading: assessmentsLoading } = useRecentAssessments({
+    limit: RECENT_ASSESSMENTS_LIMIT,
+    orgId: selectedOrgId,
+  })
+
+  const {
+    data: leaderboardData,
+    isLoading: leaderboardLoading,
+    error: leaderboardError,
+    isError: leaderboardIsError,
+  } = useOrganizationLeaderboard({
+    orgId: selectedOrgId,
+    enabled: !!selectedOrgId,
+  })
+  const isNoOrgError =
+    leaderboardIsError &&
+    leaderboardError instanceof ApiError &&
+    leaderboardError.status === 400
+
+  const { data: streakData, isLoading: streakLoading, error: streakError } = useConsumptionStreak()
+  const selectedOrgName =
+    activeOrg?.name ?? organizations.find((o) => o.id === selectedOrgId)?.name ?? null
+
+  const handleSelectOrg = useCallback((id: string) => {
+    authClient.organization.setActive({ organizationId: id })
+    setOrgPickerVisible(false)
+  }, [])
 
   return (
     <View style={[styles.container, { backgroundColor: colors.appBg }]}>
       <View style={[styles.decorativeBlob, { backgroundColor: colors.pastelPurple }]} />
 
-      <View
-        style={[
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 96 },
+          {
+            paddingTop: insets.top + 16,
+            paddingBottom: insets.bottom + 96,
+          },
         ]}
+        showsVerticalScrollIndicator={false}
       >
         <Text size="2xl" weight="bold" style={styles.title}>
           Statistics
         </Text>
 
-        <View style={[styles.card, { backgroundColor: colors.card }, shadows.md]}>
-          <Text size="lg" weight="bold" style={styles.cardTitle}>
-            This Week
+        <Pressable
+          style={[styles.orgPicker, { backgroundColor: colors.card }, shadows.sm]}
+          onPress={() => setOrgPickerVisible(true)}
+        >
+          <Text size="sm" weight="medium" muted>
+            Organization
           </Text>
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text size="2xl" weight="bold" accent>
-                12,450
-              </Text>
-              <Text size="xs" muted>
-                Calories
-              </Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text size="2xl" weight="bold" style={{ color: colors.info }}>
-                520g
-              </Text>
-              <Text size="xs" muted>
-                Carbs
-              </Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text size="2xl" weight="bold" style={{ color: colors.success }}>
-                340g
-              </Text>
-              <Text size="xs" muted>
-                Protein
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Current Streak: consecutive days with ≥1 logged meal (ending today). Zero streak = smaller, grey flame. */}
-        <View style={[styles.card, { backgroundColor: colors.card }, shadows.md]}>
-          <View style={styles.streakRow}>
-            <View>
-              <Text size="lg" weight="bold">
-                Current Streak
-              </Text>
-              <Text size="sm" muted>
-                Keep it going!
-              </Text>
-            </View>
-            <View style={styles.streakValue}>
-              {isLoading ? (
-                <ActivityIndicator size="small" color={colors.muted} />
-              ) : (
-                <Ionicons name="flame" size={flameSize} color={flameColor} />
-              )}
+          <View style={styles.orgPickerValue}>
+            {orgsLoading ? (
+              <ActivityIndicator size="small" color={colors.muted} />
+            ) : (
               <Text
-                size="3xl"
-                weight="bold"
-                style={[
-                  styles.streakNumber,
-                  { color: isZeroStreak ? colors.muted : colors.accent },
-                ]}
+                size="base"
+                weight="semibold"
+                numberOfLines={1}
+                style={selectedOrgName ? undefined : { color: colors.muted }}
               >
-                {isLoading || error ? '—' : streak}
+                {selectedOrgName ?? 'Select organization'}
               </Text>
-            </View>
+            )}
+            <Ionicons name="chevron-down" size={18} color={colors.muted} />
           </View>
-        </View>
-      </View>
+        </Pressable>
+
+        <OrgPickerModal
+          visible={orgPickerVisible}
+          onClose={() => setOrgPickerVisible(false)}
+          organizations={organizations}
+          selectedOrgId={selectedOrgId}
+          onSelect={handleSelectOrg}
+          isLoading={orgsLoading}
+        />
+
+        <RecentAssessmentsSection
+          assessments={assessmentsData?.assessments ?? []}
+          isLoading={assessmentsLoading}
+        />
+
+        <LeaderboardSection
+          selectedOrgId={selectedOrgId}
+          data={leaderboardData}
+          isLoading={leaderboardLoading}
+          isError={leaderboardIsError}
+          isNoOrgError={isNoOrgError}
+        />
+
+        <CurrentStreakCard
+          streak={streakData?.streak ?? 0}
+          isLoading={streakLoading}
+          error={streakError}
+        />
+      </ScrollView>
 
       <BottomNav activeTab="stats" />
     </View>
@@ -117,38 +165,30 @@ const styles = StyleSheet.create({
     height: 256,
     borderRadius: radii.pill,
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  content: {
+    flexGrow: 1,
     paddingHorizontal: spacing[4],
   },
   title: {
-    marginBottom: spacing[6],
-  },
-  card: {
-    borderRadius: radii.xl,
-    padding: spacing[5],
     marginBottom: spacing[4],
   },
-  cardTitle: {
-    marginBottom: spacing[4],
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  streakRow: {
+  orgPicker: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
+    borderRadius: radii.lg,
+    marginBottom: spacing[4],
   },
-  streakValue: {
+  orgPickerValue: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  streakNumber: {
-    marginLeft: spacing[2],
+    gap: spacing[2],
+    flex: 1,
+    justifyContent: 'flex-end',
   },
 })

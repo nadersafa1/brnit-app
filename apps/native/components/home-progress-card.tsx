@@ -55,21 +55,6 @@ export function HomeProgressCard({
         >
           {isToday ? "Today's Progress" : dayjs(selectedDate).format('MMMM D')}
         </Text>
-        <View style={[styles.weekBadge, { backgroundColor: colors.surfaceAlt }]}>
-          <Text
-            size='xs'
-            weight='semibold'
-            style={{ color: colors.subtle }}
-          >
-            This Week
-          </Text>
-          <Ionicons
-            name='chevron-down'
-            size={14}
-            color={colors.muted}
-            style={{ marginLeft: 4 }}
-          />
-        </View>
       </View>
 
       {hasPlan ? (
@@ -151,13 +136,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: spacing[4]
-  },
-  weekBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[1.5],
-    borderRadius: radii.pill
   },
   ringContainer: {
     alignItems: 'center',
