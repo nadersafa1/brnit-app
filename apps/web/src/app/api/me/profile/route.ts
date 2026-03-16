@@ -7,6 +7,7 @@ import {
   extractPublicId,
   uploadFileToCloudinary,
 } from '@/lib/cloudinary-utils'
+import { isPastDate } from '@/lib/date-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,7 +21,7 @@ const ALLOWED_IMAGE_TYPES = new Set([
 ])
 
 /** Profile response shape returned by GET and PATCH. */
-type ProfileResponse = { name: string; email: string; image: string | null }
+type ProfileResponse = { name: string; email: string; image: string | null; dob: string | null }
 
 /**
  * Validates profile image file: size and MIME type.
@@ -86,35 +87,46 @@ async function resolveNewImageUrl(
 }
 
 /**
- * Parses PATCH /api/me/profile form data. Returns parsed fields or an error response.
+ * Parses and validates PATCH /api/me/profile form data.
+ * Validates DOB is a past date when provided. Returns parsed fields or an error response.
  */
 function parseProfilePatchForm(
   formData: FormData
-): { name?: string; uploadFile?: File; clearImage: boolean } | { error: NextResponse } {
+): { name?: string; dob?: string; uploadFile?: File; clearImage: boolean } | { error: NextResponse } {
   const nameRaw = formData.get('name')
+  const dobRaw = formData.get('dob')
   const file = formData.get('file')
   const clearImageRaw = formData.get('clearImage')
 
   const name =
     typeof nameRaw === 'string' && nameRaw.trim() !== '' ? nameRaw.trim() : undefined
+  const dob = typeof dobRaw === 'string' && dobRaw.trim() !== '' ? dobRaw.trim() : undefined
   const uploadFile = file instanceof File && file.size > 0 ? file : undefined
   const clearImage = clearImageRaw === 'true'
 
-  if (!name && !uploadFile && !clearImage) {
+  if (dob && !isPastDate(dob)) {
     return {
       error: NextResponse.json(
-        { error: 'At least one of name, image file, or clearImage must be provided' },
+        { error: 'Date of birth must be a valid past date' },
         { status: 400 }
       ),
     }
   }
-  return { name, uploadFile, clearImage }
+  if (!name && !dob && !uploadFile && !clearImage) {
+    return {
+      error: NextResponse.json(
+        { error: 'At least one of name, dob, image file, or clearImage must be provided' },
+        { status: 400 }
+      ),
+    }
+  }
+  return { name, dob, uploadFile, clearImage }
 }
 
 /**
  * GET /api/me/profile
- * Returns the current user's profile (name, email, image).
- * Requires an authenticated session.
+ * Returns the current user's profile (name, email, image, dob).
+ * Requires an authenticated session. No side effects; read-only.
  */
 export async function GET(request: NextRequest) {
   const authResult = await requireAuth(request.headers)
@@ -125,6 +137,7 @@ export async function GET(request: NextRequest) {
     name: user.name,
     email: user.email,
     image: user.image ?? null,
+    dob: user.dob ?? null,
   }
   return NextResponse.json(response)
 }
@@ -133,10 +146,12 @@ export async function GET(request: NextRequest) {
  * PATCH /api/me/profile
  * Update current user profile. Accepts multipart/form-data:
  * - name (optional): string
+ * - dob (optional): YYYY-MM-DD, must be a valid past date
  * - file (optional): image file for profile picture (replaces existing)
  * - clearImage (optional): "true" to remove profile image
- * At least one of name, file, or clearImage must be provided.
+ * At least one of name, dob, file, or clearImage must be provided.
  * Requires an authenticated session.
+ * Note: Single updateUser call; no DB transaction needed (Better Auth handles persistence).
  */
 export async function PATCH(request: NextRequest) {
   const authResult = await requireAuth(request.headers)
@@ -144,19 +159,17 @@ export async function PATCH(request: NextRequest) {
 
   const sessionUser = authResult.session.user
 
-  // --- Parse and validate request body ---
   const formData = await request.formData()
   const parsed = parseProfilePatchForm(formData)
   if ('error' in parsed) return parsed.error
 
-  const { name, uploadFile, clearImage } = parsed
+  const { name, dob, uploadFile, clearImage } = parsed
   if (uploadFile) {
     const validation = validateImageFile(uploadFile)
     if ('error' in validation) return validation.error
   }
 
   try {
-    // --- Resolve new image URL: upload and/or clear previous (parallel where safe) ---
     const previousImageUrl = sessionUser.image ?? undefined
     const imageUrl = await resolveNewImageUrl(
       uploadFile,
@@ -164,11 +177,11 @@ export async function PATCH(request: NextRequest) {
       previousImageUrl
     )
 
-    const updatePayload: { name?: string; image?: string | null } = {}
+    const updatePayload: { name?: string; image?: string | null; dob?: string } = {}
     if (name !== undefined) updatePayload.name = name
+    if (dob !== undefined) updatePayload.dob = dob
     if (imageUrl !== undefined) updatePayload.image = imageUrl
 
-    // --- Persist via Better Auth (single user update; no multi-step DB transaction) ---
     const updateResult = await auth.api.updateUser({
       headers: request.headers,
       body: updatePayload,
@@ -181,11 +194,11 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    // Return the updated profile from the values we applied (session is not yet refreshed with new user data).
     const response: ProfileResponse = {
       name: name ?? sessionUser.name,
       email: sessionUser.email,
       image: imageUrl === undefined ? (sessionUser.image ?? null) : imageUrl,
+      dob: dob ?? sessionUser.dob ?? null,
     }
     return NextResponse.json(response)
   } catch (error) {

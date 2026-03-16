@@ -5,14 +5,17 @@ export type ProfileResponse = {
   name: string
   email: string
   image: string | null
+  dob: string | null
 }
 
 /**
- * Update current user profile. Sends multipart/form-data: name, file (image), and/or clearImage.
- * Returns the updated profile. On success, call session refetch so session.user reflects new data.
+ * Update current user profile. Sends multipart/form-data: name, dob, file (image), and/or clearImage.
+ * Only includes fields that are defined and non-empty; server validates DOB is a valid past date.
+ * On success, call session refetch so session.user reflects new data.
  */
 export async function updateProfile(options: {
   name?: string
+  dob?: string | null
   imageUri?: string | null
   clearImage?: boolean
 }): Promise<ProfileResponse> {
@@ -20,6 +23,10 @@ export async function updateProfile(options: {
 
   if (options.name !== undefined && options.name.trim() !== '') {
     formData.append('name', options.name.trim())
+  }
+
+  if (options.dob !== undefined && options.dob !== null && options.dob.trim() !== '') {
+    formData.append('dob', options.dob.trim())
   }
 
   if (options.imageUri && typeof options.imageUri === 'string') {

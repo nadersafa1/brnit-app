@@ -4,6 +4,7 @@ import type { BottomSheetFooterProps } from '@gorhom/bottom-sheet'
 import { Ionicons } from '@expo/vector-icons'
 
 import { AppBottomSheet, SheetFooter } from '@/components/bottom-sheet'
+import { DobPicker } from '@/components/dob-picker'
 import { Button, Text, Spinner } from '@/components/ui'
 import { useColors } from '@/hooks/use-theme-color'
 import { useEditProfileForm } from '@/hooks/use-edit-profile-form'
@@ -12,6 +13,8 @@ import { radii } from '@/theme/radii'
 
 type EditProfileSheetProps = {
   initialName: string
+  /** ISO date string or Date (e.g. from session). */
+  initialDob: string | Date | null
   initialImageUrl: string | null
   onSaveSuccess: () => void
   onClose: () => void
@@ -23,7 +26,7 @@ export type EditProfileSheetRef = {
 }
 
 export const EditProfileSheet = forwardRef<EditProfileSheetRef, EditProfileSheetProps>(function EditProfileSheet(
-  { initialName, initialImageUrl, onSaveSuccess, onClose },
+  { initialName, initialDob, initialImageUrl, onSaveSuccess, onClose },
   ref
 ) {
   const colors = useColors()
@@ -34,9 +37,10 @@ export const EditProfileSheet = forwardRef<EditProfileSheetRef, EditProfileSheet
 
   const form = useEditProfileForm({
     initialName,
+    initialDob,
     initialImageUrl,
     onSaveSuccess,
-    closeSheet
+    closeSheet,
   })
 
   const renderFooter = useCallback(
@@ -81,11 +85,7 @@ export const EditProfileSheet = forwardRef<EditProfileSheetRef, EditProfileSheet
         colors={colors}
       />
 
-      <Text
-        size='base'
-        weight='semibold'
-        style={styles.label}
-      >
+      <Text size='base' weight='semibold' style={styles.label}>
         Name
       </Text>
       <TextInput
@@ -94,8 +94,8 @@ export const EditProfileSheet = forwardRef<EditProfileSheetRef, EditProfileSheet
           {
             backgroundColor: colors.card,
             borderColor: colors.border,
-            color: colors.ink
-          }
+            color: colors.ink,
+          },
         ]}
         placeholder='Your name'
         placeholderTextColor={colors.muted}
@@ -105,6 +105,16 @@ export const EditProfileSheet = forwardRef<EditProfileSheetRef, EditProfileSheet
         editable={!form.isSaving}
         accessibilityLabel='Name'
         accessibilityHint='Enter your display name'
+      />
+
+      <Text size='base' weight='semibold' style={[styles.label, styles.labelTop]}>
+        Date of birth
+      </Text>
+      <DobPicker
+        value={form.dob}
+        onChange={form.setDob}
+        placeholder='Select date of birth'
+        disabled={form.isSaving}
       />
     </AppBottomSheet>
   )
@@ -227,7 +237,10 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg
   },
   label: {
-    marginBottom: spacing[2]
+    marginBottom: spacing[2],
+  },
+  labelTop: {
+    marginTop: spacing[4],
   },
   input: {
     borderWidth: 1,

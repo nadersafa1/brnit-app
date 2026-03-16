@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { AuthSuccessScreen, PasswordInput, PrimaryButton, TextInput } from '@/components'
+import { AuthSuccessScreen, DobPicker, PasswordInput, PrimaryButton, TextInput } from '@/components'
 import { FieldError, Spinner, Text } from '@/components/ui'
 import { DEEP_LINKS } from '@/constants/deep-links'
 import { useColors } from '@/hooks/use-theme-color'
@@ -24,6 +24,7 @@ export default function SignUpScreen() {
   const { data: session, isPending } = authClient.useSession()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [dob, setDob] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -39,6 +40,9 @@ export default function SignUpScreen() {
   }
 
   if (session?.user) {
+    if (!session.user.dob) {
+      return <Redirect href='/(auth)/complete-profile' />
+    }
     return <Redirect href='/(tabs)' />
   }
 
@@ -51,8 +55,14 @@ export default function SignUpScreen() {
 
   const allRequirementsMet = passwordRequirements.every(req => req.met)
   const passwordsMatch = password === confirmPassword && confirmPassword.length > 0
+  const dobDate = new Date(`${dob}T00:00:00.000Z`)
+  const isDobValid = /^\d{4}-\d{2}-\d{2}$/.test(dob) && !Number.isNaN(dobDate.getTime()) && dobDate < new Date()
 
   async function handleSignUp() {
+    if (!isDobValid) {
+      setError('Enter date of birth as YYYY-MM-DD and make sure it is in the past')
+      return
+    }
     if (!allRequirementsMet) {
       setError('Please meet all password requirements')
       return
@@ -66,7 +76,7 @@ export default function SignUpScreen() {
     setError(null)
 
     await authClient.signUp.email(
-      { name, email, password, callbackURL: DEEP_LINKS.root },
+      { name, email, dob, password, callbackURL: DEEP_LINKS.root },
       {
         onError(error) {
           setError(error.error?.message || 'Failed to sign up')
@@ -75,6 +85,7 @@ export default function SignUpScreen() {
         onSuccess() {
           setName('')
           setEmail('')
+          setDob('')
           setPassword('')
           setConfirmPassword('')
           setSent(true)
@@ -173,6 +184,8 @@ export default function SignUpScreen() {
               autoComplete='email'
             />
 
+            <DobPicker value={dob} onChange={setDob} placeholder='Date of birth' />
+
             <PasswordInput
               value={password}
               onChangeText={setPassword}
@@ -225,7 +238,7 @@ export default function SignUpScreen() {
               <PrimaryButton
                 onPress={handleSignUp}
                 isLoading={isLoading}
-                isDisabled={!allRequirementsMet || !passwordsMatch}
+                isDisabled={!allRequirementsMet || !passwordsMatch || !isDobValid}
               >
                 Create Account
               </PrimaryButton>
