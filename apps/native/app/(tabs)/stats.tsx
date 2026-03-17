@@ -1,12 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import { useCallback, useEffect, useState } from 'react'
-import {
-  View,
-  StyleSheet,
-  ActivityIndicator,
-  ScrollView,
-  Pressable,
-} from 'react-native'
+import { View, StyleSheet, ActivityIndicator, ScrollView, Pressable } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BottomNav } from '@/components/bottom-nav'
@@ -41,7 +35,7 @@ export default function Stats() {
 
   const { data: activeOrg } = authClient.useActiveOrganization()
   const { data: orgsList, isPending: orgsLoading } = authClient.useListOrganizations()
-  const organizations = (orgsList ?? []).map((o) => ({ id: o.id, name: o.name }))
+  const organizations = (orgsList ?? []).map(o => ({ id: o.id, name: o.name }))
   const selectedOrgId = activeOrg?.id ?? null
 
   // When user has only one org, set it as active so leaderboard and assessments load.
@@ -53,27 +47,23 @@ export default function Stats() {
 
   const { data: assessmentsData, isLoading: assessmentsLoading } = useRecentAssessments({
     limit: RECENT_ASSESSMENTS_LIMIT,
-    orgId: selectedOrgId,
+    orgId: selectedOrgId
   })
 
   const {
     data: leaderboardData,
     isLoading: leaderboardLoading,
     error: leaderboardError,
-    isError: leaderboardIsError,
+    isError: leaderboardIsError
   } = useOrganizationLeaderboard({
     orgId: selectedOrgId,
-    enabled: !!selectedOrgId,
+    enabled: !!selectedOrgId
   })
   // 400 from leaderboard API means user is not a member of the selected org.
-  const isNoOrgError =
-    leaderboardIsError &&
-    leaderboardError instanceof ApiError &&
-    leaderboardError.status === 400
+  const isNoOrgError = leaderboardIsError && leaderboardError instanceof ApiError && leaderboardError.status === 400
 
   const { data: streakData, isLoading: streakLoading, error: streakError } = useConsumptionStreak()
-  const selectedOrgName =
-    activeOrg?.name ?? organizations.find((o) => o.id === selectedOrgId)?.name ?? null
+  const selectedOrgName = activeOrg?.name ?? organizations.find(o => o.id === selectedOrgId)?.name ?? null
 
   const handleSelectOrg = useCallback((id: string) => {
     authClient.organization.setActive({ organizationId: id })
@@ -90,12 +80,16 @@ export default function Stats() {
           styles.content,
           {
             paddingTop: insets.top + 16,
-            paddingBottom: insets.bottom + 96,
-          },
+            paddingBottom: insets.bottom + 96
+          }
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <Text size="2xl" weight="bold" style={styles.title}>
+        <Text
+          size='2xl'
+          weight='bold'
+          style={styles.title}
+        >
           Statistics
         </Text>
 
@@ -103,23 +97,34 @@ export default function Stats() {
           style={[styles.orgPicker, { backgroundColor: colors.card }, shadows.sm]}
           onPress={() => setOrgPickerVisible(true)}
         >
-          <Text size="sm" weight="medium" muted>
+          <Text
+            size='sm'
+            weight='medium'
+            muted
+          >
             Organization
           </Text>
           <View style={styles.orgPickerValue}>
             {orgsLoading ? (
-              <ActivityIndicator size="small" color={colors.muted} />
+              <ActivityIndicator
+                size='small'
+                color={colors.muted}
+              />
             ) : (
               <Text
-                size="base"
-                weight="semibold"
+                size='base'
+                weight='semibold'
                 numberOfLines={1}
                 style={selectedOrgName ? undefined : { color: colors.muted }}
               >
                 {selectedOrgName ?? 'Select organization'}
               </Text>
             )}
-            <Ionicons name="chevron-down" size={18} color={colors.muted} />
+            <Ionicons
+              name='chevron-down'
+              size={18}
+              color={colors.muted}
+            />
           </View>
         </Pressable>
 
@@ -153,7 +158,7 @@ export default function Stats() {
         />
       </ScrollView>
 
-      <BottomNav activeTab="stats" />
+      <BottomNav activeTab='stats' />
       <AssessmentDetailSheet
         assessment={selectedAssessment}
         onClose={() => setSelectedAssessment(null)}
@@ -164,7 +169,7 @@ export default function Stats() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flex: 1
   },
   decorativeBlob: {
     position: 'absolute',
@@ -172,17 +177,17 @@ const styles = StyleSheet.create({
     right: -80,
     width: 256,
     height: 256,
-    borderRadius: radii.pill,
+    borderRadius: radii.pill
   },
   scrollView: {
-    flex: 1,
+    flex: 1
   },
   content: {
     flexGrow: 1,
-    paddingHorizontal: spacing[4],
+    paddingHorizontal: spacing[4]
   },
   title: {
-    marginBottom: spacing[4],
+    marginBottom: spacing[4]
   },
   orgPicker: {
     flexDirection: 'row',
@@ -191,13 +196,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[4],
     borderRadius: radii.lg,
-    marginBottom: spacing[4],
+    marginBottom: spacing[4]
   },
   orgPickerValue: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[2],
     flex: 1,
-    justifyContent: 'flex-end',
-  },
+    justifyContent: 'flex-end'
+  }
 })

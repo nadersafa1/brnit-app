@@ -9,6 +9,7 @@ import { HomeHeader } from '@/components/home-header'
 import { HomeMealsSection } from '@/components/home-meals-section'
 import { HomeProgressCard } from '@/components/home-progress-card'
 import { MealItemDetailSheet, type MealItemDetailPayload } from '@/components/meal-item-detail-sheet'
+import { useConsumptionStreak } from '@/hooks/use-consumption-streak'
 import { useCurrentDietPlan } from '@/hooks/use-current-diet-plan'
 import { useDayProgress } from '@/hooks/use-day-progress'
 import { useColors } from '@/hooks/use-theme-color'
@@ -37,6 +38,7 @@ export default function Home() {
   const day = useMemo(() => getDayForDate(dietPlanData, dateStr), [dietPlanData, dateStr])
   const meals = day?.meals ?? []
   const progress = useDayProgress(day, meals)
+  const { data: streakData, isLoading: streakLoading, error: streakError } = useConsumptionStreak()
 
   const userName = session?.user?.name?.split(' ')[0] || 'there'
   const userImageUrl = session?.user?.image ?? undefined
@@ -69,6 +71,9 @@ export default function Home() {
           carbsGoal={progress.carbsGoal}
           fatConsumed={progress.fatConsumed}
           fatGoal={progress.fatGoal}
+          streak={streakData?.streak ?? 0}
+          streakLoading={streakLoading}
+          streakError={streakError}
         />
         <HomeMealsSection
           isLoading={isLoading}

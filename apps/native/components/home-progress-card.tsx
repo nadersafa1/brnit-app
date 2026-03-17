@@ -8,6 +8,7 @@ import dayjs from 'dayjs'
 import { View, StyleSheet } from 'react-native'
 import { CalorieRing } from '@/components/calorie-ring'
 import { MacroBar } from '@/components/macro-bar'
+import { StreakBadge } from '@/components/streak-badge'
 import { Text } from '@/components/ui'
 import { useColors } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
@@ -28,6 +29,10 @@ interface HomeProgressCardProps {
   carbsGoal: number
   fatConsumed: number
   fatGoal: number
+  /** Current consumption streak; badge shown in top-right. */
+  streak?: number
+  streakLoading?: boolean
+  streakError?: unknown
 }
 
 export function HomeProgressCard({
@@ -42,7 +47,10 @@ export function HomeProgressCard({
   carbsConsumed,
   carbsGoal,
   fatConsumed,
-  fatGoal
+  fatGoal,
+  streak = 0,
+  streakLoading = false,
+  streakError
 }: Readonly<HomeProgressCardProps>) {
   const colors = useColors()
 
@@ -55,6 +63,12 @@ export function HomeProgressCard({
         >
           {isToday ? "Today's Progress" : dayjs(selectedDate).format('MMMM D')}
         </Text>
+        <StreakBadge
+          streak={streak}
+          isLoading={streakLoading}
+          error={streakError}
+          numberSize='xl'
+        />
       </View>
 
       {hasPlan ? (
