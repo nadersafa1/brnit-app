@@ -23,6 +23,14 @@ const ALLOWED_IMAGE_TYPES = new Set([
 /** Profile response shape returned by GET and PATCH. */
 type ProfileResponse = { name: string; email: string; image: string | null; dob: string | null }
 
+function dobToResponseValue(
+  dob: Date | string | null | undefined
+): string | null {
+  if (dob == null) return null
+  if (dob instanceof Date) return dob.toISOString().slice(0, 10)
+  return dob
+}
+
 /**
  * Validates profile image file: size and MIME type.
  * Returns an error response to return to the client, or { ok: true }.
@@ -120,6 +128,7 @@ function parseProfilePatchForm(
       ),
     }
   }
+  // All validations passed; return parsed fields for PATCH handler
   return { name, dob, uploadFile, clearImage }
 }
 
@@ -137,7 +146,7 @@ export async function GET(request: NextRequest) {
     name: user.name,
     email: user.email,
     image: user.image ?? null,
-    dob: user.dob ?? null,
+    dob: dobToResponseValue(user.dob),
   }
   return NextResponse.json(response)
 }
@@ -177,9 +186,13 @@ export async function PATCH(request: NextRequest) {
       previousImageUrl
     )
 
-    const updatePayload: { name?: string; image?: string | null; dob?: string } = {}
+    const updatePayload: {
+      name?: string
+      image?: string | null
+      dob?: Date
+    } = {}
     if (name !== undefined) updatePayload.name = name
-    if (dob !== undefined) updatePayload.dob = dob
+    if (dob !== undefined) updatePayload.dob = new Date(dob)
     if (imageUrl !== undefined) updatePayload.image = imageUrl
 
     const updateResult = await auth.api.updateUser({
@@ -198,7 +211,7 @@ export async function PATCH(request: NextRequest) {
       name: name ?? sessionUser.name,
       email: sessionUser.email,
       image: imageUrl === undefined ? (sessionUser.image ?? null) : imageUrl,
-      dob: dob ?? sessionUser.dob ?? null,
+      dob: dob ?? dobToResponseValue(sessionUser.dob),
     }
     return NextResponse.json(response)
   } catch (error) {

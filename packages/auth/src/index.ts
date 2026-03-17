@@ -1,5 +1,6 @@
 import { expo } from '@better-auth/expo'
 import { db } from '@burn-app/db'
+import { bodyCompositionAssessment } from '@burn-app/db/schema'
 import * as schema from '@burn-app/db/schema/auth'
 import { and, eq } from 'drizzle-orm'
 import { canInviteWithAnyRole, canUpdateMemberRole } from './authorization'
@@ -57,6 +58,14 @@ export const auth = betterAuth({
         type: 'date',
         required: false,
         input: true,
+      },
+    },
+    deleteUser: {
+      enabled: true,
+      beforeDelete: async (user) => {
+        await db
+          .delete(bodyCompositionAssessment)
+          .where(eq(bodyCompositionAssessment.recordedById, user.id))
       },
     },
   },

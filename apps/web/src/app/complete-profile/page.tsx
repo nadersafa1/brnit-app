@@ -17,7 +17,9 @@ export default async function CompleteProfilePage({
     redirect('/login')
   }
   if (session.user.dob) {
-    redirect(callbackUrl)
+    // Typed routes expect RouteImpl; callbackUrl is a valid app path string
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- see above
+    redirect(callbackUrl as Parameters<typeof redirect>[0])
   }
 
   return (

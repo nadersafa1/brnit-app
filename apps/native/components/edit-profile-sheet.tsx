@@ -17,7 +17,8 @@ type EditProfileSheetProps = {
   initialDob: string | Date | null
   initialImageUrl: string | null
   onSaveSuccess: () => void
-  onClose: () => void
+  /** Called when the sheet is dismissed. Optional; sheet can be closed via ref. */
+  onClose?: () => void
 }
 
 export type EditProfileSheetRef = {

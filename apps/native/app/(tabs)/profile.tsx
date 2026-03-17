@@ -51,6 +51,51 @@ export default function Profile() {
     )
   }, [router])
 
+  const confirmAndDeleteAccount = useCallback(async () => {
+    const { error } = await authClient.deleteUser()
+    if (error) {
+      Alert.alert(
+        'Could not delete account',
+        error.message ??
+          'Something went wrong. Try signing in again and deleting from Profile, or use a recent session.'
+      )
+      return
+    }
+    await authClient.signOut()
+    router.replace('/(auth)')
+  }, [router])
+
+  const handleDeleteAccountPress = useCallback(() => {
+    Alert.alert(
+      'Delete account',
+      'Your account and all associated data will be permanently deleted. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          onPress: () => {
+            Alert.alert(
+              'Are you sure?',
+              'This action cannot be undone. Your account and data will be permanently removed.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete my account',
+                  style: 'destructive',
+                  onPress: () => {
+                    void confirmAndDeleteAccount()
+                  }
+                }
+              ],
+              { cancelable: true }
+            )
+          }
+        }
+      ],
+      { cancelable: true }
+    )
+  }, [confirmAndDeleteAccount])
+
   return (
     <View style={[styles.container, { backgroundColor: colors.appBg }]}>
       <View style={[styles.decorativeBlob, { backgroundColor: colors.pastelPurple }]} />
@@ -116,7 +161,14 @@ export default function Profile() {
             icon='help-circle-outline'
             label='Help & Support'
             colors={colors}
+          />
+          <SettingsRow
+            icon='trash-outline'
+            label='Delete account'
+            colors={colors}
             isLast
+            destructive
+            onPress={handleDeleteAccountPress}
           />
         </View>
 
@@ -147,7 +199,6 @@ export default function Profile() {
         initialDob={userDob}
         initialImageUrl={userImage}
         onSaveSuccess={handleEditSaveSuccess}
-        onClose={() => {}}
       />
     </View>
   )
@@ -158,14 +209,18 @@ function SettingsRow({
   label,
   colors,
   isLast,
-  onPress
+  onPress,
+  destructive
 }: Readonly<{
   icon: keyof typeof Ionicons.glyphMap
   label: string
   colors: ReturnType<typeof useColors>
   isLast?: boolean
   onPress?: () => void
+  destructive?: boolean
 }>) {
+  const iconColor = destructive ? colors.danger : colors.subtle
+  const chevronColor = destructive ? colors.danger : colors.muted
   return (
     <Pressable
       onPress={onPress}
@@ -179,20 +234,20 @@ function SettingsRow({
         <Ionicons
           name={icon}
           size={18}
-          color={colors.subtle}
+          color={iconColor}
         />
       </View>
       <Text
         size='base'
         weight='medium'
-        style={styles.settingsLabel}
+        style={[styles.settingsLabel, destructive && { color: colors.danger }]}
       >
         {label}
       </Text>
       <Ionicons
         name='chevron-forward'
         size={18}
-        color={colors.muted}
+        color={chevronColor}
       />
     </Pressable>
   )
