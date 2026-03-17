@@ -61,6 +61,7 @@ export const SignupForm = (
       {
         onSuccess: () => {
           // Typed routes expect RouteImpl; redirectTo is a valid app path string
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- see above
           router.push(redirectTo as Parameters<typeof router.push>[0])
           toast.success('Sign up successful')
         },
@@ -104,31 +105,23 @@ export const SignupForm = (
             <Field>
               <FieldLabel htmlFor='name'>Full Name</FieldLabel>
               <Input id='name' type='text' placeholder='John Doe' {...form.register('name')} />
-              {form.formState.errors.name && (
-                <FieldError>{form.formState.errors.name.message}</FieldError>
-              )}
+              {form.formState.errors.name && <FieldError>{form.formState.errors.name.message}</FieldError>}
             </Field>
             <Field>
               <FieldLabel htmlFor='email'>Email</FieldLabel>
               <Input id='email' type='email' placeholder='m@example.com' {...form.register('email')} />
-              {form.formState.errors.email && (
-                <FieldError>{form.formState.errors.email.message}</FieldError>
-              )}
+              {form.formState.errors.email && <FieldError>{form.formState.errors.email.message}</FieldError>}
             </Field>
             <Field>
               <FieldLabel htmlFor='dob'>Date of Birth</FieldLabel>
               <Input id='dob' type='date' {...form.register('dob')} />
-              {form.formState.errors.dob && (
-                <FieldError>{form.formState.errors.dob.message}</FieldError>
-              )}
+              {form.formState.errors.dob && <FieldError>{form.formState.errors.dob.message}</FieldError>}
             </Field>
             <Field>
               <FieldLabel htmlFor='password'>Password</FieldLabel>
               <Input id='password' type='password' {...form.register('password')} />
               <FieldDescription>Must be at least 8 characters long.</FieldDescription>
-              {form.formState.errors.password && (
-                <FieldError>{form.formState.errors.password.message}</FieldError>
-              )}
+              {form.formState.errors.password && <FieldError>{form.formState.errors.password.message}</FieldError>}
             </Field>
             <Field>
               <FieldLabel htmlFor='confirmPassword'>Confirm Password</FieldLabel>
@@ -151,7 +144,10 @@ export const SignupForm = (
               </Button>
               <FieldDescription className='text-center'>
                 Already have an account?{' '}
-                <Link href={loginHref as Parameters<typeof Link>[0]['href']} className="underline underline-offset-4 hover:text-primary">
+                <Link
+                  href={loginHref as Parameters<typeof Link>[0]['href']}
+                  className='underline underline-offset-4 hover:text-primary'
+                >
                   Sign in
                 </Link>
               </FieldDescription>
