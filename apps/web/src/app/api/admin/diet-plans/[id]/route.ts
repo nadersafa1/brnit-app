@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { flattenError } from 'zod'
+import { deleteSuccessWithBody } from '@/lib/api-helpers/delete-responses'
 import { requireAdmin } from '@/lib/api-helpers/admin-auth'
 import { getDietPlanById, updateDietPlan, deleteDietPlan } from '@/lib/services/diet-plans'
 import { updateDietPlanSchema } from '@/types/api/diet-plan.schemas'
 
 type Params = { params: Promise<{ id: string }> }
 
+/** Returns a single diet plan by id (admin). */
 export const GET = async (request: NextRequest, { params }: Params) => {
   const authResult = await requireAdmin(request.headers)
   if (authResult.error) return authResult.error
@@ -20,6 +22,7 @@ export const GET = async (request: NextRequest, { params }: Params) => {
   return NextResponse.json({ data: planData })
 }
 
+/** Updates a diet plan; returns full plan (with slots) for cache/UI. */
 export const PATCH = async (request: NextRequest, { params }: Params) => {
   const authResult = await requireAdmin(request.headers)
   if (authResult.error) return authResult.error
@@ -48,6 +51,7 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
   return NextResponse.json({ data: planData })
 }
 
+/** Deletes a diet plan; returns deleted entity in response body. */
 export const DELETE = async (request: NextRequest, { params }: Params) => {
   const authResult = await requireAdmin(request.headers)
   if (authResult.error) return authResult.error
@@ -59,5 +63,5 @@ export const DELETE = async (request: NextRequest, { params }: Params) => {
     return NextResponse.json({ error: 'Diet plan not found' }, { status: 404 })
   }
 
-  return NextResponse.json({ data: deleted })
+  return deleteSuccessWithBody(deleted)
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { deleteSuccessWithBody } from '@/lib/api-helpers/delete-responses'
 import { requireNutritionistOrgContext } from '@/lib/api-helpers/nutritionist-auth'
 import { deleteDietPlanMealConsumption } from '@/lib/services/diet-plan-meal-consumption'
 
@@ -17,5 +18,5 @@ export const DELETE = async (request: NextRequest, { params }: Params) => {
     return NextResponse.json({ error: 'Consumption not found' }, { status: 404 })
   }
 
-  return NextResponse.json({ data: deleted })
+  return deleteSuccessWithBody(deleted)
 }

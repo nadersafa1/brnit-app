@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { flattenError } from 'zod'
+import { deleteSuccess } from '@/lib/api-helpers/delete-responses'
 import { requireAuth } from '@/lib/api-helpers/require-auth'
 import { db } from '@burn-app/db'
 import { dietPlanAssignment, member } from '@burn-app/db/schema'
@@ -26,32 +27,33 @@ type AssignmentRow = {
   endDate: string
 }
 
-/** Fetch assignment if it belongs to the current user. Returns row with dates or null. */
+/**
+ * Fetches the assignment if it belongs to the current user (direct or via member).
+ * Used to restrict list/delete to the user's assignments only.
+ */
 async function getAssignmentForUser(
   userId: string,
   assignmentId: string
 ): Promise<AssignmentRow | null> {
-  const memberIds = await db
-    .select({ id: member.id })
-    .from(member)
-    .where(eq(member.userId, userId))
-  const memberIdList = memberIds.map(m => m.id)
-
-  const [row] = await db
-    .select({
-      id: dietPlanAssignment.id,
-      userId: dietPlanAssignment.userId,
-      memberId: dietPlanAssignment.memberId,
-      startDate: dietPlanAssignment.startDate,
-      endDate: dietPlanAssignment.endDate,
-    })
-    .from(dietPlanAssignment)
-    .where(eq(dietPlanAssignment.id, assignmentId))
-    .limit(1)
-
+  const [memberRows, assignmentRows] = await Promise.all([
+    db.select({ id: member.id }).from(member).where(eq(member.userId, userId)),
+    db
+      .select({
+        id: dietPlanAssignment.id,
+        userId: dietPlanAssignment.userId,
+        memberId: dietPlanAssignment.memberId,
+        startDate: dietPlanAssignment.startDate,
+        endDate: dietPlanAssignment.endDate,
+      })
+      .from(dietPlanAssignment)
+      .where(eq(dietPlanAssignment.id, assignmentId))
+      .limit(1),
+  ])
+  const memberIdSet = new Set(memberRows.map((m) => m.id))
+  const [row] = assignmentRows
   if (!row) return null
   if (row.userId === userId) return row
-  if (row.memberId && memberIdList.includes(row.memberId)) return row
+  if (row.memberId && memberIdSet.has(row.memberId)) return row
   return null
 }
 
@@ -92,14 +94,15 @@ export const GET = async (request: NextRequest) => {
   }
 
   // Restrict to assignments the user owns or is linked to (direct or via member).
+  // When no assignment filter is given, resolve all assignment ids the user can see.
   if (parseResult.data.dietPlanAssignmentId) {
     const assignment = await getAssignmentForUser(userId, parseResult.data.dietPlanAssignmentId)
     if (!assignment) {
       return NextResponse.json({ error: 'Forbidden: assignment not found or access denied' }, { status: 403 })
     }
   } else {
-    const memberIds = await db.select({ id: member.id }).from(member).where(eq(member.userId, userId))
-    const memberIdList = memberIds.map(m => m.id)
+    const memberRows = await db.select({ id: member.id }).from(member).where(eq(member.userId, userId))
+    const memberIdList = memberRows.map((m) => m.id)
     const userAssignments = await db
       .select({ id: dietPlanAssignment.id })
       .from(dietPlanAssignment)
@@ -109,7 +112,7 @@ export const GET = async (request: NextRequest) => {
           memberIdList.length > 0 ? inArray(dietPlanAssignment.memberId, memberIdList) : sql`false`
         )
       )
-    const assignmentIds = userAssignments.map(a => a.id)
+    const assignmentIds = userAssignments.map((a) => a.id)
     if (assignmentIds.length === 0) {
       return NextResponse.json(createPaginatedResponse([], parseResult.data.page ?? 1, parseResult.data.perPage ?? 25, 0))
     }
@@ -212,5 +215,5 @@ export const DELETE = async (request: NextRequest) => {
     return NextResponse.json({ error: 'Consumption not found' }, { status: 404 })
   }
 
-  return NextResponse.json({ data: { deleted: true } }, { status: 200 })
+  return deleteSuccess()
 }

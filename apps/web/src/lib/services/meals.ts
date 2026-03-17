@@ -4,6 +4,7 @@ import { count, asc, desc, ilike, eq, and, inArray } from 'drizzle-orm'
 import { calculateOffset, combineConditions } from '@/lib/api-helpers/query-builders'
 import type { MealsQuery, CreateMeal, UpdateMeal } from '@/types/api/meal.schemas'
 
+/** Lists meals with optional search and sort; count and items are fetched in parallel. */
 export async function listMeals(query: MealsQuery) {
   const { page, perPage, q, sortBy, sortOrder } = query
   const offset = calculateOffset(page, perPage)
@@ -44,6 +45,9 @@ export async function listMeals(query: MealsQuery) {
   }
 }
 
+/**
+ * Fetches a single meal by id with its items (food details). Returns null if not found.
+ */
 export async function getMealById(id: string) {
   const [mealRow] = await db
     .select({
@@ -90,28 +94,33 @@ export async function getMealById(id: string) {
       protein: mi.protein ? Number(mi.protein) : null,
       carbs: mi.carbs ? Number(mi.carbs) : null,
       fat: mi.fat ? Number(mi.fat) : null,
-      unit: (mi.unit ?? '100g') as '100g' | 'piece',
-      gramsPerUnit: mi.gramsPerUnit != null ? Number(mi.gramsPerUnit) : null,
+      unit: mi.unit ?? '100g',
+      gramsPerUnit: mi.gramsPerUnit == null ? null : Number(mi.gramsPerUnit),
     })),
   }
 }
 
+/**
+ * Creates a meal and its items atomically. Rolls back if any step fails.
+ */
 export async function createMeal(data: CreateMeal) {
   const { name, description, mealItems } = data
 
-  const [newMeal] = await db.insert(meal).values({ name, description }).returning()
+  const newMeal = await db.transaction(async (tx) => {
+    const [inserted] = await tx.insert(meal).values({ name, description }).returning()
+    if (!inserted) return null
 
-  if (!newMeal) return null
-
-  if (mealItems.length > 0) {
-    await db.insert(mealItem).values(
-      mealItems.map((item) => ({
-        mealId: newMeal.id,
-        foodItemId: item.foodItemId,
-        quantity: item.quantity.toString(),
-      }))
-    )
-  }
+    if (mealItems.length > 0) {
+      await tx.insert(mealItem).values(
+        mealItems.map((item) => ({
+          mealId: inserted.id,
+          foodItemId: item.foodItemId,
+          quantity: item.quantity.toString(),
+        }))
+      )
+    }
+    return inserted
+  })
 
   return newMeal
 }
@@ -120,71 +129,95 @@ export type UpdateMealResult =
   | { ok: true; data: (typeof meal.$inferSelect) }
   | { ok: false; error: string; code: 'NOT_FOUND' | 'VALIDATION' }
 
+type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+async function validateMealItemIdsInMeal(
+  tx: Transaction,
+  mealId: string,
+  mealItemIdsToCheck: string[]
+): Promise<UpdateMealResult | null> {
+  if (mealItemIdsToCheck.length === 0) return null
+  const existing = await tx
+    .select({ id: mealItem.id })
+    .from(mealItem)
+    .where(and(eq(mealItem.mealId, mealId), inArray(mealItem.id, mealItemIdsToCheck)))
+  const existingIds = new Set(existing.map((r) => r.id))
+  const missing = mealItemIdsToCheck.filter((mid) => !existingIds.has(mid))
+  if (missing.length > 0) {
+    return {
+      ok: false,
+      error: `Meal item(s) not found or do not belong to this meal: ${missing.join(', ')}`,
+      code: 'VALIDATION',
+    }
+  }
+  return null
+}
+
+function validateRemoveUpdateOverlap(
+  remove: string[] | undefined,
+  update: UpdateMeal['update']
+): UpdateMealResult | null {
+  const removeSet = new Set(remove ?? [])
+  const updateIds = (update ?? []).map((u) => u.mealItemId)
+  const inBoth = updateIds.filter((mid) => removeSet.has(mid))
+  if (inBoth.length > 0) {
+    return {
+      ok: false,
+      error: `Meal item(s) cannot appear in both remove and update: ${inBoth.join(', ')}`,
+      code: 'VALIDATION',
+    }
+  }
+  return null
+}
+
+async function validateFoodItemIdsExist(
+  tx: Transaction,
+  foodIdsToAdd: string[]
+): Promise<UpdateMealResult | null> {
+  if (foodIdsToAdd.length === 0) return null
+  const existingFood = await tx
+    .select({ id: foodItem.id })
+    .from(foodItem)
+    .where(inArray(foodItem.id, foodIdsToAdd))
+  const existingFoodIds = new Set(existingFood.map((r) => r.id))
+  const missingFood = foodIdsToAdd.filter((fid) => !existingFoodIds.has(fid))
+  if (missingFood.length > 0) {
+    return {
+      ok: false,
+      error: `Food item(s) not found: ${missingFood.join(', ')}`,
+      code: 'VALIDATION',
+    }
+  }
+  return null
+}
+
+/**
+ * Updates meal metadata and/or items (add/remove/update) in a single transaction.
+ * Validations run first; on success returns the updated meal row.
+ */
 export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMealResult> {
   const { name, description, add, remove, update } = data
 
   return db.transaction(async (tx) => {
-    // 1. Check meal exists
     const [mealRow] = await tx.select().from(meal).where(eq(meal.id, id)).limit(1)
     if (!mealRow) return { ok: false, error: 'Meal not found', code: 'NOT_FOUND' }
 
-    // 2. Validate: mealItemIds in remove/update must belong to this meal
+    // Run sync overlap check first; then parallelize independent DB validations.
+    const overlapError = validateRemoveUpdateOverlap(remove, update)
+    if (overlapError) return overlapError
+
     const mealItemIdsToCheck = [
       ...(remove ?? []),
       ...(update ?? []).map((u) => u.mealItemId),
     ]
-    if (mealItemIdsToCheck.length > 0) {
-      const existing = await tx
-        .select({ id: mealItem.id })
-        .from(mealItem)
-        .where(
-          and(
-            eq(mealItem.mealId, id),
-            inArray(mealItem.id, mealItemIdsToCheck)
-          )
-        )
-      const existingIds = new Set(existing.map((r) => r.id))
-      const missing = mealItemIdsToCheck.filter((mid) => !existingIds.has(mid))
-      if (missing.length > 0) {
-        return {
-          ok: false,
-          error: `Meal item(s) not found or do not belong to this meal: ${missing.join(', ')}`,
-          code: 'VALIDATION',
-        }
-      }
-    }
-
-    // 3. Validate: no mealItemId in both remove and update
-    const removeSet = new Set(remove ?? [])
-    const updateIds = (update ?? []).map((u) => u.mealItemId)
-    const inBoth = updateIds.filter((mid) => removeSet.has(mid))
-    if (inBoth.length > 0) {
-      return {
-        ok: false,
-        error: `Meal item(s) cannot appear in both remove and update: ${inBoth.join(', ')}`,
-        code: 'VALIDATION',
-      }
-    }
-
-    // 4. Validate: all foodItemIds in add exist
     const foodIdsToAdd = [...new Set((add ?? []).map((a) => a.foodItemId))]
-    if (foodIdsToAdd.length > 0) {
-      const existingFood = await tx
-        .select({ id: foodItem.id })
-        .from(foodItem)
-        .where(inArray(foodItem.id, foodIdsToAdd))
-      const existingFoodIds = new Set(existingFood.map((r) => r.id))
-      const missingFood = foodIdsToAdd.filter((fid) => !existingFoodIds.has(fid))
-      if (missingFood.length > 0) {
-        return {
-          ok: false,
-          error: `Food item(s) not found: ${missingFood.join(', ')}`,
-          code: 'VALIDATION',
-        }
-      }
-    }
+    const [mealItemValidationError, foodValidationError] = await Promise.all([
+      validateMealItemIdsInMeal(tx, id, mealItemIdsToCheck),
+      validateFoodItemIdsExist(tx, foodIdsToAdd),
+    ])
+    const validationError = mealItemValidationError ?? foodValidationError
+    if (validationError) return validationError
 
-    // 5. Apply meal metadata updates
     const updateData: Record<string, string | null | undefined> = {}
     if (name !== undefined) updateData.name = name
     if (description !== undefined) updateData.description = description
@@ -192,25 +225,22 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
       await tx.update(meal).set(updateData).where(eq(meal.id, id))
     }
 
-    // 6. Apply remove (first)
-    if (remove && remove.length > 0) {
+    if (remove?.length) {
       await tx
         .delete(mealItem)
         .where(and(eq(mealItem.mealId, id), inArray(mealItem.id, remove)))
     }
-
-    // 7. Apply update (quantity changes)
-    if (update && update.length > 0) {
-      for (const u of update) {
-        await tx
-          .update(mealItem)
-          .set({ quantity: u.quantity.toString() })
-          .where(and(eq(mealItem.id, u.mealItemId), eq(mealItem.mealId, id)))
-      }
+    if (update?.length) {
+      await Promise.all(
+        update.map((u) =>
+          tx
+            .update(mealItem)
+            .set({ quantity: u.quantity.toString() })
+            .where(and(eq(mealItem.id, u.mealItemId), eq(mealItem.mealId, id)))
+        )
+      )
     }
-
-    // 8. Apply add
-    if (add && add.length > 0) {
+    if (add?.length) {
       await tx.insert(mealItem).values(
         add.map((item) => ({
           mealId: id,
@@ -225,6 +255,7 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
   })
 }
 
+/** Deletes a meal by id. Returns the deleted row or null if not found. */
 export async function deleteMeal(id: string) {
   const [deleted] = await db.delete(meal).where(eq(meal.id, id)).returning()
   return deleted ?? null

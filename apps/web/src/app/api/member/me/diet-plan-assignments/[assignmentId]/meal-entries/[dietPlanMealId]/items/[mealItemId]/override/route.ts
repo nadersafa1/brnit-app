@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { flattenError } from 'zod'
+import { deleteSuccess } from '@/lib/api-helpers/delete-responses'
 import { requireAuth } from '@/lib/api-helpers/require-auth'
 import { upsertMealItemOverride, deleteMealItemOverride } from '@/lib/services/diet-plan-meal-item-override'
 import {
@@ -74,16 +75,18 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
   return handlePutOrPatch(request, context.params)
 }
 
-/** DELETE: remove override. Optional ?date=YYYY-MM-DD targets that date's override; omit to remove future-only. */
+/**
+ * DELETE: remove override for this meal item.
+ * Optional ?date=YYYY-MM-DD removes that date's override; omit to remove future-only override.
+ */
 export async function DELETE(request: NextRequest, context: RouteParams) {
   const authResult = await requireAuth(request.headers)
   if (authResult.error) return authResult.error
 
   const { assignmentId, dietPlanMealId, mealItemId } = await context.params
-  const { searchParams } = new URL(request.url)
-  const dateParam = searchParams.get('date')
+  const dateParam = new URL(request.url).searchParams.get('date')?.trim()
   let date: string | undefined
-  if (dateParam !== null && dateParam !== '') {
+  if (dateParam) {
     const parsed = dateStringSchema.safeParse(dateParam)
     if (!parsed.success) {
       return NextResponse.json(
@@ -95,6 +98,7 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
   } else {
     date = undefined
   }
+
   const result = await deleteMealItemOverride(
     authResult.session.user.id,
     assignmentId,
@@ -110,5 +114,5 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
     return NextResponse.json({ error: result.error }, { status: 404 })
   }
 
-  return new NextResponse(null, { status: 204 })
+  return deleteSuccess()
 }

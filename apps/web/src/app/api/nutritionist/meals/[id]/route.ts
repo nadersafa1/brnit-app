@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { flattenError } from 'zod'
+import { deleteSuccessWithBody } from '@/lib/api-helpers/delete-responses'
 import { requireNutritionist } from '@/lib/api-helpers/nutritionist-auth'
 import { getMealById, updateMeal, deleteMeal } from '@/lib/services/meals'
 import { updateMealSchema } from '@/types/api/meal.schemas'
@@ -58,5 +59,5 @@ export const DELETE = async (request: NextRequest, { params }: Params) => {
     return NextResponse.json({ error: 'Meal not found' }, { status: 404 })
   }
 
-  return NextResponse.json({ data: deleted })
+  return deleteSuccessWithBody(deleted)
 }

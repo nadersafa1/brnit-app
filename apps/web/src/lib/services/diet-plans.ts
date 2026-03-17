@@ -44,7 +44,7 @@ export async function listDietPlans(query: DietPlansQuery) {
   return {
     items: items.map(({ slotCount, ...rest }) => ({
       ...rest,
-      slotCount: Number(slotCount) ?? 0,
+      slotCount: Number(slotCount) || 0,
     })),
     totalItems: countResult[0]?.count ?? 0,
   }
@@ -138,8 +138,8 @@ export async function getDietPlanById(id: string) {
         foodItemId: row.foodItemId,
         foodName: row.foodName,
         quantity: Number(row.quantity),
-        unit: (row.unit ?? '100g') as '100g' | 'piece',
-        gramsPerUnit: row.gramsPerUnit != null ? Number(row.gramsPerUnit) : null,
+        unit: row.unit ?? '100g',
+        gramsPerUnit: row.gramsPerUnit == null ? null : Number(row.gramsPerUnit),
       })
       mealItemsByMealId.set(row.mealId, list)
     }
@@ -205,101 +205,94 @@ export type UpdateDietPlanResult =
   | { ok: true; data: (typeof dietPlan.$inferSelect) }
   | { ok: false; error: string; code: 'NOT_FOUND' | 'VALIDATION' }
 
-export async function updateDietPlan(
-  id: string,
-  data: UpdateDietPlan
-): Promise<UpdateDietPlanResult> {
-  const { name, description, add, remove, update } = data
+type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
-  // 1. Check plan exists
-  const [planRow] = await db.select().from(dietPlan).where(eq(dietPlan.id, id)).limit(1)
-  if (!planRow) return { ok: false, error: 'Diet plan not found', code: 'NOT_FOUND' }
-
-  // 2. Validate: dietPlanMealIds in remove/update must belong to this plan
-  const idsToCheck = [...(remove ?? []), ...(update ?? []).map((u) => u.dietPlanMealId)]
-  if (idsToCheck.length > 0) {
-    const existing = await db
-      .select({ id: dietPlanMeal.id })
-      .from(dietPlanMeal)
-      .where(and(eq(dietPlanMeal.dietPlanId, id), inArray(dietPlanMeal.id, idsToCheck)))
-    const existingIds = new Set(existing.map((r) => r.id))
-    const missing = idsToCheck.filter((mid) => !existingIds.has(mid))
-    if (missing.length > 0) {
-      return {
-        ok: false,
-        error: `Diet plan meal(s) not found or do not belong to this plan: ${missing.join(', ')}`,
-        code: 'VALIDATION',
-      }
-    }
-  }
-
-  // 3. Validate: no dietPlanMealId in both remove and update
+function validateRemoveUpdateOverlap(
+  remove: UpdateDietPlan['remove'],
+  update: UpdateDietPlan['update']
+): UpdateDietPlanResult | null {
   const removeSet = new Set(remove ?? [])
   const updateIds = (update ?? []).map((u) => u.dietPlanMealId)
   const inBoth = updateIds.filter((mid) => removeSet.has(mid))
-  if (inBoth.length > 0) {
-    return {
-      ok: false,
-      error: `Diet plan meal(s) cannot appear in both remove and update: ${inBoth.join(', ')}`,
-      code: 'VALIDATION',
-    }
+  if (inBoth.length === 0) return null
+  return {
+    ok: false,
+    error: `Diet plan meal(s) cannot appear in both remove and update: ${inBoth.join(', ')}`,
+    code: 'VALIDATION',
   }
+}
 
-  // 4. Validate: all mealIds in add exist
-  const mealIdsToAdd = [...new Set((add ?? []).map((a) => a.mealId))]
-  if (mealIdsToAdd.length > 0) {
-    const existingMeals = await db
-      .select({ id: meal.id })
-      .from(meal)
-      .where(inArray(meal.id, mealIdsToAdd))
-    const existingMealIds = new Set(existingMeals.map((r) => r.id))
-    const missingMeals = mealIdsToAdd.filter((mid) => !existingMealIds.has(mid))
-    if (missingMeals.length > 0) {
-      return {
-        ok: false,
-        error: `Meal(s) not found: ${missingMeals.join(', ')}`,
-        code: 'VALIDATION',
-      }
-    }
-  }
+async function validateSlotAndMealIdsInPlan(
+  tx: Transaction,
+  planId: string,
+  idsToCheck: string[],
+  mealIdsToAdd: string[]
+): Promise<{ error: string } | null> {
+  const [slotErr, mealErr] = await Promise.all([
+    idsToCheck.length > 0
+      ? tx
+          .select({ id: dietPlanMeal.id })
+          .from(dietPlanMeal)
+          .where(and(eq(dietPlanMeal.dietPlanId, planId), inArray(dietPlanMeal.id, idsToCheck)))
+          .then((existing) => {
+            const existingIds = new Set(existing.map((r) => r.id))
+            const missing = idsToCheck.filter((mid) => !existingIds.has(mid))
+            return missing.length > 0 ? { error: `Diet plan meal(s) not found or do not belong to this plan: ${missing.join(', ')}` } : null
+          })
+      : Promise.resolve(null),
+    mealIdsToAdd.length > 0
+      ? tx
+          .select({ id: meal.id })
+          .from(meal)
+          .where(inArray(meal.id, mealIdsToAdd))
+          .then((rows) => {
+            const existingIds = new Set(rows.map((r) => r.id))
+            const missing = mealIdsToAdd.filter((mid) => !existingIds.has(mid))
+            return missing.length > 0 ? { error: `Meal(s) not found: ${missing.join(', ')}` } : null
+          })
+      : Promise.resolve(null),
+  ])
+  return slotErr ?? mealErr
+}
 
-  // 5. Apply metadata updates
+async function applyDietPlanMutations(
+  tx: Transaction,
+  planId: string,
+  data: UpdateDietPlan
+): Promise<void> {
+  const { name, description, add, remove, update } = data
   const updateData: Record<string, string | null | undefined> = {}
   if (name !== undefined) updateData.name = name
   if (description !== undefined) updateData.description = description
   if (Object.keys(updateData).length > 0) {
-    await db.update(dietPlan).set(updateData).where(eq(dietPlan.id, id))
+    await tx.update(dietPlan).set(updateData).where(eq(dietPlan.id, planId))
   }
-
-  // 6. Apply remove (first)
-  if (remove && remove.length > 0) {
-    await db
+  if (remove?.length) {
+    await tx
       .delete(dietPlanMeal)
-      .where(and(eq(dietPlanMeal.dietPlanId, id), inArray(dietPlanMeal.id, remove)))
+      .where(and(eq(dietPlanMeal.dietPlanId, planId), inArray(dietPlanMeal.id, remove)))
   }
-
-  // 7. Apply update
-  if (update && update.length > 0) {
-    for (const u of update) {
-      const setData: Record<string, string | number | undefined> = {}
-      if (u.mealId !== undefined) setData.mealId = u.mealId
-      if (u.dayNumber !== undefined) setData.dayNumber = u.dayNumber
-      if (u.mealType !== undefined) setData.mealType = u.mealType
-      if (u.mealOrder !== undefined) setData.mealOrder = u.mealOrder
-      if (Object.keys(setData).length > 0) {
-        await db
+  if (update?.length) {
+    const promises = update
+      .map((u) => {
+        const setData: Record<string, string | number | undefined> = {}
+        if (u.mealId !== undefined) setData.mealId = u.mealId
+        if (u.dayNumber !== undefined) setData.dayNumber = u.dayNumber
+        if (u.mealType !== undefined) setData.mealType = u.mealType
+        if (u.mealOrder !== undefined) setData.mealOrder = u.mealOrder
+        if (Object.keys(setData).length === 0) return null
+        return tx
           .update(dietPlanMeal)
           .set(setData)
-          .where(and(eq(dietPlanMeal.id, u.dietPlanMealId), eq(dietPlanMeal.dietPlanId, id)))
-      }
-    }
+          .where(and(eq(dietPlanMeal.id, u.dietPlanMealId), eq(dietPlanMeal.dietPlanId, planId)))
+      })
+      .filter((p): p is NonNullable<typeof p> => p !== null)
+    if (promises.length > 0) await Promise.all(promises)
   }
-
-  // 8. Apply add
-  if (add && add.length > 0) {
-    await db.insert(dietPlanMeal).values(
+  if (add?.length) {
+    await tx.insert(dietPlanMeal).values(
       add.map((item) => ({
-        dietPlanId: id,
+        dietPlanId: planId,
         mealId: item.mealId,
         dayNumber: item.dayNumber,
         mealType: item.mealType,
@@ -307,9 +300,35 @@ export async function updateDietPlan(
       }))
     )
   }
+}
 
-  const [final] = await db.select().from(dietPlan).where(eq(dietPlan.id, id)).limit(1)
-  return { ok: true, data: final! }
+/**
+ * Updates diet plan metadata and/or slots (add/remove/update) in a single transaction.
+ * Validations run first; on success returns the updated plan row. All mutations are atomic.
+ */
+export async function updateDietPlan(
+  id: string,
+  data: UpdateDietPlan
+): Promise<UpdateDietPlanResult> {
+  const { add, remove, update } = data
+
+  return db.transaction(async (tx) => {
+    const [planRow] = await tx.select().from(dietPlan).where(eq(dietPlan.id, id)).limit(1)
+    if (!planRow) return { ok: false, error: 'Diet plan not found', code: 'NOT_FOUND' }
+
+    const overlapError = validateRemoveUpdateOverlap(remove, update)
+    if (overlapError) return overlapError
+
+    const idsToCheck = [...(remove ?? []), ...(update ?? []).map((u) => u.dietPlanMealId)]
+    const mealIdsToAdd = [...new Set((add ?? []).map((a) => a.mealId))]
+    const validationError = await validateSlotAndMealIdsInPlan(tx, id, idsToCheck, mealIdsToAdd)
+    if (validationError) return { ok: false, error: validationError.error, code: 'VALIDATION' }
+
+    await applyDietPlanMutations(tx, id, data)
+
+    const [final] = await tx.select().from(dietPlan).where(eq(dietPlan.id, id)).limit(1)
+    return { ok: true, data: final! }
+  })
 }
 
 export async function deleteDietPlan(id: string) {

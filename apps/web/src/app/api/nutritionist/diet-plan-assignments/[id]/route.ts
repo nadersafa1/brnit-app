@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { flattenError } from 'zod'
+import { deleteSuccessWithBody } from '@/lib/api-helpers/delete-responses'
 import { requireNutritionistOrgContext } from '@/lib/api-helpers/nutritionist-auth'
 import {
   getDietPlanAssignmentById,
@@ -30,22 +31,24 @@ async function checkAssignmentOrgAccess(
   return null
 }
 
+/** Fetches a single assignment; non-admin users are restricted to their active org. */
 export const GET = async (request: NextRequest, { params }: Params) => {
   const authResult = await requireNutritionistOrgContext(request.headers)
   if (authResult.error) return authResult.error
 
   const { id } = await params
-  const assignment = await getDietPlanAssignmentById(id)
+  const activeOrgId = authResult.context?.activeOrgId ?? null
+  const needsOrgCheck = authResult.session.user.role !== 'admin' && activeOrgId
+
+  const [assignment, accessError] = await Promise.all([
+    getDietPlanAssignmentById(id),
+    needsOrgCheck ? checkAssignmentOrgAccess(id, activeOrgId) : Promise.resolve(null),
+  ])
 
   if (!assignment) {
     return NextResponse.json({ error: 'Assignment not found' }, { status: 404 })
   }
-
-  const activeOrgId = authResult.context?.activeOrgId ?? null
-  if (authResult.session.user.role !== 'admin') {
-    const accessError = await checkAssignmentOrgAccess(id, activeOrgId)
-    if (accessError) return accessError
-  }
+  if (accessError) return accessError
 
   return NextResponse.json({ data: assignment })
 }
@@ -103,5 +106,5 @@ export const DELETE = async (request: NextRequest, { params }: Params) => {
     return NextResponse.json({ error: 'Assignment not found' }, { status: 404 })
   }
 
-  return NextResponse.json({ data: deleted })
+  return deleteSuccessWithBody(deleted)
 }
