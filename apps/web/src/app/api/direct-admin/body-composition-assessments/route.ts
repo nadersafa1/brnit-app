@@ -6,8 +6,8 @@ import {
   createBodyCompositionAssessment,
   listBodyCompositionAssessments,
 } from '@/lib/services/body-composition-assessments'
-import {
 import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
+import {
   createBodyCompositionAssessmentFormSchema,
   bodyCompositionAssessmentsQuerySchema,
 } from '@/types/api/body-composition-assessment.schemas'

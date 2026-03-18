@@ -10,7 +10,9 @@ type RequestLogOptions = {
 // Next.js App Router route handlers can accept a second "context" argument, e.g.:
 //   export const GET = async (req, { params }) => { ... }
 // Your tests call handlers with that same signature, so we must preserve it.
-type NextHandler = (req: NextRequest, context?: unknown) => Promise<Response> | Response
+// Use a generic context type so route handlers can strongly type `{ params }` etc.
+// App Router always passes the second argument "context" at runtime.
+type NextHandler<C = unknown> = (req: NextRequest, context: C) => Promise<Response> | Response
 
 const LOG_HTTP =
   (process.env.LOG_HTTP ??
@@ -59,8 +61,11 @@ function safeErrorMeta(err: unknown): { err: unknown } {
   return { err: new Error(typeof err === 'string' ? err : 'Unknown error') }
 }
 
-export function withRequestLogging(handler: NextHandler, opts: RequestLogOptions = {}): NextHandler {
-  return async (req: NextRequest, context?: unknown) => {
+export function withRequestLogging<C = unknown>(
+  handler: NextHandler<C>,
+  opts: RequestLogOptions = {}
+): NextHandler<C> {
+  return async (req: NextRequest, context: C) => {
     // Correlation id: stable per request so multiple log lines can be traced.
     const requestId = getRequestId(req)
     const method = req.method
