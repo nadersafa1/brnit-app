@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@burn-app/auth'
 import { requireAuth } from '@/lib/api-helpers/require-auth'
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
+import { logger } from '@/lib/server-logger'
 import {
   buildCloudinaryUrl,
   deleteCloudinaryImage,
@@ -137,7 +139,7 @@ function parseProfilePatchForm(
  * Returns the current user's profile (name, email, image, dob).
  * Requires an authenticated session. No side effects; read-only.
  */
-export async function GET(request: NextRequest) {
+async function getHandler(request: NextRequest) {
   const authResult = await requireAuth(request.headers)
   if (authResult.error) return authResult.error
 
@@ -162,7 +164,7 @@ export async function GET(request: NextRequest) {
  * Requires an authenticated session.
  * Note: Single updateUser call; no DB transaction needed (Better Auth handles persistence).
  */
-export async function PATCH(request: NextRequest) {
+async function patchHandler(request: NextRequest) {
   const authResult = await requireAuth(request.headers)
   if (authResult.error) return authResult.error
 
@@ -215,10 +217,13 @@ export async function PATCH(request: NextRequest) {
     }
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Profile update error:', error)
+    logger.error('Profile update error', { err: error })
     return NextResponse.json(
       { error: 'Failed to update profile' },
       { status: 500 }
     )
   }
 }
+
+export const GET = withRequestLogging(getHandler, { actionName: 'GetProfile' })
+export const PATCH = withRequestLogging(patchHandler, { actionName: 'UpdateProfile' })

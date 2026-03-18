@@ -5,6 +5,7 @@ import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
 import { getDisplayedFoodAndQuantityForMealItem } from '@/lib/services/diet-plan-meal-item-override'
 import { getFoodItemAlternatives } from '@/lib/services/food-item-alternatives'
 import { mealItemAlternativesQuerySchema } from '@/types/api/diet-plan-meal-item-override.schemas'
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +17,7 @@ type RouteParams = {
   }>
 }
 
-export async function GET(request: NextRequest, context: RouteParams) {
+async function getHandler(request: NextRequest, context: RouteParams) {
   const authResult = await requireAuth(request.headers)
   if (authResult.error) return authResult.error
 
@@ -69,3 +70,5 @@ export async function GET(request: NextRequest, context: RouteParams) {
     createPaginatedResponse(result.items, page, perPage, result.totalItems)
   )
 }
+
+export const GET = withRequestLogging(getHandler)

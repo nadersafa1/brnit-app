@@ -4,10 +4,11 @@ import { requireAuth } from '@/lib/api-helpers/require-auth'
 import { getFoodItemAlternatives } from '@/lib/services/food-item-alternatives'
 import { foodItemAlternativesQuerySchema } from '@/types/api/food.schemas'
 import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(
+async function getHandler(
   request: NextRequest,
   { params }: { params: Promise<{ foodItemId: string }> }
 ) {
@@ -46,3 +47,5 @@ export async function GET(
     createPaginatedResponse(result.items, page, perPage, result.totalItems)
   )
 }
+
+export const GET = withRequestLogging(getHandler)

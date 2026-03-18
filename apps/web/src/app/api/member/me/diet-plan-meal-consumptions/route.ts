@@ -16,6 +16,7 @@ import {
   deleteDietPlanMealConsumptionBySlotSchema,
 } from '@/types/api/diet-plan-meal-consumption.schemas'
 import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 
 export const dynamic = 'force-dynamic'
 
@@ -70,7 +71,7 @@ function getGraceDays(): number {
 }
 
 /** Lists consumptions for the current user (optionally filtered by assignment and date range). */
-export const GET = async (request: NextRequest) => {
+const getHandler = async (request: NextRequest) => {
   const authResult = await requireAuth(request.headers)
   if (authResult.error) return authResult.error
 
@@ -126,7 +127,7 @@ export const GET = async (request: NextRequest) => {
 }
 
 /** Creates a meal consumption (mark as consumed). Validates assignment and date range before calling service. */
-export const POST = async (request: NextRequest) => {
+const postHandler = async (request: NextRequest) => {
   const authResult = await requireAuth(request.headers)
   if (authResult.error) return authResult.error
 
@@ -183,7 +184,7 @@ export const POST = async (request: NextRequest) => {
 }
 
 /** Deletes a consumption by slot (assignment + meal + date). Used by member app to unmark consumed. */
-export const DELETE = async (request: NextRequest) => {
+const deleteHandler = async (request: NextRequest) => {
   const authResult = await requireAuth(request.headers)
   if (authResult.error) return authResult.error
 
@@ -217,3 +218,9 @@ export const DELETE = async (request: NextRequest) => {
 
   return deleteSuccess()
 }
+
+export const GET = withRequestLogging(getHandler)
+
+export const POST = withRequestLogging(postHandler)
+
+export const DELETE = withRequestLogging(deleteHandler)

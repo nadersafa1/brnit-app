@@ -3,6 +3,7 @@ import { flattenError } from 'zod'
 import { requireAdmin } from '@/lib/api-helpers/admin-auth'
 import { parseFoodItemsQuery } from '@/lib/api-helpers/food-items-query'
 import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 import { createFoodItem, listFoodItems } from '@/lib/services/food'
 import { createFoodItemFormSchema } from '@/types/api/food.schemas'
 
@@ -23,7 +24,7 @@ const CREATE_FORM_FIELDS = [
 ] as const
 
 /** List food items (admin). Uses shared query parsing and listFoodItems service. */
-export const GET = async (request: NextRequest) => {
+const getHandler = async (request: NextRequest) => {
   const authResult = await requireAdmin(request.headers)
   if (authResult.error) return authResult.error
 
@@ -37,7 +38,7 @@ export const GET = async (request: NextRequest) => {
 }
 
 /** Create food item (multipart form). Validates body with createFoodItemFormSchema; macros required. */
-export const POST = async (request: NextRequest) => {
+const postHandler = async (request: NextRequest) => {
   const authResult = await requireAdmin(request.headers)
   if (authResult.error) return authResult.error
 
@@ -68,3 +69,6 @@ export const POST = async (request: NextRequest) => {
 
   return NextResponse.json({ data: newItem }, { status: 201 })
 }
+
+export const GET = withRequestLogging(getHandler, { actionName: 'AdminListFoodItems' })
+export const POST = withRequestLogging(postHandler, { actionName: 'AdminCreateFoodItem' })

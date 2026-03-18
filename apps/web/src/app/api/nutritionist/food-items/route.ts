@@ -3,11 +3,12 @@ import { requireNutritionist } from '@/lib/api-helpers/nutritionist-auth'
 import { parseFoodItemsQuery } from '@/lib/api-helpers/food-items-query'
 import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
 import { listFoodItems } from '@/lib/services/food'
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 
 export const dynamic = 'force-dynamic'
 
 /** List food items (nutritionist). Uses shared query parsing and listFoodItems service. */
-export const GET = async (request: NextRequest) => {
+const getHandler = async (request: NextRequest) => {
   const authResult = await requireNutritionist(request.headers)
   if (authResult.error) return authResult.error
 
@@ -19,3 +20,5 @@ export const GET = async (request: NextRequest) => {
 
   return NextResponse.json(createPaginatedResponse(items, page, perPage, totalItems))
 }
+
+export const GET = withRequestLogging(getHandler)

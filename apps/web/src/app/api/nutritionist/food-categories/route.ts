@@ -4,10 +4,11 @@ import { requireNutritionist } from '@/lib/api-helpers/nutritionist-auth'
 import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
 import { listFoodCategories } from '@/lib/services/food'
 import { foodCategoriesQuerySchema } from '@/types/api/food.schemas'
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 
 export const dynamic = 'force-dynamic'
 
-export const GET = async (request: NextRequest) => {
+const getHandler = async (request: NextRequest) => {
   const authResult = await requireNutritionist(request.headers)
   if (authResult.error) return authResult.error
 
@@ -32,3 +33,5 @@ export const GET = async (request: NextRequest) => {
 
   return NextResponse.json(createPaginatedResponse(items, page, perPage, totalItems))
 }
+
+export const GET = withRequestLogging(getHandler)

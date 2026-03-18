@@ -7,13 +7,14 @@ import {
   listBodyCompositionAssessments,
 } from '@/lib/services/body-composition-assessments'
 import {
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
   createBodyCompositionAssessmentFormSchema,
   bodyCompositionAssessmentsQuerySchema,
 } from '@/types/api/body-composition-assessment.schemas'
 
 export const dynamic = 'force-dynamic'
 
-export const GET = async (request: NextRequest) => {
+const getHandler = async (request: NextRequest) => {
   const authResult = await requireAssessmentWriteAuth(request.headers)
   if (authResult.error) return authResult.error
 
@@ -43,7 +44,7 @@ export const GET = async (request: NextRequest) => {
   return NextResponse.json(createPaginatedResponse(items, page, perPage, totalItems))
 }
 
-export const POST = async (request: NextRequest) => {
+const postHandler = async (request: NextRequest) => {
   const authResult = await requireAssessmentWriteAuth(request.headers)
   if (authResult.error) return authResult.error
 
@@ -92,3 +93,7 @@ export const POST = async (request: NextRequest) => {
 
   return NextResponse.json({ data: result.data }, { status: 201 })
 }
+
+export const GET = withRequestLogging(getHandler)
+
+export const POST = withRequestLogging(postHandler)

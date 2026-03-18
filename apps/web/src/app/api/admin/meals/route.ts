@@ -4,10 +4,11 @@ import { requireAdmin } from '@/lib/api-helpers/admin-auth'
 import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
 import { createMeal, listMeals } from '@/lib/services/meals'
 import { mealsQuerySchema, createMealSchema } from '@/types/api/meal.schemas'
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 
 export const dynamic = 'force-dynamic'
 
-export const GET = async (request: NextRequest) => {
+const getHandler = async (request: NextRequest) => {
   const authResult = await requireAdmin(request.headers)
   if (authResult.error) return authResult.error
 
@@ -33,7 +34,7 @@ export const GET = async (request: NextRequest) => {
   return NextResponse.json(createPaginatedResponse(items, page, perPage, totalItems))
 }
 
-export const POST = async (request: NextRequest) => {
+const postHandler = async (request: NextRequest) => {
   const authResult = await requireAdmin(request.headers)
   if (authResult.error) return authResult.error
 
@@ -55,3 +56,7 @@ export const POST = async (request: NextRequest) => {
 
   return NextResponse.json({ data: newMeal }, { status: 201 })
 }
+
+export const GET = withRequestLogging(getHandler)
+
+export const POST = withRequestLogging(postHandler)

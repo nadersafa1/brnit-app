@@ -4,10 +4,11 @@ import { deleteSuccessWithBody } from '@/lib/api-helpers/delete-responses'
 import { requireAdmin } from '@/lib/api-helpers/admin-auth'
 import { getMealById, updateMeal, deleteMeal } from '@/lib/services/meals'
 import { updateMealSchema } from '@/types/api/meal.schemas'
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 
 type Params = { params: Promise<{ id: string }> }
 
-export const GET = async (request: NextRequest, { params }: Params) => {
+const getHandler = async (request: NextRequest, { params }: Params) => {
   const authResult = await requireAdmin(request.headers)
   if (authResult.error) return authResult.error
 
@@ -21,7 +22,7 @@ export const GET = async (request: NextRequest, { params }: Params) => {
   return NextResponse.json({ data: mealData })
 }
 
-export const PATCH = async (request: NextRequest, { params }: Params) => {
+const patchHandler = async (request: NextRequest, { params }: Params) => {
   const authResult = await requireAdmin(request.headers)
   if (authResult.error) return authResult.error
 
@@ -48,7 +49,7 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
   return NextResponse.json({ data: result.data })
 }
 
-export const DELETE = async (request: NextRequest, { params }: Params) => {
+const deleteHandler = async (request: NextRequest, { params }: Params) => {
   const authResult = await requireAdmin(request.headers)
   if (authResult.error) return authResult.error
 
@@ -61,3 +62,9 @@ export const DELETE = async (request: NextRequest, { params }: Params) => {
 
   return deleteSuccessWithBody(deleted)
 }
+
+export const GET = withRequestLogging(getHandler)
+
+export const PATCH = withRequestLogging(patchHandler)
+
+export const DELETE = withRequestLogging(deleteHandler)

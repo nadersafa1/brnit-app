@@ -8,10 +8,11 @@ import {
   deleteFoodCategory,
 } from '@/lib/services/food'
 import { updateFoodCategorySchema } from '@/types/api/food.schemas'
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 
 type Params = { params: Promise<{ id: string }> }
 
-export const GET = async (request: NextRequest, { params }: Params) => {
+const getHandler = async (request: NextRequest, { params }: Params) => {
   const authResult = await requireAdmin(request.headers)
   if (authResult.error) return authResult.error
 
@@ -25,7 +26,7 @@ export const GET = async (request: NextRequest, { params }: Params) => {
   return NextResponse.json({ data: category })
 }
 
-export const PATCH = async (request: NextRequest, { params }: Params) => {
+const patchHandler = async (request: NextRequest, { params }: Params) => {
   const authResult = await requireAdmin(request.headers)
   if (authResult.error) return authResult.error
 
@@ -49,7 +50,7 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
   return NextResponse.json({ data: updated })
 }
 
-export const DELETE = async (request: NextRequest, { params }: Params) => {
+const deleteHandler = async (request: NextRequest, { params }: Params) => {
   const authResult = await requireAdmin(request.headers)
   if (authResult.error) return authResult.error
 
@@ -62,3 +63,9 @@ export const DELETE = async (request: NextRequest, { params }: Params) => {
 
   return deleteSuccessWithBody(deleted)
 }
+
+export const GET = withRequestLogging(getHandler)
+
+export const PATCH = withRequestLogging(patchHandler)
+
+export const DELETE = withRequestLogging(deleteHandler)

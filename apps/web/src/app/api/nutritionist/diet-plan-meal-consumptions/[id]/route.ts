@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { deleteSuccessWithBody } from '@/lib/api-helpers/delete-responses'
 import { requireNutritionistOrgContext } from '@/lib/api-helpers/nutritionist-auth'
 import { deleteDietPlanMealConsumption } from '@/lib/services/diet-plan-meal-consumption'
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 
 type Params = { params: Promise<{ id: string }> }
 
 export const dynamic = 'force-dynamic'
 
-export const DELETE = async (request: NextRequest, { params }: Params) => {
+const deleteHandler = async (request: NextRequest, { params }: Params) => {
   const authResult = await requireNutritionistOrgContext(request.headers)
   if (authResult.error) return authResult.error
 
@@ -20,3 +21,5 @@ export const DELETE = async (request: NextRequest, { params }: Params) => {
 
   return deleteSuccessWithBody(deleted)
 }
+
+export const DELETE = withRequestLogging(deleteHandler)

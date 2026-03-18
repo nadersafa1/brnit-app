@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { auth } from '@burn-app/auth'
 import { cloudinary } from '@/lib/cloudinary'
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
+import { logger } from '@/lib/server-logger'
 
-export async function POST(request: NextRequest) {
+async function postHandler(request: NextRequest) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -36,10 +38,14 @@ export async function POST(request: NextRequest) {
       apiKey: process.env.CLOUDINARY_API_KEY,
     })
   } catch (error) {
-    console.error('Error generating Cloudinary signature:', error)
+    logger.error('Error generating Cloudinary signature', { err: error })
     return NextResponse.json(
       { error: 'Failed to generate signature' },
       { status: 500 }
     )
   }
 }
+
+export const POST = withRequestLogging(postHandler, {
+  actionName: 'CloudinarySign',
+})

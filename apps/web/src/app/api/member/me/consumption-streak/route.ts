@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-helpers/require-auth'
 import { getConsumptionStreakForUser } from '@/lib/services/consumption-streak'
 import { consumptionStreakResponseSchema } from '@/types/api/consumption-streak.schemas'
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,7 +10,7 @@ export const dynamic = 'force-dynamic'
  * GET: Current consumption streak (consecutive days with at least one logged meal, ending today).
  * Returns { streak: number }. No query params required.
  */
-export async function GET(request: NextRequest) {
+async function getHandler(request: NextRequest) {
   const authResult = await requireAuth(request.headers)
   if (authResult.error) return authResult.error
 
@@ -20,3 +21,5 @@ export async function GET(request: NextRequest) {
   }
   return NextResponse.json(parsed.data)
 }
+
+export const GET = withRequestLogging(getHandler)

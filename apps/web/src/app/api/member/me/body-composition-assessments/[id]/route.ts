@@ -3,6 +3,7 @@ import { flattenError } from 'zod'
 import { requireMemberOrg } from '@/lib/api-helpers/member-org'
 import { getBodyCompositionAssessmentByIdForMember } from '@/lib/services/body-composition-assessments'
 import { memberSingleAssessmentQuerySchema } from '@/types/api/body-composition-assessment.schemas'
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -12,7 +13,7 @@ export const dynamic = 'force-dynamic'
  * GET: Single body-composition assessment for the current member.
  * Requires orgId so we can resolve the member and enforce ownership; returns 404 if not found or not owned.
  */
-export async function GET(request: NextRequest, { params }: Params) {
+async function getHandler(request: NextRequest, { params }: Params) {
   const { searchParams } = new URL(request.url)
   const queryResult = memberSingleAssessmentQuerySchema.safeParse({
     orgId: searchParams.get('orgId') ?? undefined,
@@ -49,3 +50,5 @@ export async function GET(request: NextRequest, { params }: Params) {
     },
   })
 }
+
+export const GET = withRequestLogging(getHandler)

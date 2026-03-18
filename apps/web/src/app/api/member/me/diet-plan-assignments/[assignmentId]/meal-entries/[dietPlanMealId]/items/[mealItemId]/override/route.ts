@@ -4,6 +4,7 @@ import { deleteSuccess } from '@/lib/api-helpers/delete-responses'
 import { requireAuth } from '@/lib/api-helpers/require-auth'
 import { upsertMealItemOverride, deleteMealItemOverride } from '@/lib/services/diet-plan-meal-item-override'
 import {
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
   setDietPlanMealItemOverrideBodySchema,
   dateStringSchema,
 } from '@/types/api/diet-plan-meal-item-override.schemas'
@@ -67,11 +68,11 @@ async function handlePutOrPatch(request: NextRequest, params: RouteParams['param
   )
 }
 
-export async function PUT(request: NextRequest, context: RouteParams) {
+async function putHandler(request: NextRequest, context: RouteParams) {
   return handlePutOrPatch(request, context.params)
 }
 
-export async function PATCH(request: NextRequest, context: RouteParams) {
+async function patchHandler(request: NextRequest, context: RouteParams) {
   return handlePutOrPatch(request, context.params)
 }
 
@@ -79,7 +80,7 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
  * DELETE: remove override for this meal item.
  * Optional ?date=YYYY-MM-DD removes that date's override; omit to remove future-only override.
  */
-export async function DELETE(request: NextRequest, context: RouteParams) {
+async function deleteHandler(request: NextRequest, context: RouteParams) {
   const authResult = await requireAuth(request.headers)
   if (authResult.error) return authResult.error
 
@@ -116,3 +117,9 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
 
   return deleteSuccess()
 }
+
+export const PUT = withRequestLogging(putHandler)
+
+export const PATCH = withRequestLogging(patchHandler)
+
+export const DELETE = withRequestLogging(deleteHandler)

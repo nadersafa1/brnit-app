@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireNutritionist } from '@/lib/api-helpers/nutritionist-auth'
 import { getFoodCategoryById } from '@/lib/services/food'
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 
 type Params = { params: Promise<{ id: string }> }
 
-export const GET = async (request: NextRequest, { params }: Params) => {
+const getHandler = async (request: NextRequest, { params }: Params) => {
   const authResult = await requireNutritionist(request.headers)
   if (authResult.error) return authResult.error
 
@@ -17,3 +18,5 @@ export const GET = async (request: NextRequest, { params }: Params) => {
 
   return NextResponse.json({ data: category })
 }
+
+export const GET = withRequestLogging(getHandler)

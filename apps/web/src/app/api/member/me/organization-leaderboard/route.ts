@@ -3,11 +3,12 @@ import { flattenError } from 'zod'
 import { requireMemberOrg } from '@/lib/api-helpers/member-org'
 import { getOrganizationLeaderboard } from '@/lib/services/organization-leaderboard'
 import { memberLeaderboardQuerySchema } from '@/types/api/member-leaderboard.schemas'
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 
 export const dynamic = 'force-dynamic'
 
 /** GET: Organization leaderboard by body-fat % point drop (top 3 + self), optional orgId. */
-export async function GET(request: NextRequest) {
+async function getHandler(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const parseResult = memberLeaderboardQuerySchema.safeParse({
     orgId: searchParams.get('orgId') ?? undefined,
@@ -33,3 +34,5 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(result)
 }
+
+export const GET = withRequestLogging(getHandler)

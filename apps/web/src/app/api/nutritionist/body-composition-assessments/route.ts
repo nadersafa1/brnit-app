@@ -4,10 +4,11 @@ import { requireNutritionistOrgContext } from '@/lib/api-helpers/nutritionist-au
 import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
 import { listBodyCompositionAssessments } from '@/lib/services/body-composition-assessments'
 import { bodyCompositionAssessmentsQuerySchema } from '@/types/api/body-composition-assessment.schemas'
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 
 export const dynamic = 'force-dynamic'
 
-export const GET = async (request: NextRequest) => {
+const getHandler = async (request: NextRequest) => {
   const authResult = await requireNutritionistOrgContext(request.headers)
   if (authResult.error) return authResult.error
 
@@ -36,3 +37,5 @@ export const GET = async (request: NextRequest) => {
 
   return NextResponse.json(createPaginatedResponse(items, page, perPage, totalItems))
 }
+
+export const GET = withRequestLogging(getHandler)

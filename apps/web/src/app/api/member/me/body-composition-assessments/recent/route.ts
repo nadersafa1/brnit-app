@@ -7,11 +7,12 @@ import {
   getRecentAssessmentsForUserAllOrgs,
 } from '@/lib/services/body-composition-assessments'
 import { memberRecentAssessmentsQuerySchema } from '@/types/api/body-composition-assessment.schemas'
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 
 export const dynamic = 'force-dynamic'
 
 /** GET: Recent body-composition assessments. With orgId: that org only; without orgId: all members linked to the logged-in user. */
-export async function GET(request: NextRequest) {
+async function getHandler(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const parseResult = memberRecentAssessmentsQuerySchema.safeParse({
     orgId: searchParams.get('orgId') ?? undefined,
@@ -47,3 +48,5 @@ export async function GET(request: NextRequest) {
   const result = await getRecentAssessmentsForUserAllOrgs(authResult.session.user.id, limit)
   return NextResponse.json(result)
 }
+
+export const GET = withRequestLogging(getHandler)

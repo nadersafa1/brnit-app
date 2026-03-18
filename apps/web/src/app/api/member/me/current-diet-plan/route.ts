@@ -3,10 +3,11 @@ import { flattenError } from 'zod'
 import { requireAuth } from '@/lib/api-helpers/require-auth'
 import { currentDietPlanQuerySchema } from '@/types/api/current-diet-plan.schemas'
 import { getCurrentDietPlanForUser } from '@/lib/services/current-diet-plan'
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+async function getHandler(request: NextRequest) {
   const authResult = await requireAuth(request.headers)
   if (authResult.error) return authResult.error
 
@@ -29,3 +30,5 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(result)
 }
 
+
+export const GET = withRequestLogging(getHandler)

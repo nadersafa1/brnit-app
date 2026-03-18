@@ -4,11 +4,12 @@ import { requireAuth } from '@/lib/api-helpers/require-auth'
 import { db } from '@burn-app/db'
 import { dietPlanAssignment, dietPlan, member } from '@burn-app/db/schema'
 import { eq, or, inArray, asc } from 'drizzle-orm'
+import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 
 export const dynamic = 'force-dynamic'
 
 /** List diet plan assignments for the current user (as user or as member). */
-export async function GET(request: NextRequest) {
+async function getHandler(request: NextRequest) {
   const authResult = await requireAuth(request.headers)
   if (authResult.error) return authResult.error
 
@@ -42,3 +43,5 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({ data: items })
 }
+
+export const GET = withRequestLogging(getHandler)
