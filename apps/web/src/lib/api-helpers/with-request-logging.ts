@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { logger } from '@/lib/server-logger'
+import { deriveActionName, deriveResource, writeAuditLog } from '@/lib/audit/audit-log-writer'
 
 type RequestLogOptions = {
   actionName?: string
@@ -50,6 +51,15 @@ function getRequestPath(req: NextRequest): string {
   }
 }
 
+function getEndpointPath(req: NextRequest): string {
+  try {
+    // Endpoint path (no query params) for stable audit labels/correlation.
+    return req.nextUrl.pathname
+  } catch {
+    return req.url.split('?')[0] || req.url
+  }
+}
+
 function getRequestId(req: NextRequest): string {
   const incoming = req.headers.get('x-request-id')?.trim()
   if (incoming) return incoming
@@ -61,6 +71,10 @@ function safeErrorMeta(err: unknown): { err: unknown } {
   return { err: new Error(typeof err === 'string' ? err : 'Unknown error') }
 }
 
+function isWriteMethod(method: string): boolean {
+  return method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE'
+}
+
 export function withRequestLogging<C = unknown>(
   handler: NextHandler<C>,
   opts: RequestLogOptions = {}
@@ -70,40 +84,89 @@ export function withRequestLogging<C = unknown>(
     const requestId = getRequestId(req)
     const method = req.method
     const path = getRequestPath(req)
+    const endpointPath = getEndpointPath(req)
 
-    // Optional bypass for environments where request logging is too noisy.
-    if (!LOG_HTTP || (opts.skip?.(req) ?? false)) {
+    const logHttpEnabled = LOG_HTTP && (opts.skip?.(req) ?? false) === false
+    const auditEnabled = process.env.AUDIT_LOG_DB_ENABLED === 'true' && isWriteMethod(method)
+    const shouldMeasure = logHttpEnabled || auditEnabled
+
+    // Fast path: neither console logging nor audit logging is enabled.
+    if (!shouldMeasure) {
       const res = await handler(req, context)
       const out = toNextResponse(res)
       out.headers.set('x-request-id', requestId)
       return out
     }
 
-    // Performance timing only in log-enabled mode.
+    // If either logging or audit is enabled, we use try/catch so Phase 2 can record failures.
     const start = performance.now()
     const actionName = opts.actionName
-    const reqLogger = logger.child({ requestId, method, path, actionName })
+    const reqLogger = logHttpEnabled
+      ? logger.child({ requestId, method, path, actionName })
+      : null
 
     try {
       const res = await handler(req, context)
       const ms = performance.now() - start
 
-      const statusStr = formatStatus(res.status)
-      const ts = new Date().toISOString()
-      reqLogger.info(`${ts} | ${method} ${path} | Status: ${statusStr} | Response Time: ${ms.toFixed(2)}ms`)
+      if (reqLogger) {
+        const statusStr = formatStatus(res.status)
+        const ts = new Date().toISOString()
+        reqLogger.info(
+          `${ts} | ${method} ${path} | Status: ${statusStr} | Response Time: ${ms.toFixed(2)}ms`
+        )
+      }
 
-      // Ensure response header for correlation
       const out = toNextResponse(res)
       out.headers.set('x-request-id', requestId)
+
+      if (auditEnabled) {
+        const durationMs = Math.round(ms)
+        const actionNameForAudit = opts.actionName ?? deriveActionName(method, endpointPath)
+        const resource = deriveResource(endpointPath)
+
+        // Best-effort: audit logging must never break the response path.
+        writeAuditLog(req, {
+          requestId,
+          actionName: actionNameForAudit,
+          resource,
+          endpoint: endpointPath,
+          requestMethod: method,
+          statusCode: res.status,
+          success: res.status < 400,
+          durationMs,
+        })
+      }
+
       return out
     } catch (err) {
       const ms = performance.now() - start
-      const ts = new Date().toISOString()
-      const statusStr = formatStatus(500)
-      reqLogger.error(
-        `${ts} | ${method} ${path} | Status: ${statusStr} | Response Time: ${ms.toFixed(2)}ms`,
-        safeErrorMeta(err)
-      )
+
+      if (reqLogger) {
+        const ts = new Date().toISOString()
+        const statusStr = formatStatus(500)
+        reqLogger.error(
+          `${ts} | ${method} ${path} | Status: ${statusStr} | Response Time: ${ms.toFixed(2)}ms`,
+          safeErrorMeta(err)
+        )
+      }
+
+      if (auditEnabled) {
+        const durationMs = Math.round(ms)
+        const actionNameForAudit = opts.actionName ?? deriveActionName(method, endpointPath)
+        const resource = deriveResource(endpointPath)
+
+        writeAuditLog(req, {
+          requestId,
+          actionName: actionNameForAudit,
+          resource,
+          endpoint: endpointPath,
+          requestMethod: method,
+          statusCode: 500,
+          success: false,
+          durationMs,
+        })
+      }
 
       const out = NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
       out.headers.set('x-request-id', requestId)
