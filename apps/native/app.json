@@ -33,7 +33,11 @@
       "url": "https://u.expo.dev/eb226ae4-16cf-4326-bdba-08518b4ae2a3",
       "enableBsdiffPatchSupport": true
     },
-    "android": {},
-    "ios": {}
+    "android": {
+      "package": "com.nader_safa.brnit"
+    },
+    "ios": {
+      "bundleIdentifier": "com.nader-safa.brnit"
+    }
   }
 }
