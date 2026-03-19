@@ -24,6 +24,9 @@ interface HomeMealsSectionProps {
   selectedDate: Date
   /** When present, meal cards show mark-as-consumed and pass it to the API. */
   dietPlanAssignmentId?: string
+  assignmentStartDate?: string
+  assignmentEndDate?: string
+  maxPastDays?: number
   onMealItemPress?: (params: MealItemDetailPayload) => void
 }
 
@@ -33,6 +36,9 @@ export function HomeMealsSection({
   meals,
   selectedDate,
   dietPlanAssignmentId,
+  assignmentStartDate,
+  assignmentEndDate,
+  maxPastDays,
   onMealItemPress,
 }: Readonly<HomeMealsSectionProps>) {
   const colors = useColors()
@@ -104,6 +110,9 @@ export function HomeMealsSection({
             dietPlanMealId={meal.dietPlanMealId}
             consumed={meal.consumed}
             consumedDate={consumedDate}
+            assignmentStartDate={assignmentStartDate}
+            assignmentEndDate={assignmentEndDate}
+            maxPastDays={maxPastDays}
             onMealItemPress={item => handleMealItemPress(item, meal.dietPlanMealId)}
           />
         ))}

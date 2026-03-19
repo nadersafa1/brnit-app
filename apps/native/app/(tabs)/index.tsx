@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
 import { useMemo, useState } from 'react'
-import { ScrollView, View, StyleSheet } from 'react-native'
+import { ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BottomNav } from '@/components/bottom-nav'
@@ -14,9 +14,10 @@ import { useCurrentDietPlan } from '@/hooks/use-current-diet-plan'
 import { useDayProgress } from '@/hooks/use-day-progress'
 import { useColors } from '@/hooks/use-theme-color'
 import { authClient } from '@/lib/auth-client'
+import { getMaxConsumptionPastDays } from '@/lib/consumption-date-window'
 import { getDayForDate } from '@/lib/helpers/diet-plan'
-import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
+import { spacing } from '@/theme/spacing'
 
 export default function Home() {
   const insets = useSafeAreaInsets()
@@ -24,6 +25,7 @@ export default function Home() {
   const { data: session } = authClient.useSession()
   const [selectedDate, setSelectedDate] = useState(() => new Date())
   const [selectedMealItem, setSelectedMealItem] = useState<MealItemDetailPayload | null>(null)
+  const maxConsumptionPastDays = getMaxConsumptionPastDays()
 
   const dateStr = dayjs(selectedDate).format('YYYY-MM-DD')
   const {
@@ -53,7 +55,10 @@ export default function Home() {
         contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 96 }]}
         showsVerticalScrollIndicator={false}
       >
-        <HomeHeader userName={userName} userImageUrl={userImageUrl} />
+        <HomeHeader
+          userName={userName}
+          userImageUrl={userImageUrl}
+        />
         <CalendarStrip
           selectedDate={selectedDate}
           onDateSelect={setSelectedDate}
@@ -81,13 +86,19 @@ export default function Home() {
           meals={meals}
           selectedDate={selectedDate}
           dietPlanAssignmentId={dietPlanData?.data?.assignment?.id}
+          assignmentStartDate={dietPlanData?.data?.assignment?.startDate}
+          assignmentEndDate={dietPlanData?.data?.assignment?.endDate}
+          maxPastDays={maxConsumptionPastDays}
           onMealItemPress={setSelectedMealItem}
         />
       </ScrollView>
 
       <BottomNav activeTab='home' />
       {selectedMealItem ? (
-        <MealItemDetailSheet payload={selectedMealItem} onClose={() => setSelectedMealItem(null)} />
+        <MealItemDetailSheet
+          payload={selectedMealItem}
+          onClose={() => setSelectedMealItem(null)}
+        />
       ) : null}
     </View>
   )

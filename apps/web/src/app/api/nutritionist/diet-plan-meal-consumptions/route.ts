@@ -62,6 +62,16 @@ const postHandler = async (request: NextRequest) => {
     if (result.code === 'DUPLICATE') {
       return NextResponse.json({ error: result.error }, { status: 409 })
     }
+    if (result.code === 'OUT_OF_ALLOWED_DATE_RANGE') {
+      return NextResponse.json(
+        {
+          error:
+            'consumedAt must not be in the future and must be within the allowed backdate window',
+          details: { reason: result.error },
+        },
+        { status: 400 }
+      )
+    }
     return NextResponse.json({ error: result.error }, { status: 400 })
   }
 

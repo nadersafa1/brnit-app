@@ -9,6 +9,7 @@ import {
 } from '@burn-app/db/schema'
 import { count, asc, desc, eq, and, gte, lte, inArray } from 'drizzle-orm'
 import { calculateOffset } from '@/lib/api-helpers/query-builders'
+import { getMaxConsumptionPastDays } from '@/lib/config/consumption-window'
 import { getDietPlanById } from '@/lib/services/diet-plans'
 import { getOverridesByAssignmentId, resolveOverridesForDate } from '@/lib/services/diet-plan-meal-item-override'
 import type {
@@ -21,12 +22,18 @@ function toDateString(d: Date): string {
   return d.toISOString().slice(0, 10)
 }
 
+function addDaysToDateString(dateStr: string, days: number): string {
+  const d = new Date(`${dateStr}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
 export type LogConsumptionResult =
   | { ok: true; data: typeof dietPlanMealConsumption.$inferSelect }
   | {
       ok: false
       error: string
-      code: 'DUPLICATE' | 'NOT_FOUND' | 'INVALID_CONSUMED_ITEMS' | 'INVALID_SLOT'
+      code: 'DUPLICATE' | 'NOT_FOUND' | 'INVALID_CONSUMED_ITEMS' | 'INVALID_SLOT' | 'OUT_OF_ALLOWED_DATE_RANGE'
     }
 
 /**
@@ -81,6 +88,18 @@ export async function logDietPlanMealConsumption(data: CreateDietPlanMealConsump
 
   const consumedAt = data.consumedAt instanceof Date ? data.consumedAt : new Date(data.consumedAt)
   const consumedDate = toDateString(consumedAt)
+  const maxPastDays = getMaxConsumptionPastDays()
+  const today = toDateString(new Date())
+  const minAllowedDate = addDaysToDateString(today, -maxPastDays)
+
+  // Guardrail: reject future dates and dates older than allowed backdate window.
+  if (consumedDate > today || consumedDate < minAllowedDate) {
+    return {
+      ok: false,
+      error: `consumedAt must be between ${minAllowedDate} and ${today}`,
+      code: 'OUT_OF_ALLOWED_DATE_RANGE',
+    }
+  }
 
   // Resolve planned items from plan + overrides when client requests meal-level consumption only.
   if (data.usePlannedItems && (!consumedItems || consumedItems.length === 0)) {
