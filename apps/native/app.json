@@ -3,8 +3,15 @@
     "scheme": "brnit",
     "userInterfaceStyle": "automatic",
     "orientation": "default",
+    "icon": "./assets/images/icon.png",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "web": {
-      "bundler": "metro"
+      "bundler": "metro",
+      "favicon": "./assets/images/favicon.png"
     },
     "name": "brnit",
     "slug": "brnit",
@@ -34,7 +41,11 @@
       "enableBsdiffPatchSupport": true
     },
     "android": {
-      "package": "com.nader_safa.brnit"
+      "package": "com.nader_safa.brnit",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
     },
     "ios": {
       "bundleIdentifier": "com.nader-safa.brnit"
