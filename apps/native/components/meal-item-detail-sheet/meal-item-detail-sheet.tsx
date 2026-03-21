@@ -28,8 +28,15 @@ export function MealItemDetailSheet({ payload, onClose }: Readonly<MealItemDetai
 
   // Keep sheet visibility controlled by selected payload from parent screen state.
   useEffect(() => {
-    if (payload) ref.current?.open(1);
-    else ref.current?.close();
+    if (payload) {
+      const frameId = requestAnimationFrame(() => {
+        ref.current?.open(1);
+      });
+      setSelectedAlternative(null);
+      return () => cancelAnimationFrame(frameId);
+    }
+
+    ref.current?.close();
     setSelectedAlternative(null);
   }, [payload]);
 

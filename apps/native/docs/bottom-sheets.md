@@ -5,10 +5,11 @@ All bottom sheets in the app use the shared **AppBottomSheet** wrapper so behavi
 ## Adding a new sheet
 
 1. **Use `AppBottomSheet`** from `@/components/bottom-sheet`. Do not use `@gorhom/bottom-sheet` directly for the root sheet.
+   - The wrapper is backed by `BottomSheetModal`, and the app root must stay wrapped with `BottomSheetModalProvider` (already configured in `app/_layout.tsx`).
 2. **Ref**: Use `AppBottomSheetRef` for open/close:
   - `ref.current.open()` — open at first snap point (default).
   - `ref.current.open(snapIndex)` — open at a specific snap index (e.g. `open(1)` for 60%).
-  - `ref.current.close()` — close the sheet and run `onClose` if provided.
+  - `ref.current.close()` — dismiss the sheet and run `onClose` if provided.
 3. **Props**:
   - **headerTitle** — Simple title only (same padding and text style as all sheets).
   - **renderHeader** — Custom header (e.g. back button + title). Overrides `headerTitle` when set.

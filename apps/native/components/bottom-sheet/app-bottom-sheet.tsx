@@ -1,6 +1,6 @@
 import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react'
 import { View, StyleSheet } from 'react-native'
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet'
+import { BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import type { BottomSheetFooterProps } from '@gorhom/bottom-sheet'
 
 import { Text } from '@/components/ui'
@@ -54,29 +54,41 @@ export const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>
   ref
 ) {
   const colors = useColors()
-  const bottomSheetRef = useRef<BottomSheet>(null)
+  const bottomSheetRef = useRef<BottomSheetModal>(null)
   const points = snapPoints ?? DEFAULT_SNAP_POINTS
 
   const open = useCallback((snapIndex = 0) => {
-    bottomSheetRef.current?.snapToIndex(snapIndex)
-  }, [])
+    const sheet = bottomSheetRef.current
+    if (!sheet) return
+
+    const targetIndex = Math.max(0, Math.min(snapIndex, points.length - 1))
+    sheet.present()
+
+    requestAnimationFrame(() => {
+      if (targetIndex > 0) {
+        sheet.snapToIndex(targetIndex)
+      }
+    })
+  }, [points.length])
 
   const close = useCallback(() => {
-    bottomSheetRef.current?.close()
-    onClose?.()
-  }, [onClose])
+    bottomSheetRef.current?.dismiss()
+  }, [])
 
   useImperativeHandle(ref, () => ({ open, close }), [open, close])
 
   return (
-    <BottomSheet
+    <BottomSheetModal
       ref={bottomSheetRef}
-      index={-1}
+      index={0}
       snapPoints={[...points]}
       enablePanDownToClose
       backdropComponent={SheetBackdrop}
       footerComponent={footerComponent}
-      onClose={onClose}
+      onDismiss={onClose}
+      keyboardBehavior='interactive'
+      android_keyboardInputMode='adjustResize'
+      enableDynamicSizing={false}
       backgroundStyle={{ backgroundColor: colors.appBg }}
       handleIndicatorStyle={{ backgroundColor: colors.pastelPurple }}
     >
@@ -89,7 +101,7 @@ export const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>
       >
         {children}
       </BottomSheetScrollView>
-    </BottomSheet>
+    </BottomSheetModal>
   )
 })
 

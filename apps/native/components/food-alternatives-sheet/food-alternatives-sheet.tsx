@@ -44,10 +44,13 @@ export function FoodAlternativesSheet({ foodItem, onClose }: Readonly<FoodAltern
 
   useEffect(() => {
     if (foodItem) {
-      sheetRef.current?.open(1)
+      const frameId = requestAnimationFrame(() => {
+        sheetRef.current?.open(1)
+      })
       setSheetState('input')
       const defaultQty = foodItem.unit === '100g' ? '100' : '1'
       form.reset({ quantity: defaultQty })
+      return () => cancelAnimationFrame(frameId)
     } else {
       sheetRef.current?.close()
     }

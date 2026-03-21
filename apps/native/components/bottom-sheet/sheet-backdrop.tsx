@@ -10,6 +10,7 @@ export function SheetBackdrop(props: Readonly<BottomSheetBackdropProps>) {
       {...props}
       disappearsOnIndex={-1}
       appearsOnIndex={0}
+      pressBehavior='close'
     />
   )
 }

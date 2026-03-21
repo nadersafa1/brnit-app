@@ -87,7 +87,10 @@ export function AssessmentDetailSheet({ assessment, onClose }: AssessmentDetailS
     if (assessment == null) {
       ref.current?.close()
     } else {
-      ref.current?.open(1)
+      const frameId = requestAnimationFrame(() => {
+        ref.current?.open(1)
+      })
+      return () => cancelAnimationFrame(frameId)
     }
   }, [assessment])
 
