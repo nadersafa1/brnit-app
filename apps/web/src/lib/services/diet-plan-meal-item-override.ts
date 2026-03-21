@@ -8,6 +8,7 @@ import {
   foodItem,
 } from '@burn-app/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
+import { getTodayUtcDateString } from '@/lib/helpers/date-utc'
 import type { SetDietPlanMealItemOverrideBody } from '@/types/api/diet-plan-meal-item-override.schemas'
 
 type AssignmentForUser = { id: string; dietPlanId: string }
@@ -303,20 +304,12 @@ export async function getOverridesByAssignmentId(assignmentId: string): Promise<
   }))
 }
 
-function getTodayUTC(): string {
-  const d = new Date()
-  const y = d.getUTCFullYear()
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(d.getUTCDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
 /**
  * Resolve which overrides apply for a given date.
  * Prefer override with effectiveDate = date; else effectiveDate null and date >= today; else no override.
  */
 export function resolveOverridesForDate(overrideRows: OverrideRow[], resolutionDate: string): Map<string, OverrideRow> {
-  const today = getTodayUTC()
+  const today = getTodayUtcDateString()
   const isFutureOrToday = resolutionDate >= today
 
   const byKey = new Map<string, OverrideRow[]>()

@@ -72,6 +72,7 @@ export default function DietPlanDetailPage() {
             dayNumber: meal.dayNumber,
             mealType: meal.mealType,
             mealOrder: meal.mealOrder,
+            scheduledTime: meal.scheduledTime,
           },
         ],
       })
@@ -93,6 +94,7 @@ export default function DietPlanDetailPage() {
       dayNumber?: number
       mealType?: string
       mealOrder?: number
+      scheduledTime?: string | null
     }) => {
       await updatePlan.mutateAsync({
         id,

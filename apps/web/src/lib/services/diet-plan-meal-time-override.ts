@@ -1,6 +1,7 @@
 import { db } from '@burn-app/db'
 import { dietPlanMeal, dietPlanMealTimeOverride } from '@burn-app/db/schema'
 import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { getTodayUtcDateString } from '@/lib/helpers/date-utc'
 
 type DbClient = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
@@ -84,14 +85,6 @@ export async function getMealTimeOverridesByAssignmentId(assignmentId: string): 
   }))
 }
 
-function getTodayUTC(): string {
-  const d = new Date()
-  const y = d.getUTCFullYear()
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(d.getUTCDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
 /**
  * Resolve effective assignment-level times for a date.
  * Prefer exact-date override; otherwise future-only override for today/future dates.
@@ -100,7 +93,7 @@ export function resolveMealTimeOverridesForDate(
   overrideRows: MealTimeOverrideRow[],
   resolutionDate: string
 ): Map<string, string> {
-  const today = getTodayUTC()
+  const today = getTodayUtcDateString()
   const isFutureOrToday = resolutionDate >= today
   const grouped = new Map<string, MealTimeOverrideRow[]>()
 

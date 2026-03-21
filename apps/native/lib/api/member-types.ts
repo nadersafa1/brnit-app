@@ -28,6 +28,7 @@ export type CurrentDietPlanMeal = {
   mealName: string;
   mealType: string;
   mealOrder: number;
+  scheduledTime?: string;
   mealItems: CurrentDietPlanMealItem[];
   consumed: boolean;
   consumedAt?: string;

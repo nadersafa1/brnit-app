@@ -1,26 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import { addDaysUTC, getTodayUtcDateString } from '@/lib/helpers/date-utc'
 import { resolveMealTimeOverridesForDate, type MealTimeOverrideRow } from './diet-plan-meal-time-override'
-
-function getTodayUTC(): string {
-  const d = new Date()
-  const y = d.getUTCFullYear()
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(d.getUTCDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
-function addDaysUTC(dateStr: string, days: number): string {
-  const d = new Date(`${dateStr}T00:00:00.000Z`)
-  d.setUTCDate(d.getUTCDate() + days)
-  const y = d.getUTCFullYear()
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(d.getUTCDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
 
 describe('resolveMealTimeOverridesForDate', () => {
   it('prefers exact-date override over future-only override', () => {
-    const today = getTodayUTC()
+    const today = getTodayUtcDateString()
     const rows: MealTimeOverrideRow[] = [
       { dietPlanMealId: 'meal-1', scheduledTime: '09:00', effectiveDate: null },
       { dietPlanMealId: 'meal-1', scheduledTime: '10:30', effectiveDate: today },
@@ -31,7 +15,7 @@ describe('resolveMealTimeOverridesForDate', () => {
   })
 
   it('applies future-only overrides for today/future, but not past dates', () => {
-    const today = getTodayUTC()
+    const today = getTodayUtcDateString()
     const tomorrow = addDaysUTC(today, 1)
     const yesterday = addDaysUTC(today, -1)
     const rows: MealTimeOverrideRow[] = [

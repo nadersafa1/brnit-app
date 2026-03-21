@@ -39,6 +39,7 @@ export interface DietPlanMealUpdateInput {
   dayNumber?: number
   mealType?: string
   mealOrder?: number
+  scheduledTime?: string | null
 }
 
 interface EditDietPlanMealDialogProps {
@@ -55,13 +56,14 @@ export function EditDietPlanMealDialog({
   slot,
   onUpdate,
   source = 'admin',
-}: EditDietPlanMealDialogProps) {
+}: Readonly<EditDietPlanMealDialogProps>) {
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [mealId, setMealId] = useState('')
   const [dayNumber, setDayNumber] = useState(0)
   const [mealType, setMealType] = useState('breakfast')
   const [mealOrder, setMealOrder] = useState(1)
+  const [scheduledTime, setScheduledTime] = useState('')
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchInput), 300)
@@ -74,6 +76,7 @@ export function EditDietPlanMealDialog({
       setDayNumber(slot.dayNumber)
       setMealType(slot.mealType)
       setMealOrder(slot.mealOrder)
+      setScheduledTime(slot.scheduledTime ?? '')
       setSearchInput('')
       setDebouncedSearch('')
     }
@@ -96,6 +99,31 @@ export function EditDietPlanMealDialog({
     [selectedMeal?.mealItems]
   )
 
+  const mealsListContent = (() => {
+    if (isLoading) {
+      return <div className="p-4 text-sm text-muted-foreground">Loading…</div>
+    }
+    if (!meals?.length) {
+      return <div className="p-4 text-sm text-muted-foreground">No meals found.</div>
+    }
+    return (
+      <div className="divide-y">
+        {meals.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            className={`w-full px-4 py-2 text-left text-sm hover:bg-muted/50 ${
+              mealId === m.id ? 'bg-muted' : ''
+            }`}
+            onClick={() => setMealId(m.id)}
+          >
+            <span className="font-medium">{m.name}</span>
+          </button>
+        ))}
+      </div>
+    )
+  })()
+
   const handleOpenChange = (next: boolean) => {
     if (!next) onOpenChange(false)
   }
@@ -108,6 +136,7 @@ export function EditDietPlanMealDialog({
       dayNumber,
       mealType,
       mealOrder,
+      scheduledTime: scheduledTime || null,
     })
     onOpenChange(false)
   }
@@ -136,26 +165,7 @@ export function EditDietPlanMealDialog({
           </Field>
 
           <div className="flex-1 overflow-auto rounded-md border min-h-[120px] max-h-[200px]">
-            {isLoading ? (
-              <div className="p-4 text-sm text-muted-foreground">Loading…</div>
-            ) : !meals?.length ? (
-              <div className="p-4 text-sm text-muted-foreground">No meals found.</div>
-            ) : (
-              <div className="divide-y">
-                {meals.map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    className={`w-full px-4 py-2 text-left text-sm hover:bg-muted/50 ${
-                      mealId === m.id ? 'bg-muted' : ''
-                    }`}
-                    onClick={() => setMealId(m.id)}
-                  >
-                    <span className="font-medium">{m.name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+            {mealsListContent}
           </div>
 
           {selectedMeal && foodItemsPreview && (
@@ -193,6 +203,16 @@ export function EditDietPlanMealDialog({
               min={1}
               value={mealOrder}
               onChange={(e) => setMealOrder(Math.max(1, Number.parseInt(e.target.value, 10) || 1))}
+            />
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="edit-meal-time">Default time (optional)</FieldLabel>
+            <Input
+              id="edit-meal-time"
+              type="time"
+              value={scheduledTime}
+              onChange={(e) => setScheduledTime(e.target.value)}
             />
           </Field>
         </div>

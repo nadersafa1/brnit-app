@@ -26,6 +26,23 @@ async function getAssignmentUserId(memberId: string | null, userId: string | nul
   return null
 }
 
+/** Group list rows for UI: future-only (`effectiveDate` null) overrides per assignment. */
+function groupFutureMealTimeOverridesByAssignmentId(
+  rows: Array<{
+    dietPlanAssignmentId: string
+    dietPlanMealId: string
+    scheduledTime: string
+  }>
+): Map<string, Array<{ dietPlanMealId: string; scheduledTime: string }>> {
+  const map = new Map<string, Array<{ dietPlanMealId: string; scheduledTime: string }>>()
+  for (const row of rows) {
+    const list = map.get(row.dietPlanAssignmentId) ?? []
+    list.push({ dietPlanMealId: row.dietPlanMealId, scheduledTime: row.scheduledTime })
+    map.set(row.dietPlanAssignmentId, list)
+  }
+  return map
+}
+
 /** Check for overlapping assignments for the same user/member pool. */
 async function hasOverlappingAssignment(
   excludeId: string | null,
@@ -197,12 +214,7 @@ export async function listDietPlanAssignments(query: DietPlanAssignmentsQuery) {
             )
           )
       : []
-  const overridesByAssignment = new Map<string, Array<{ dietPlanMealId: string; scheduledTime: string }>>()
-  for (const row of overrides) {
-    const list = overridesByAssignment.get(row.dietPlanAssignmentId) ?? []
-    list.push({ dietPlanMealId: row.dietPlanMealId, scheduledTime: row.scheduledTime })
-    overridesByAssignment.set(row.dietPlanAssignmentId, list)
-  }
+  const overridesByAssignment = groupFutureMealTimeOverridesByAssignmentId(overrides)
 
   return {
     items: items.map(item => ({

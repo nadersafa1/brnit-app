@@ -11,7 +11,14 @@ export const MEAL_TYPE_ICONS: Record<string, 'sunny-outline' | 'partly-sunny-out
 }
 
 /** Default display time for a meal type (placeholder). */
-export function formatMealTime(mealType: string): string {
+export function formatMealTime(mealType: string, scheduledTime?: string): string {
+  if (scheduledTime && /^([01]\d|2[0-3]):([0-5]\d)$/.test(scheduledTime)) {
+    const [hourRaw, minute] = scheduledTime.split(':')
+    const hour = Number(hourRaw)
+    const suffix = hour >= 12 ? 'PM' : 'AM'
+    const hour12 = hour % 12 === 0 ? 12 : hour % 12
+    return `${hour12}:${minute} ${suffix}`
+  }
   const times: Record<string, string> = {
     breakfast: '8:00 AM',
     lunch: '12:30 PM',

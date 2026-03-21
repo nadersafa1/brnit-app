@@ -17,6 +17,10 @@ export function useCreateDietPlanAssignment() {
       dietPlanId: string
       startDate: string
       endDate: string
+      mealTimeOverrides?: Array<{
+        dietPlanMealId: string
+        scheduledTime: string | null
+      }>
     }) => {
       const res = await fetchWithCredentials(API_ENDPOINTS.nutritionist.dietPlanAssignments, {
         method: 'POST',
@@ -39,14 +43,19 @@ export function useUpdateDietPlanAssignment() {
       id,
       startDate,
       endDate,
+      mealTimeOverrides,
     }: {
       id: string
       startDate?: string
       endDate?: string
+      mealTimeOverrides?: Array<{
+        dietPlanMealId: string
+        scheduledTime: string | null
+      }>
     }) => {
       const res = await fetchWithCredentials(API_ENDPOINTS.nutritionist.dietPlanAssignment(id), {
         method: 'PATCH',
-        body: JSON.stringify({ startDate, endDate }),
+        body: JSON.stringify({ startDate, endDate, mealTimeOverrides }),
       })
       return requireJsonSuccess(res, 'Failed to update assignment')
     },

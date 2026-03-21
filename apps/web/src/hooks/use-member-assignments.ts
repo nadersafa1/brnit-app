@@ -14,6 +14,10 @@ export interface DietPlanAssignment {
   startDate: string
   endDate: string
   createdAt: string
+  mealTimeOverrides?: Array<{
+    dietPlanMealId: string
+    scheduledTime: string
+  }>
 }
 
 export interface MemberAssignmentsResponse {

@@ -1,23 +1,7 @@
 import { db } from '@burn-app/db'
 import { dietPlanAssignment, dietPlanMealConsumption, member } from '@burn-app/db/schema'
 import { and, eq, gte, inArray, or, SQL } from 'drizzle-orm'
-
-// --- Date helpers (UTC, YYYY-MM-DD) ---
-// Aligned with current-diet-plan so "today" and date math are consistent across services.
-
-function toDateStringUTC(input: string | Date): string {
-  const date = typeof input === 'string' ? new Date(input) : input
-  const year = date.getUTCFullYear()
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(date.getUTCDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-function addDaysUTC(dateStr: string, days: number): string {
-  const d = new Date(`${dateStr}T00:00:00.000Z`)
-  d.setUTCDate(d.getUTCDate() + days)
-  return toDateStringUTC(d)
-}
+import { addDaysUTC, toDateStringUTC } from '@/lib/helpers/date-utc'
 
 /** Normalize consumed_date from DB (string or Date) to YYYY-MM-DD for set membership. */
 function toConsumedDateKey(consumedDate: string | Date): string {

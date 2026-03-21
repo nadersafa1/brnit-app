@@ -41,7 +41,7 @@ export function DietPlanMealsTable({
   selectedIds,
   onSelectionChange,
   isRemoving = false,
-}: DietPlanMealsTableProps) {
+}: Readonly<DietPlanMealsTableProps>) {
   const toggleSelect = (id: string) => {
     if (selectedIds.includes(id)) {
       onSelectionChange(selectedIds.filter((x) => x !== id))
@@ -81,6 +81,7 @@ export function DietPlanMealsTable({
             </TableHead>
             <TableHead>Day</TableHead>
             <TableHead>Meal type</TableHead>
+            <TableHead>Default time</TableHead>
             <TableHead>Meal name</TableHead>
             <TableHead className="max-w-[300px]">Food items</TableHead>
             <TableHead className="w-12" />
@@ -99,6 +100,7 @@ export function DietPlanMealsTable({
                 {formatDayNumberDisplay(m.dayNumber)}
               </TableCell>
               <TableCell className="capitalize">{m.mealType}</TableCell>
+              <TableCell>{m.scheduledTime ?? '—'}</TableCell>
               <TableCell>{m.mealName}</TableCell>
               <TableCell className="text-muted-foreground text-sm max-w-[300px] truncate" title={formatFoodItemsSummary(m.mealItems)}>
                 {formatFoodItemsSummary(m.mealItems)}

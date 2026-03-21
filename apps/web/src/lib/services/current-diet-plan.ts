@@ -24,6 +24,7 @@ import type {
   CurrentDietPlanQuery,
   CurrentDietPlanMealItem,
 } from '@/types/api/current-diet-plan.schemas'
+import { addDaysUTC, getTodayUtcDateString } from '@/lib/helpers/date-utc'
 
 /**
  * Current diet plan service: returns the active assignment and daily meal structure
@@ -31,21 +32,7 @@ import type {
  * Read-only; no transactions. Failures propagate to the route handler.
  */
 
-// --- Date helpers (UTC, YYYY-MM-DD) ---
-
-function toDateStringUTC(input: string | Date): string {
-  const date = typeof input === 'string' ? new Date(input) : input
-  const year = date.getUTCFullYear()
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(date.getUTCDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-function addDaysUTC(dateStr: string, days: number): string {
-  const d = new Date(`${dateStr}T00:00:00.000Z`)
-  d.setUTCDate(d.getUTCDate() + days)
-  return toDateStringUTC(d)
-}
+// --- Date range (UTC calendar dates) ---
 
 function diffDaysInclusiveUTC(from: string, to: string): number {
   const fromDate = new Date(`${from}T00:00:00.000Z`)
@@ -54,9 +41,6 @@ function diffDaysInclusiveUTC(from: string, to: string): number {
   return diffMs / (1000 * 60 * 60 * 24) + 1
 }
 
-function getTodayUTC(): string {
-  return toDateStringUTC(new Date())
-}
 
 // --- Response types ---
 
@@ -267,7 +251,7 @@ export async function getCurrentDietPlanForUser(
   userId: string,
   query: CurrentDietPlanQuery
 ): Promise<CurrentDietPlanResult> {
-  const today = getTodayUTC()
+  const today = getTodayUtcDateString()
   const from = query.from ?? today
   const to = query.to ?? addDaysUTC(from, 6)
 

@@ -102,7 +102,7 @@ export function HomeMealsSection({
             key={meal.dietPlanMealId}
             title={meal.mealName}
             calories={roundUpToTenth(meal.macros.calories)}
-            time={formatMealTime(meal.mealType)}
+            time={formatMealTime(meal.mealType, meal.scheduledTime)}
             icon={MEAL_TYPE_ICONS[meal.mealType.toLowerCase()] ?? 'restaurant-outline'}
             macros={meal.macros}
             items={meal.mealItems}

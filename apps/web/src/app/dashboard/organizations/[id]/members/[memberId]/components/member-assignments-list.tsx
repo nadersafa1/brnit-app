@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { Fragment, useState, useMemo, useEffect, useCallback } from 'react'
 
 import { useMemberAssignments } from '@/hooks/use-member-assignments'
 import { useDietPlans } from '@/hooks/use-diet-plans'
+import { useDietPlan } from '@/hooks/use-diet-plan'
 import { useUpdateDietPlanAssignment, useDeleteDietPlanAssignment } from '@/hooks/use-diet-plan-assignment-mutations'
 import {
   AlertDialog,
@@ -25,6 +26,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { MealTimeAssignmentFields } from '@/components/diet-plans/meal-time-assignment-fields'
+import { buildMealTimeOverridesPayload, mealTimeFieldMapFromPlanAndOverrides } from '@/lib/helpers/meal-time-assignment'
 import { Pencil, Trash2 } from 'lucide-react'
 
 interface MemberAssignmentsListProps {
@@ -35,7 +38,8 @@ interface MemberAssignmentsListProps {
 export default function MemberAssignmentsList({
   memberId,
   organizationId,
-}: MemberAssignmentsListProps) {
+}: Readonly<MemberAssignmentsListProps>) {
+  // --- Query current assignments and related plan metadata ---
   const { assignments, isLoading, error, refetch } = useMemberAssignments(
     memberId,
     organizationId
@@ -47,7 +51,10 @@ export default function MemberAssignmentsList({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editStartDate, setEditStartDate] = useState('')
   const [editEndDate, setEditEndDate] = useState('')
+  const [editMealTimesByMealId, setEditMealTimesByMealId] = useState<Record<string, string>>({})
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const editingAssignment = assignments.find(a => a.id === editingId) ?? null
+  const { data: editingPlan } = useDietPlan(editingAssignment?.dietPlanId ?? '', 'nutritionist')
 
   const planNameMap = useMemo(() => {
     const m: Record<string, string> = {}
@@ -57,20 +64,35 @@ export default function MemberAssignmentsList({
     return m
   }, [plans])
 
+  const handleEditMealTimeChange = useCallback((dietPlanMealId: string, value: string) => {
+    setEditMealTimesByMealId(prev => ({
+      ...prev,
+      [dietPlanMealId]: value,
+    }))
+  }, [])
+
+  const editMealTimeOverrides = useMemo(() => {
+    if (!editingPlan?.dietPlanMeals) return undefined
+    return buildMealTimeOverridesPayload(editingPlan.dietPlanMeals, editMealTimesByMealId)
+  }, [editingPlan?.dietPlanMeals, editMealTimesByMealId])
+
   const handleStartEdit = (a: { id: string; startDate: string; endDate: string }) => {
     setEditingId(a.id)
     setEditStartDate(a.startDate)
     setEditEndDate(a.endDate)
+    setEditMealTimesByMealId({})
   }
 
   const handleSaveEdit = async () => {
     if (!editingId) return
     if (editStartDate > editEndDate) return
+
     try {
       await updateAssignment.mutateAsync({
         id: editingId,
         startDate: editStartDate,
         endDate: editEndDate,
+        mealTimeOverrides: editMealTimeOverrides,
       })
       setEditingId(null)
       refetch()
@@ -81,6 +103,7 @@ export default function MemberAssignmentsList({
 
   const handleCancelEdit = () => {
     setEditingId(null)
+    setEditMealTimesByMealId({})
   }
 
   const handleDelete = async () => {
@@ -93,6 +116,13 @@ export default function MemberAssignmentsList({
       // toast handled
     }
   }
+
+  useEffect(() => {
+    if (!editingId || !editingPlan?.dietPlanMeals || !editingAssignment) return
+    setEditMealTimesByMealId(
+      mealTimeFieldMapFromPlanAndOverrides(editingPlan.dietPlanMeals, editingAssignment.mealTimeOverrides ?? [])
+    )
+  }, [editingAssignment, editingId, editingPlan?.dietPlanMeals])
 
   if (isLoading) {
     return (
@@ -123,7 +153,8 @@ export default function MemberAssignmentsList({
         </TableHeader>
         <TableBody>
           {assignments.map((a) => (
-            <TableRow key={a.id}>
+            <Fragment key={a.id}>
+            <TableRow>
                 <TableCell>
                   {planNameMap[a.dietPlanId] ?? a.dietPlanId}
                 </TableCell>
@@ -193,6 +224,22 @@ export default function MemberAssignmentsList({
                   </div>
                 </TableCell>
               </TableRow>
+              {editingId === a.id && editingPlan?.dietPlanMeals?.length ? (
+                <TableRow>
+                  <TableCell colSpan={4}>
+                    <div className="space-y-2 rounded-md border p-3">
+                      <p className="text-sm font-medium">Meal times (optional)</p>
+                      <MealTimeAssignmentFields
+                        meals={editingPlan.dietPlanMeals}
+                        valuesByMealId={editMealTimesByMealId}
+                        onChange={handleEditMealTimeChange}
+                        className="space-y-2"
+                      />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : null}
+            </Fragment>
           ))}
         </TableBody>
       </Table>

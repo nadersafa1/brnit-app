@@ -24,13 +24,17 @@ interface CreateDietPlanDialogProps {
   source?: DataSource
 }
 
+function getMealIdentity(meal: DietPlanMealInput): string {
+  return `${meal.mealId}-${meal.dayNumber}-${meal.mealType}-${meal.mealOrder}`
+}
+
 export function CreateDietPlanDialog({
   open,
   onOpenChange,
   onSuccess,
   onSuccessWithPlanId,
   source = 'admin',
-}: CreateDietPlanDialogProps) {
+}: Readonly<CreateDietPlanDialogProps>) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [meals, setMeals] = useState<DietPlanMealInput[]>([])
@@ -53,8 +57,8 @@ export function CreateDietPlanDialog({
     setMeals((prev) => [...prev, meal])
   }
 
-  const handleRemoveMeal = (index: number) => {
-    setMeals((prev) => prev.filter((_, i) => i !== index))
+  const handleRemoveMeal = (mealIdentity: string) => {
+    setMeals((prev) => prev.filter((meal) => getMealIdentity(meal) !== mealIdentity))
   }
 
   const handleSubmit = async () => {
@@ -67,6 +71,7 @@ export function CreateDietPlanDialog({
         dayNumber: m.dayNumber,
         mealType: m.mealType,
         mealOrder: m.mealOrder,
+        scheduledTime: m.scheduledTime,
       })),
     })
     handleOpenChange(false)
@@ -124,17 +129,18 @@ export function CreateDietPlanDialog({
                 <p className="text-sm text-muted-foreground">No meals added. Click Add meal to add slots.</p>
               ) : (
                 <ul className="text-sm space-y-1 border rounded-md p-2 max-h-32 overflow-auto">
-                  {meals.map((m, i) => (
-                    <li key={i} className="flex justify-between items-center gap-2">
+                  {meals.map((m) => (
+                    <li key={getMealIdentity(m)} className="flex justify-between items-center gap-2">
                       <span>
                         {formatDayNumberDisplay(m.dayNumber)} · {m.mealType} · Meal #{m.mealOrder}
+                        {m.scheduledTime ? ` · ${m.scheduledTime}` : ''}
                       </span>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         className="h-6 px-1 text-destructive hover:text-destructive"
-                        onClick={() => handleRemoveMeal(i)}
+                        onClick={() => handleRemoveMeal(getMealIdentity(m))}
                       >
                         Remove
                       </Button>
