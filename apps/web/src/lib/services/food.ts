@@ -13,7 +13,7 @@ import {
   deleteCloudinaryImage,
   uploadFileToCloudinary,
 } from '@/lib/cloudinary-utils'
-import type { FoodCategoriesQuery, FoodItemsQuery } from '@/types/api/food.schemas'
+import type { FoodCategoriesQuery, FoodItemsQuery, FoodUnit } from '@/types/api/food.schemas'
 
 const FOOD_ITEM_IMAGE_FOLDER = 'food-items'
 
@@ -277,7 +277,7 @@ export async function createFoodItem(
     carbs?: number
     fat?: number
     servingSize?: number
-    unit?: '100g' | 'piece'
+    unit?: FoodUnit
     gramsPerUnit?: number | null
   },
   options?: { file?: File }
@@ -321,7 +321,7 @@ function buildFoodItemUpdatePayload(
     carbs?: number | null
     fat?: number | null
     servingSize?: number | null
-    unit?: '100g' | 'piece' | null
+    unit?: FoodUnit | null
     gramsPerUnit?: number | null
   },
   newImagePublicId: string | null | undefined
@@ -359,7 +359,7 @@ export async function updateFoodItem(
     carbs?: number | null
     fat?: number | null
     servingSize?: number | null
-    unit?: '100g' | 'piece' | null
+    unit?: FoodUnit | null
     gramsPerUnit?: number | null
   },
   options?: { file?: File; clearImage?: boolean }

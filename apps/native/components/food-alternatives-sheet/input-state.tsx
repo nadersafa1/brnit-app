@@ -5,12 +5,21 @@ import { spacing } from "@/theme/spacing";
 import type { FoodItem } from "@/lib/api/member-food-types";
 import type { QuantityFormValues } from "./schema";
 
-function quantityLabel(unit: '100g' | 'piece'): string {
-  return unit === '100g' ? 'Enter amount (grams)' : 'Enter amount (pieces)';
+import type { FoodUnit } from "@/lib/utils/numbers";
+
+function quantityLabel(unit: FoodUnit): string {
+  if (unit === "100g") return "Enter amount (grams)";
+  if (unit === "liters") return "Enter amount (liters)";
+  if (unit === "cup") return "Enter amount (cups)";
+  if (unit === "tbsp") return "Enter amount (tbsp)";
+  return "Enter amount (pieces)";
 }
 
-function quantityPlaceholder(unit: '100g' | 'piece'): string {
-  return unit === '100g' ? 'e.g. 100' : 'e.g. 2';
+function quantityPlaceholder(unit: FoodUnit): string {
+  if (unit === "100g") return "e.g. 100";
+  if (unit === "liters") return "e.g. 0.5";
+  if (unit === "cup" || unit === "tbsp") return "e.g. 1";
+  return "e.g. 2";
 }
 
 interface InputStateProps {

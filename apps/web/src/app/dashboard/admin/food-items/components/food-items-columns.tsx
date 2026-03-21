@@ -12,6 +12,7 @@ import {
 import { createSortableHeader, createTextColumn } from '@/lib/table-core'
 import type { SortOrder } from '@/lib/table-core'
 import type { FoodItem } from '@/lib/queries/food-items'
+import { formatFoodUnitLabel } from '@/lib/helpers/food-unit-display'
 import { Edit, ImageIcon, MoreHorizontal, Trash2 } from 'lucide-react'
 
 export type FoodItemsSortBy = 'name' | 'calories' | 'protein' | 'carbs' | 'fat' | 'createdAt'
@@ -78,7 +79,7 @@ export function createFoodItemsColumns({
         )
       },
     },
-    createTextColumn<FoodItem>('unit', 'Unit', (row) => row.unit ?? '100g', {}),
+    createTextColumn<FoodItem>('unit', 'Unit', (row) => formatFoodUnitLabel(row.unit ?? '100g'), {}),
     createTextColumn<FoodItem>('categoryName', 'Category', (row) => row.categoryName ?? '–', {}),
     createTextColumn<FoodItem>('calories', 'Calories', (row) => row.calories ?? '–', {
       sortable: true,

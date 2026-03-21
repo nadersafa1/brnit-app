@@ -120,6 +120,20 @@
       "when": 1774064766674,
       "tag": "0016_milky_the_santerians",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1774067094773,
+      "tag": "0017_rare_hiroim",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1774067542077,
+      "tag": "0018_parallel_squadron_supreme",
+      "breakpoints": true
     }
   ]
 }

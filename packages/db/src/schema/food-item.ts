@@ -10,8 +10,14 @@ import {
 } from 'drizzle-orm/pg-core'
 import { foodCategory } from './food-category'
 
-/** Unit for food quantity and per-unit nutrition (100g = quantity in grams; piece = count). */
-export const foodItemUnitEnum = pgEnum('food_item_unit', ['100g', 'piece'])
+/** Unit for food quantity and per-unit nutrition (100g = grams; piece = count; other units need gramsPerUnit). */
+export const foodItemUnitEnum = pgEnum('food_item_unit', [
+  '100g',
+  'piece',
+  'liters',
+  'cup',
+  'tbsp',
+])
 
 export const foodItem = pgTable(
   'food_item',

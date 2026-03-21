@@ -1,6 +1,6 @@
 /**
  * Macro calculation helpers for meal items, meals, and days.
- * Nutrition is stored per 1 unit; quantity is in that unit (grams for 100g, count for piece).
+ * Nutrition is stored per 1 unit; quantity is in that unit (grams for 100g; count/volume measures for other units).
  */
 
 export type Macros = {
@@ -18,7 +18,7 @@ export type NutritionPer100g = {
   fat: number
 }
 
-export type FoodUnit = '100g' | 'piece'
+export type FoodUnit = '100g' | 'piece' | 'liters' | 'cup' | 'tbsp'
 
 /** Used when summing or when no nutrition data exists (e.g. missing food item). */
 export const ZERO_MACROS: Macros = { calories: 0, protein: 0, carbs: 0, fat: 0 }
@@ -30,7 +30,7 @@ function roundUpToTenth(value: number): number {
 
 /**
  * Factor for macro calculation: for 100g, quantity is in grams so factor = quantity/100;
- * for piece, quantity is count so factor = quantity.
+ * for any non-100g unit, quantity is in that unit so factor = quantity.
  */
 export function getMacroFactor(quantity: number, unit: FoodUnit): number {
   return unit === '100g' ? quantity / 100 : quantity
@@ -38,7 +38,7 @@ export function getMacroFactor(quantity: number, unit: FoodUnit): number {
 
 /**
  * Equivalent grams for a quantity in the given unit (for alternatives comparison).
- * For 100g, quantity is already grams. For piece, quantity * gramsPerUnit (default 100 if null).
+ * For 100g, quantity is already grams. Otherwise quantity * gramsPerUnit (default 100 if null).
  */
 export function toEquivalentGrams(
   quantity: number,

@@ -10,6 +10,7 @@ import {
 import { count, asc, desc, ilike, eq, and, inArray } from 'drizzle-orm'
 import { calculateOffset, combineConditions } from '@/lib/api-helpers/query-builders'
 import type { DietPlansQuery, CreateDietPlan, UpdateDietPlan } from '@/types/api/diet-plan.schemas'
+import type { FoodUnit } from '@/types/api/food.schemas'
 
 export async function listDietPlans(query: DietPlansQuery) {
   const { page, perPage, q, sortBy, sortOrder } = query
@@ -123,7 +124,7 @@ export async function getDietPlanById(id: string) {
     foodItemId: string
     foodName: string
     quantity: number
-    unit: '100g' | 'piece'
+    unit: FoodUnit
     gramsPerUnit: number | null
   }
   const mealItemsByMealId = new Map<string, MealItemRow[]>()

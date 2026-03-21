@@ -14,13 +14,25 @@ export function formatCalorieDisplay(value: number): string {
   return value % 1 === 0 ? String(value) : value.toFixed(1)
 }
 
-export type FoodUnit = '100g' | 'piece'
+export type FoodUnit = '100g' | 'piece' | 'liters' | 'cup' | 'tbsp'
 
 /**
- * Formats quantity with unit for display (e.g. "150g", "2 pieces").
+ * Formats quantity with unit for display (e.g. "150g", "2 pieces", "0.5L", "1 cup").
  */
 export function formatQuantityWithUnit(quantity: number, unit: FoodUnit): string {
   if (unit === '100g') return `${quantity}g`
+  if (unit === 'liters') {
+    const q = quantity % 1 === 0 ? String(quantity) : quantity.toFixed(1)
+    return `${q}L`
+  }
+  if (unit === 'cup') {
+    const q = quantity % 1 === 0 ? String(quantity) : (Math.round(quantity * 1000) / 1000).toString()
+    return `${q} cup${quantity === 1 ? '' : 's'}`
+  }
+  if (unit === 'tbsp') {
+    const q = quantity % 1 === 0 ? String(quantity) : (Math.round(quantity * 1000) / 1000).toString()
+    return `${q} tbsp`
+  }
   const q = quantity % 1 === 0 ? String(quantity) : quantity.toFixed(1)
   return `${q} piece${quantity === 1 ? '' : 's'}`
 }

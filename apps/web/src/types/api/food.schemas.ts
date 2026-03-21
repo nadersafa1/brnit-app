@@ -28,10 +28,13 @@ export const updateFoodCategorySchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be less than 100 characters'),
 })
 
-export const foodUnitSchema = z.enum(['100g', 'piece'])
+export const foodUnitSchema = z.enum(['100g', 'piece', 'liters', 'cup', 'tbsp'])
 export type FoodUnit = z.infer<typeof foodUnitSchema>
 
-/** Create payload: name, categoryId, and macros (calories, protein, carbs, fat) required; fdcId, servingSize, unit, gramsPerUnit optional. When unit is piece, gramsPerUnit is required. */
+/** Non-100g units need gramsPerUnit (weight of one piece, per L, per cup, per tbsp, etc.). */
+const unitRequiresGramsPerUnit = (unit: FoodUnit | undefined) => unit != null && unit !== '100g'
+
+/** Create payload: name, categoryId, and macros (calories, protein, carbs, fat) required; fdcId, servingSize, unit, gramsPerUnit optional. When unit is not 100g, gramsPerUnit is required. */
 export const createFoodItemSchema = z
   .object({
     name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
@@ -45,12 +48,18 @@ export const createFoodItemSchema = z
     unit: foodUnitSchema.optional().default('100g'),
     gramsPerUnit: z.number().positive('Grams per unit must be positive').nullable().optional(),
   })
-  .refine(data => data.unit !== 'piece' || (data.gramsPerUnit != null && data.gramsPerUnit > 0), {
-    message: 'Grams per unit is required when unit is piece',
-    path: ['gramsPerUnit'],
-  })
+  .refine(
+    data =>
+      !unitRequiresGramsPerUnit(data.unit) ||
+      (data.gramsPerUnit != null && data.gramsPerUnit > 0),
+    {
+      message: 'Grams per unit is required when unit is not 100g',
+      path: ['gramsPerUnit'],
+    }
+  )
 
-export const updateFoodItemSchema = z.object({
+export const updateFoodItemSchema = z
+  .object({
   name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters').optional(),
   categoryId: z.uuid('Invalid category ID').optional(),
   fdcId: z.number().int().nullable().optional(),
@@ -61,7 +70,19 @@ export const updateFoodItemSchema = z.object({
   servingSize: z.number().positive('Serving size must be positive').nullable().optional(),
   unit: foodUnitSchema.nullable().optional(),
   gramsPerUnit: z.number().positive('Grams per unit must be positive').nullable().optional(),
-})
+  })
+  .refine(
+    data => {
+      const u = data.unit
+      if (u === undefined || u === null) return true
+      if (u === '100g') return true
+      return data.gramsPerUnit != null && data.gramsPerUnit > 0
+    },
+    {
+      message: 'Grams per unit is required when unit is not 100g',
+      path: ['gramsPerUnit'],
+    }
+  )
 
 /** FormData parsing for POST create — coerce form string values */
 export const createFoodItemFormSchema = z
@@ -77,13 +98,19 @@ export const createFoodItemFormSchema = z
     unit: foodUnitSchema.optional().default('100g'),
     gramsPerUnit: z.coerce.number().positive('Grams per unit must be positive').nullable().optional(),
   })
-  .refine(data => data.unit !== 'piece' || (data.gramsPerUnit != null && data.gramsPerUnit > 0), {
-    message: 'Grams per unit is required when unit is piece',
-    path: ['gramsPerUnit'],
-  })
+  .refine(
+    data =>
+      !unitRequiresGramsPerUnit(data.unit) ||
+      (data.gramsPerUnit != null && data.gramsPerUnit > 0),
+    {
+      message: 'Grams per unit is required when unit is not 100g',
+      path: ['gramsPerUnit'],
+    }
+  )
 
 /** FormData parsing for PATCH update — optional fields + clearImage */
-export const updateFoodItemFormSchema = z.object({
+export const updateFoodItemFormSchema = z
+  .object({
   name: z.string().min(1, 'Name is required').max(255).optional(),
   categoryId: z.string().min(1).pipe(z.uuid('Invalid category ID')).optional(),
   fdcId: z.coerce.number().int().nullable().optional(),
@@ -98,7 +125,19 @@ export const updateFoodItemFormSchema = z.object({
     .string()
     .optional()
     .transform((v) => v === '1' || v === 'true'),
-})
+  })
+  .refine(
+    data => {
+      const u = data.unit
+      if (u === undefined || u === null) return true
+      if (u === '100g') return true
+      return data.gramsPerUnit != null && data.gramsPerUnit > 0
+    },
+    {
+      message: 'Grams per unit is required when unit is not 100g',
+      path: ['gramsPerUnit'],
+    }
+  )
 
 export type FoodItemsQuery = z.infer<typeof foodItemsQuerySchema>
 export type FoodCategoriesQuery = z.infer<typeof foodCategoriesQuerySchema>

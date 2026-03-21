@@ -23,6 +23,7 @@ import { useFoodCategories } from '@/hooks/use-food-categories'
 import { useUpdateFoodItem, useDeleteFoodItem } from '@/hooks/use-food-mutations'
 import { FoodItemForm } from '../components/food-item-form'
 import type { UpdateFoodItem } from '@/types/api/food.schemas'
+import { formatFoodUnitLabel } from '@/lib/helpers/food-unit-display'
 
 export default function FoodItemDetailPage() {
   const params = useParams()
@@ -132,7 +133,7 @@ export default function FoodItemDetailPage() {
             <div>Protein: {item.protein ?? '–'} g</div>
             <div>Carbs: {item.carbs ?? '–'} g</div>
             <div>Fat: {item.fat ?? '–'} g</div>
-            <div>Unit: {item.unit ?? '–'}</div>
+            <div>Unit: {formatFoodUnitLabel(item.unit)}</div>
             {item.unit !== '100g' && <div>Grams per unit: {item.gramsPerUnit ?? '–'}</div>}
           </div>
           <p className='text-sm text-muted-foreground pt-2'>

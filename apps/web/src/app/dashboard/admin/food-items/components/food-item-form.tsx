@@ -12,7 +12,12 @@ import { Field, FieldLabel, FieldError } from '@/components/ui/field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { FoodItem } from '@/lib/queries/food-items'
 import type { FoodCategory } from '@/lib/queries/food-categories'
-import { createFoodItemSchema, updateFoodItemSchema } from '@/types/api/food.schemas'
+import {
+  createFoodItemSchema,
+  updateFoodItemSchema,
+  type FoodUnit,
+} from '@/types/api/food.schemas'
+import { gramsPerUnitPlaceholder } from '@/lib/helpers/food-unit-display'
 
 type CreateFormData = z.infer<typeof createFoodItemSchema>
 type UpdateFormData = z.infer<typeof updateFoodItemSchema>
@@ -41,7 +46,7 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
     carbs: number
     fat: number
     servingSize?: number
-    unit: '100g' | 'piece'
+    unit: FoodUnit
     gramsPerUnit?: number | null
   }
   const form = useForm<FormValues>({
@@ -185,7 +190,7 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
         <Select
           value={form.watch('unit')}
           onValueChange={v => {
-            form.setValue('unit', v as '100g' | 'piece')
+            form.setValue('unit', v as FoodUnit)
             if (v === '100g') form.setValue('gramsPerUnit', undefined)
           }}
           disabled={isLoading}
@@ -196,21 +201,26 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
           <SelectContent>
             <SelectItem value='100g'>100g (per 100 grams)</SelectItem>
             <SelectItem value='piece'>Piece (per 1 item)</SelectItem>
+            <SelectItem value='liters'>L (per 1 liter)</SelectItem>
+            <SelectItem value='cup'>Cup (per 1 cup)</SelectItem>
+            <SelectItem value='tbsp'>Tbsp (per 1 tablespoon)</SelectItem>
           </SelectContent>
         </Select>
         <FieldError errors={form.formState.errors.unit ? [form.formState.errors.unit] : undefined} />
       </Field>
 
-      {unit === 'piece' && (
+      {unit !== '100g' && (
         <Field>
-          <FieldLabel htmlFor='item-grams-per-unit'>Grams per unit (required for piece)</FieldLabel>
+          <FieldLabel htmlFor='item-grams-per-unit'>
+            Grams per unit (required when not 100g — grams in one piece, 1 L, 1 cup, 1 tbsp, etc.)
+          </FieldLabel>
           <Input
             id='item-grams-per-unit'
             type='number'
             step='0.1'
             min={0.1}
             {...form.register('gramsPerUnit', { valueAsNumber: true })}
-            placeholder='e.g. 50 for one egg'
+            placeholder={gramsPerUnitPlaceholder(unit)}
             disabled={isLoading}
           />
           <FieldError errors={form.formState.errors.gramsPerUnit ? [form.formState.errors.gramsPerUnit] : undefined} />

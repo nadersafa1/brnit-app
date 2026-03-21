@@ -10,6 +10,7 @@ import { useFoodItems } from '@/hooks/use-food-items'
 import { useFoodCategories } from '@/hooks/use-food-categories'
 import type { DataSource } from '@/lib/queries/keys'
 import type { FoodItem } from '@/lib/queries/food-items'
+import { mealQuantityPlaceholder, mealQuantityStep } from '@/lib/helpers/food-unit-display'
 
 interface AddFoodDialogProps {
   open: boolean
@@ -89,7 +90,12 @@ export function AddFoodDialog({
 
   let quantitySuffix = ''
   if (selectedFood) {
-    quantitySuffix = selectedFood.unit === 'piece' ? ' (pieces)' : ' (g)'
+    const u = selectedFood.unit
+    if (u === 'piece') quantitySuffix = ' (pieces)'
+    else if (u === 'liters') quantitySuffix = ' (L)'
+    else if (u === 'cup') quantitySuffix = ' (cups)'
+    else if (u === 'tbsp') quantitySuffix = ' (tbsp)'
+    else quantitySuffix = ' (g)'
   }
 
   let listContent: React.ReactNode
@@ -123,8 +129,8 @@ export function AddFoodDialog({
         <DialogHeader>
           <DialogTitle>Add food item</DialogTitle>
           <DialogDescription>
-            Search and select a food item, then enter the quantity in the food&apos;s unit (grams for 100g items, pieces
-            for piece-based items).
+            Search and select a food item, then enter the quantity in the food&apos;s unit (e.g. g, pieces, L, cups,
+            tbsp).
           </DialogDescription>
         </DialogHeader>
 
@@ -160,10 +166,10 @@ export function AddFoodDialog({
               id='add-quantity'
               type='number'
               min={0.1}
-              step={1}
+              step={selectedFood ? mealQuantityStep(selectedFood.unit) : 1}
               value={quantity}
               onChange={e => setQuantity(e.target.value)}
-              placeholder={selectedFood?.unit === 'piece' ? 'e.g. 2' : 'e.g. 100'}
+              placeholder={mealQuantityPlaceholder(selectedFood?.unit)}
               disabled={!selectedFood || isSubmitting}
             />
             <FieldError errors={quantityError ? [{ message: quantityError }] : undefined} />

@@ -1,0 +1,1 @@
+ALTER TYPE "public"."food_item_unit" ADD VALUE 'liters';

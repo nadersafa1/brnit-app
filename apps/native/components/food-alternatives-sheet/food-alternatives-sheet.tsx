@@ -12,6 +12,7 @@ import { useColors } from '@/hooks/use-theme-color'
 import { useFoodItemAlternatives } from '@/hooks/use-food-item-alternatives'
 import { spacing } from '@/theme/spacing'
 import type { FoodItemAlternative } from '@/lib/api/member-food-types'
+import { formatQuantityWithUnit } from '@/lib/utils/numbers'
 import { quantitySchema, type QuantityFormValues } from './schema'
 import { InputState } from './input-state'
 import { ResultsState } from './results-state'
@@ -24,7 +25,7 @@ export function FoodAlternativesSheet({ foodItem, onClose }: Readonly<FoodAltern
   const [sheetState, setSheetState] = useState<SheetState>('input')
   const [quantity, setQuantity] = useState(0)
 
-  const defaultQty = foodItem?.unit === 'piece' ? '1' : '100'
+  const defaultQty = foodItem?.unit === '100g' ? '100' : '1'
   const form = useForm<QuantityFormValues>({
     resolver: zodResolver(quantitySchema),
     defaultValues: { quantity: defaultQty },
@@ -44,7 +45,7 @@ export function FoodAlternativesSheet({ foodItem, onClose }: Readonly<FoodAltern
     if (foodItem) {
       sheetRef.current?.open(1)
       setSheetState('input')
-      const defaultQty = foodItem.unit === 'piece' ? '1' : '100'
+      const defaultQty = foodItem.unit === '100g' ? '100' : '1'
       form.reset({ quantity: defaultQty })
     } else {
       sheetRef.current?.close()
@@ -68,8 +69,7 @@ export function FoodAlternativesSheet({ foodItem, onClose }: Readonly<FoodAltern
   }, [])
 
   const handleCopy = useCallback(async (alt: FoodItemAlternative) => {
-    const qtyText =
-      alt.unit === '100g' ? `${alt.suggestedQuantity}g` : `${alt.suggestedQuantity} piece${alt.suggestedQuantity === 1 ? '' : 's'}`
+    const qtyText = formatQuantityWithUnit(alt.suggestedQuantity, alt.unit)
     const text = `${alt.name}: ${qtyText} (${alt.calories} kcal, P: ${alt.protein}g, C: ${alt.carbs}g, F: ${alt.fat}g)`
     await Clipboard.setStringAsync(text)
     showSuccess('Copied', 'Alternative copied to clipboard')

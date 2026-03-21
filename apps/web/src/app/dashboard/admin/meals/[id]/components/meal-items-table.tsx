@@ -8,6 +8,9 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import type { MealItem } from '@/lib/queries/meals'
+import { getMacroFactor } from '@/lib/helpers/macros'
+import { mealQuantityStep } from '@/lib/helpers/food-unit-display'
+import type { FoodUnit } from '@/types/api/food.schemas'
 
 interface MealItemsTableProps {
   mealItems: MealItem[]
@@ -17,10 +20,36 @@ interface MealItemsTableProps {
   onSelectionChange: (ids: string[]) => void
 }
 
-function scaleNutrient(per100: number | null, quantity: number): string {
-  if (per100 == null) return '–'
-  const v = Math.round((per100 / 100) * quantity * 10) / 10
+/** Nutrition values are per 1 unit (per 100g or per the food’s chosen measure). */
+function scaleNutrient(
+  perUnit: number | null,
+  quantity: number,
+  unit: MealItem['unit']
+): string {
+  if (perUnit == null) return '–'
+  const factor = getMacroFactor(quantity, unit)
+  const v = Math.round(factor * perUnit * 10) / 10
   return String(v)
+}
+
+function formatQuantityQty(quantity: number): string {
+  return Number.isInteger(quantity) || quantity % 1 === 0
+    ? String(quantity)
+    : (Math.round(quantity * 1000) / 1000).toString()
+}
+
+function formatQuantityWithUnit(quantity: number, unit: MealItem['unit']): string {
+  if (unit === 'piece') return `${quantity} pcs`
+  if (unit === 'liters') {
+    const q = formatQuantityQty(quantity)
+    return `${q}L`
+  }
+  if (unit === 'cup') {
+    const q = formatQuantityQty(quantity)
+    return `${q} cup${quantity === 1 ? '' : 's'}`
+  }
+  if (unit === 'tbsp') return `${formatQuantityQty(quantity)} tbsp`
+  return `${quantity} g`
 }
 
 export function MealItemsTable({
@@ -112,7 +141,7 @@ export function MealItemsTable({
                     <Input
                       type='number'
                       min={0.1}
-                      step={1}
+                      step={mealQuantityStep(item.unit as FoodUnit)}
                       value={editValue}
                       onChange={e => setEditValue(e.target.value)}
                       className='w-20 h-8'
@@ -126,15 +155,14 @@ export function MealItemsTable({
                   </div>
                 ) : (
                   <button type='button' className='hover:underline text-left' onClick={() => startEdit(item)}>
-                    {item.quantity}
-                    {item.unit === 'piece' ? ' pcs' : ' g'}
+                    {formatQuantityWithUnit(item.quantity, item.unit)}
                   </button>
                 )}
               </TableCell>
-              <TableCell>{scaleNutrient(item.calories, item.quantity)}</TableCell>
-              <TableCell>{scaleNutrient(item.protein, item.quantity)}</TableCell>
-              <TableCell>{scaleNutrient(item.carbs, item.quantity)}</TableCell>
-              <TableCell>{scaleNutrient(item.fat, item.quantity)}</TableCell>
+              <TableCell>{scaleNutrient(item.calories, item.quantity, item.unit)}</TableCell>
+              <TableCell>{scaleNutrient(item.protein, item.quantity, item.unit)}</TableCell>
+              <TableCell>{scaleNutrient(item.carbs, item.quantity, item.unit)}</TableCell>
+              <TableCell>{scaleNutrient(item.fat, item.quantity, item.unit)}</TableCell>
               <TableCell>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

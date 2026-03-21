@@ -6,7 +6,7 @@ import { API_ENDPOINTS } from '@/lib/api/endpoints'
 import { getKeys, type DataSource } from './keys'
 import type { PaginationMeta } from '@/lib/api-helpers/pagination'
 
-export type FoodUnit = '100g' | 'piece'
+export type FoodUnit = '100g' | 'piece' | 'liters' | 'cup' | 'tbsp'
 
 export interface FoodItem {
   id: string

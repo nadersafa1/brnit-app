@@ -38,7 +38,7 @@ export type GetAlternativesResult =
 
 /**
  * Computes reference macros from quantity in the reference food's unit.
- * For 100g: factor = quantity/100. For piece: factor = quantity.
+ * For 100g: factor = quantity/100. For piece or liters: factor = quantity.
  */
 function referenceMacros(
   quantity: number,
@@ -59,7 +59,7 @@ function referenceMacros(
 
 /**
  * Quantity in the candidate's unit that matches reference calories: factor = R_cal / c_cal;
- * for 100g suggestedQuantity = factor * 100 (grams); for piece suggestedQuantity = factor (count).
+ * for 100g suggestedQuantity = factor * 100 (grams); for piece/liters suggestedQuantity = factor (count or L).
  */
 function suggestedQuantityInUnit(
   factor: number,

@@ -70,6 +70,8 @@ describe('GET alternatives with auth', () => {
           name: 'Turkey',
           categoryId: 'cat-1',
           categoryName: 'Proteins',
+          suggestedQuantity: 160,
+          unit: '100g' as const,
           suggestedQuantityGrams: 160,
           calories: 250,
           protein: 30,

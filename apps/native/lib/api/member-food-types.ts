@@ -1,4 +1,4 @@
-export type FoodUnit = '100g' | 'piece'
+export type FoodUnit = '100g' | 'piece' | 'liters' | 'cup' | 'tbsp'
 
 export type FoodItem = {
   id: string

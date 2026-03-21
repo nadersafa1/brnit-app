@@ -12,7 +12,7 @@ function scaleNutrient(per100: number | null, quantity: number): number {
   return Math.round((per100 / 100) * quantity * 10) / 10
 }
 
-export function MealSummaryCard({ mealItems }: MealSummaryCardProps) {
+export function MealSummaryCard({ mealItems }: Readonly<MealSummaryCardProps>) {
   const totals = mealItems.reduce(
     (acc, mi) => ({
       calories: acc.calories + scaleNutrient(mi.calories, mi.quantity),
@@ -26,10 +26,10 @@ export function MealSummaryCard({ mealItems }: MealSummaryCardProps) {
   return (
     <Card>
       <CardHeader>
-        <h3 className="text-sm font-medium">Nutrition Summary</h3>
+        <h3 className='text-sm font-medium'>Nutrition Summary</h3>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-wrap gap-4 text-sm">
+        <div className='flex flex-wrap gap-4 text-sm'>
           <span>
             <strong>{totals.calories}</strong> kcal
           </span>

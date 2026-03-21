@@ -5,8 +5,8 @@ export const quantitySchema = z.object({
     .string()
     .min(1, 'Quantity is required')
     .refine(val => !Number.isNaN(Number(val)), 'Must be a number')
-    .refine(val => Number(val) >= 1, 'Minimum 1 gram')
-    .refine(val => Number(val) <= 10000, 'Maximum 10000 grams'),
+    .refine(val => Number(val) > 0, 'Must be positive')
+    .refine(val => Number(val) <= 10000, 'Maximum 10000'),
 })
 
 export type QuantityFormValues = z.infer<typeof quantitySchema>

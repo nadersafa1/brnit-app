@@ -41,7 +41,7 @@ export type Macros = {
   fat: number
 }
 
-export type FoodUnit = '100g' | 'piece'
+export type FoodUnit = '100g' | 'piece' | 'liters' | 'cup' | 'tbsp'
 
 /** Meal item as returned in current-diet-plan (with override support). */
 export type CurrentDietPlanMealItem = {
