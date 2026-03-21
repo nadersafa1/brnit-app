@@ -11,11 +11,16 @@ export const dayNumberSchema = z
   .int()
   .min(0, 'Day number must be 0 (all days) or a positive integer')
 
+export const timeOfDaySchema = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Time must be HH:mm')
+
 export const dietPlanMealSchema = z.object({
   mealId: z.uuid('Invalid meal ID'),
   dayNumber: dayNumberSchema,
   mealType: z.string().min(1, 'Meal type is required').max(50, 'Meal type must be less than 50 characters'),
   mealOrder: z.number().int().positive('Meal order must be a positive integer').default(1),
+  scheduledTime: timeOfDaySchema.optional(),
 })
 
 export const dietPlansQuerySchema = z.object({
@@ -37,6 +42,7 @@ const addDietPlanMealSchema = z.object({
   dayNumber: dayNumberSchema,
   mealType: z.string().min(1, 'Meal type is required').max(50, 'Meal type must be less than 50 characters'),
   mealOrder: z.number().int().positive('Meal order must be a positive integer').optional().default(1),
+  scheduledTime: timeOfDaySchema.optional(),
 })
 
 // Update item input for diet plan meals
@@ -46,6 +52,7 @@ const updateDietPlanMealSchema = z.object({
   dayNumber: dayNumberSchema.optional(),
   mealType: z.string().min(1).max(50).optional(),
   mealOrder: z.number().int().positive().optional(),
+  scheduledTime: timeOfDaySchema.nullable().optional(),
 })
 
 // Refined schemas to reject duplicates

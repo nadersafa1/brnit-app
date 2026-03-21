@@ -134,6 +134,13 @@
       "when": 1774067542077,
       "tag": "0018_parallel_squadron_supreme",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1774124417603,
+      "tag": "0019_vengeful_genesis",
+      "breakpoints": true
     }
   ]
 }

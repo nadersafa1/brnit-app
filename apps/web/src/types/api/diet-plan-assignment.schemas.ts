@@ -11,12 +11,28 @@ const dateStringSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be Y
 const idSchema = z.string().min(1, 'ID is required')
 
 /** Nutritionist create: memberId only (no userId). */
+const mealTimeOverrideSchema = z.object({
+  dietPlanMealId: z.uuid('Invalid diet plan meal ID'),
+  scheduledTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Time must be HH:mm')
+    .nullable(),
+})
+
+const mealTimeOverridesArraySchema = z
+  .array(mealTimeOverrideSchema)
+  .refine(
+    arr => new Set(arr.map(item => item.dietPlanMealId)).size === arr.length,
+    { message: 'Duplicate dietPlanMealId in mealTimeOverrides' }
+  )
+
 export const createDietPlanAssignmentNutritionistSchema = z
   .object({
     memberId: idSchema,
     dietPlanId: z.uuid('Invalid diet plan ID'),
     startDate: dateStringSchema,
     endDate: dateStringSchema,
+    mealTimeOverrides: mealTimeOverridesArraySchema.optional(),
   })
   .refine(data => data.startDate <= data.endDate, {
     message: 'Start date must be before or equal to end date',
@@ -35,6 +51,7 @@ export const createDietPlanAssignmentSchema = z
     dietPlanId: z.uuid('Invalid diet plan ID'),
     startDate: dateStringSchema,
     endDate: dateStringSchema,
+    mealTimeOverrides: mealTimeOverridesArraySchema.optional(),
   })
   .refine(data => (data.memberId != null) !== (data.userId != null), {
     message: 'Exactly one of memberId or userId must be provided',
@@ -49,6 +66,7 @@ export const updateDietPlanAssignmentSchema = z
   .object({
     startDate: dateStringSchema.optional(),
     endDate: dateStringSchema.optional(),
+    mealTimeOverrides: mealTimeOverridesArraySchema.optional(),
   })
   .refine(
     data => {
@@ -57,8 +75,8 @@ export const updateDietPlanAssignmentSchema = z
     },
     { message: 'Start date must be before or equal to end date', path: ['endDate'] }
   )
-  .refine(data => data.startDate !== undefined || data.endDate !== undefined, {
-    message: 'At least one of startDate or endDate must be provided',
+  .refine(data => data.startDate !== undefined || data.endDate !== undefined || data.mealTimeOverrides !== undefined, {
+    message: 'At least one of startDate, endDate, or mealTimeOverrides must be provided',
   })
 
 export const dietPlanAssignmentsQuerySchema = z.object({

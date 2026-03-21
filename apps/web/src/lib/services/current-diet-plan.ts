@@ -13,6 +13,11 @@ import {
   resolveOverridesForDate,
   type OverrideRow,
 } from '@/lib/services/diet-plan-meal-item-override'
+import {
+  getMealTimeOverridesByAssignmentId,
+  resolveMealTimeOverridesForDate,
+  type MealTimeOverrideRow,
+} from '@/lib/services/diet-plan-meal-time-override'
 import type {
   CurrentDietPlanDay,
   CurrentDietPlanMeal,
@@ -172,9 +177,11 @@ function buildCurrentDietPlanDays(
     dayNumber: number
     mealType: string
     mealOrder: number
+    scheduledTime: string | null
     mealItems: Array<{ mealItemId: string; foodItemId: string; foodName: string; quantity: number }>
   }>,
   overrideRows: OverrideRow[],
+  mealTimeOverrideRows: MealTimeOverrideRow[],
   consumptionMap: Map<string, { consumedAt: string }>,
   foodDetailsMap: Map<string, FoodDetails>
 ): CurrentDietPlanDay[] {
@@ -189,6 +196,7 @@ function buildCurrentDietPlanDays(
         quantity: Number(row.quantity),
       })
     }
+    const resolvedMealTimes = resolveMealTimeOverridesForDate(mealTimeOverrideRows, date)
     const mealsForDay = dietPlanMeals
       .filter(pm => pm.dayNumber === 0 || pm.dayNumber === planDay)
       .sort((a, b) => {
@@ -243,6 +251,7 @@ function buildCurrentDietPlanDays(
           mealName: pm.mealName,
           mealType: pm.mealType,
           mealOrder: pm.mealOrder,
+          scheduledTime: resolvedMealTimes.get(pm.id) ?? pm.scheduledTime ?? undefined,
           mealItems,
           consumed: !!consumption,
           consumedAt: consumption?.consumedAt,
@@ -291,9 +300,10 @@ export async function getCurrentDietPlanForUser(
   const assignment = (containing.length > 0 ? containing : rows)[0]
 
   // Fetch plan and overrides in parallel; neither depends on the other.
-  const [planFull, overrideRows] = await Promise.all([
+  const [planFull, overrideRows, mealTimeOverrideRows] = await Promise.all([
     getDietPlanById(assignment.dietPlanId),
     getOverridesByAssignmentId(assignment.id),
+    getMealTimeOverridesByAssignmentId(assignment.id),
   ])
 
   if (!planFull) {
@@ -352,6 +362,7 @@ export async function getCurrentDietPlanForUser(
     assignment,
     dietPlanMeals,
     overrideRows,
+    mealTimeOverrideRows,
     consumptionMap,
     foodDetailsMap
   )

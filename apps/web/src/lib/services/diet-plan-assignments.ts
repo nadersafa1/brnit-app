@@ -1,23 +1,23 @@
 import { db } from '@burn-app/db'
-import {
-  dietPlanAssignment,
-  dietPlan,
-  member,
-  dietPlanMealConsumption,
-} from '@burn-app/db/schema'
-import { count, asc, desc, eq, and, or, sql, inArray, gte, lte } from 'drizzle-orm'
+import { dietPlanAssignment, dietPlan, member, dietPlanMealTimeOverride } from '@burn-app/db/schema'
+import { count, asc, desc, eq, and, or, sql, inArray, gte, lte, isNull } from 'drizzle-orm'
 import { calculateOffset, combineConditions } from '@/lib/api-helpers/query-builders'
 import type {
   DietPlanAssignmentsQuery,
   CreateDietPlanAssignment,
   UpdateDietPlanAssignment,
 } from '@/types/api/diet-plan-assignment.schemas'
+import { saveAssignmentMealTimeOverrides } from '@/lib/services/diet-plan-meal-time-override'
+
+class AssignmentValidationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'AssignmentValidationError'
+  }
+}
 
 /** Get userId for an assignment (from member or user). */
-async function getAssignmentUserId(
-  memberId: string | null,
-  userId: string | null
-): Promise<string | null> {
+async function getAssignmentUserId(memberId: string | null, userId: string | null): Promise<string | null> {
   if (userId) return userId
   if (memberId) {
     const [m] = await db.select({ userId: member.userId }).from(member).where(eq(member.id, memberId)).limit(1)
@@ -33,10 +33,7 @@ async function hasOverlappingAssignment(
   startDate: string,
   endDate: string
 ): Promise<boolean> {
-  const memberIds = await db
-    .select({ id: member.id })
-    .from(member)
-    .where(eq(member.userId, targetUserId))
+  const memberIds = await db.select({ id: member.id }).from(member).where(eq(member.userId, targetUserId))
   const memberIdList = memberIds.map(m => m.id)
 
   const overlapConditions = [
@@ -59,18 +56,17 @@ async function hasOverlappingAssignment(
 }
 
 export type CreateAssignmentResult =
-  | { ok: true; data: (typeof dietPlanAssignment.$inferSelect) }
+  | { ok: true; data: typeof dietPlanAssignment.$inferSelect }
   | { ok: false; error: string; code: 'VALIDATION' | 'OVERLAP' | 'NOT_FOUND' }
 
 export type CreateDietPlanAssignmentInput = CreateDietPlanAssignment & {
   organizationId?: string
 }
 
-export async function createDietPlanAssignment(
-  data: CreateDietPlanAssignmentInput
-): Promise<CreateAssignmentResult> {
-  const { memberId, userId, dietPlanId, startDate, endDate, organizationId } = data
+export async function createDietPlanAssignment(data: CreateDietPlanAssignmentInput): Promise<CreateAssignmentResult> {
+  const { memberId, userId, dietPlanId, startDate, endDate, organizationId, mealTimeOverrides = [] } = data
 
+  // --- Scope/assignee validation ---
   if (organizationId) {
     if (!memberId || userId) {
       return {
@@ -79,6 +75,7 @@ export async function createDietPlanAssignment(
         code: 'VALIDATION',
       }
     }
+
     const [m] = await db
       .select({ id: member.id, organizationId: member.organizationId, role: member.role })
       .from(member)
@@ -97,21 +94,15 @@ export async function createDietPlanAssignment(
     }
   }
 
-  const assigneeUserId = await getAssignmentUserId(memberId ?? null, userId ?? null)
-  if (!assigneeUserId) {
-    return { ok: false, error: 'Member or user not found', code: 'NOT_FOUND' }
-  }
-
-  const [plan] = await db.select({ id: dietPlan.id }).from(dietPlan).where(eq(dietPlan.id, dietPlanId)).limit(1)
+  // --- Validate referenced plan and resolve target user ---
+  const [[plan], assigneeUserId] = await Promise.all([
+    db.select({ id: dietPlan.id }).from(dietPlan).where(eq(dietPlan.id, dietPlanId)).limit(1),
+    getAssignmentUserId(memberId ?? null, userId ?? null),
+  ])
   if (!plan) return { ok: false, error: 'Diet plan not found', code: 'NOT_FOUND' }
+  if (!assigneeUserId) return { ok: false, error: 'Member or user not found', code: 'NOT_FOUND' }
 
-  if (memberId && !organizationId) {
-    const [m] = await db.select({ id: member.id }).from(member).where(eq(member.id, memberId)).limit(1)
-    if (!m) return { ok: false, error: 'Member not found', code: 'NOT_FOUND' }
-  } else if (userId) {
-    // User assignment - user existence checked via getAssignmentUserId
-  }
-
+  // --- Prevent overlapping active assignments for same assignee group ---
   const overlaps = await hasOverlappingAssignment(null, assigneeUserId, startDate, endDate)
   if (overlaps) {
     return {
@@ -121,24 +112,41 @@ export async function createDietPlanAssignment(
     }
   }
 
-  const [created] = await db
-    .insert(dietPlanAssignment)
-    .values({
-      memberId: memberId ?? null,
-      userId: userId ?? null,
-      dietPlanId,
-      startDate,
-      endDate,
-    })
-    .returning()
+  // --- Atomic write: assignment row + optional meal-time overrides ---
+  try {
+    const created = await db.transaction(async tx => {
+      const [inserted] = await tx
+        .insert(dietPlanAssignment)
+        .values({
+          memberId: memberId ?? null,
+          userId: userId ?? null,
+          dietPlanId,
+          startDate,
+          endDate,
+        })
+        .returning()
+      if (!inserted) throw new AssignmentValidationError('Failed to create assignment')
 
-  if (!created) return { ok: false, error: 'Failed to create assignment', code: 'VALIDATION' }
-  return { ok: true, data: created }
+      const saveResult = await saveAssignmentMealTimeOverrides(tx, inserted.id, dietPlanId, mealTimeOverrides)
+      if (!saveResult.ok) throw new AssignmentValidationError(saveResult.error)
+
+      return inserted
+    })
+    return { ok: true, data: created }
+  } catch (error) {
+    if (error instanceof AssignmentValidationError) {
+      return { ok: false, error: error.message, code: 'VALIDATION' }
+    }
+    return {
+      ok: false,
+      error: 'Failed to create assignment',
+      code: 'VALIDATION',
+    }
+  }
 }
 
 export async function listDietPlanAssignments(query: DietPlanAssignmentsQuery) {
-  const { page, perPage, sortBy, sortOrder, memberId, userId, dietPlanId, organizationId } =
-    query
+  const { page, perPage, sortBy, sortOrder, memberId, userId, dietPlanId, organizationId } = query
   const offset = calculateOffset(page, perPage)
 
   const conditions = []
@@ -148,11 +156,8 @@ export async function listDietPlanAssignments(query: DietPlanAssignmentsQuery) {
 
   if (organizationId) {
     const orgMemberIds = (
-      await db
-        .select({ id: member.id })
-        .from(member)
-        .where(eq(member.organizationId, organizationId))
-    ).map((m) => m.id)
+      await db.select({ id: member.id }).from(member).where(eq(member.organizationId, organizationId))
+    ).map(m => m.id)
     if (orgMemberIds.length > 0) {
       conditions.push(inArray(dietPlanAssignment.memberId, orgMemberIds))
     } else {
@@ -172,26 +177,44 @@ export async function listDietPlanAssignments(query: DietPlanAssignmentsQuery) {
 
   const [countResult, items] = await Promise.all([
     db.select({ count: count() }).from(dietPlanAssignment).where(where),
-    db
-      .select()
-      .from(dietPlanAssignment)
-      .where(where)
-      .orderBy(sortDir(sortColumn))
-      .limit(perPage)
-      .offset(offset),
+    db.select().from(dietPlanAssignment).where(where).orderBy(sortDir(sortColumn)).limit(perPage).offset(offset),
   ])
 
+  const assignmentIds = items.map(item => item.id)
+  const overrides =
+    assignmentIds.length > 0
+      ? await db
+          .select({
+            dietPlanAssignmentId: dietPlanMealTimeOverride.dietPlanAssignmentId,
+            dietPlanMealId: dietPlanMealTimeOverride.dietPlanMealId,
+            scheduledTime: dietPlanMealTimeOverride.scheduledTime,
+          })
+          .from(dietPlanMealTimeOverride)
+          .where(
+            and(
+              inArray(dietPlanMealTimeOverride.dietPlanAssignmentId, assignmentIds),
+              isNull(dietPlanMealTimeOverride.effectiveDate)
+            )
+          )
+      : []
+  const overridesByAssignment = new Map<string, Array<{ dietPlanMealId: string; scheduledTime: string }>>()
+  for (const row of overrides) {
+    const list = overridesByAssignment.get(row.dietPlanAssignmentId) ?? []
+    list.push({ dietPlanMealId: row.dietPlanMealId, scheduledTime: row.scheduledTime })
+    overridesByAssignment.set(row.dietPlanAssignmentId, list)
+  }
+
   return {
-    items,
+    items: items.map(item => ({
+      ...item,
+      mealTimeOverrides: overridesByAssignment.get(item.id) ?? [],
+    })),
     totalItems: countResult[0]?.count ?? 0,
   }
 }
 
 /** Check if an assignment's member belongs to the given organization. */
-export async function assignmentMemberBelongsToOrg(
-  assignmentId: string,
-  organizationId: string
-): Promise<boolean> {
+export async function assignmentMemberBelongsToOrg(assignmentId: string, organizationId: string): Promise<boolean> {
   const [row] = await db
     .select({ memberId: dietPlanAssignment.memberId })
     .from(dietPlanAssignment)
@@ -207,22 +230,30 @@ export async function assignmentMemberBelongsToOrg(
 }
 
 export async function getDietPlanAssignmentById(id: string) {
-  const [row] = await db
-    .select()
-    .from(dietPlanAssignment)
-    .where(eq(dietPlanAssignment.id, id))
-    .limit(1)
-  return row ?? null
+  const [row] = await db.select().from(dietPlanAssignment).where(eq(dietPlanAssignment.id, id)).limit(1)
+  if (!row) return null
+  const overrides = await db
+    .select({
+      dietPlanMealId: dietPlanMealTimeOverride.dietPlanMealId,
+      scheduledTime: dietPlanMealTimeOverride.scheduledTime,
+    })
+    .from(dietPlanMealTimeOverride)
+    .where(and(eq(dietPlanMealTimeOverride.dietPlanAssignmentId, id), isNull(dietPlanMealTimeOverride.effectiveDate)))
+  return {
+    ...row,
+    mealTimeOverrides: overrides,
+  }
 }
 
 export type UpdateAssignmentResult =
-  | { ok: true; data: (typeof dietPlanAssignment.$inferSelect) }
+  | { ok: true; data: typeof dietPlanAssignment.$inferSelect }
   | { ok: false; error: string; code: 'NOT_FOUND' | 'OVERLAP' | 'VALIDATION' }
 
 export async function updateDietPlanAssignment(
   id: string,
   data: UpdateDietPlanAssignment
 ): Promise<UpdateAssignmentResult> {
+  // --- Read current assignment and compute effective dates ---
   const existing = await getDietPlanAssignmentById(id)
   if (!existing) return { ok: false, error: 'Assignment not found', code: 'NOT_FOUND' }
 
@@ -237,6 +268,7 @@ export async function updateDietPlanAssignment(
     }
   }
 
+  // --- Keep overlap rules unchanged when dates move ---
   const assigneeUserId = await getAssignmentUserId(existing.memberId, existing.userId)
   if (assigneeUserId) {
     const overlaps = await hasOverlappingAssignment(id, assigneeUserId, startDate, endDate)
@@ -249,14 +281,37 @@ export async function updateDietPlanAssignment(
     }
   }
 
-  const [updated] = await db
-    .update(dietPlanAssignment)
-    .set({ startDate, endDate })
-    .where(eq(dietPlanAssignment.id, id))
-    .returning()
+  // --- Atomic write: assignment date updates + optional meal-time overrides ---
+  try {
+    const updated = await db.transaction(async tx => {
+      const [row] = await tx
+        .update(dietPlanAssignment)
+        .set({ startDate, endDate })
+        .where(eq(dietPlanAssignment.id, id))
+        .returning()
 
-  if (!updated) return { ok: false, error: 'Failed to update', code: 'NOT_FOUND' }
-  return { ok: true, data: updated }
+      if (!row) throw new AssignmentValidationError('Assignment not found')
+
+      if (data.mealTimeOverrides !== undefined) {
+        const saveResult = await saveAssignmentMealTimeOverrides(tx, id, existing.dietPlanId, data.mealTimeOverrides)
+        if (!saveResult.ok) throw new AssignmentValidationError(saveResult.error)
+      }
+      return row
+    })
+    return { ok: true, data: updated }
+  } catch (error) {
+    if (error instanceof AssignmentValidationError) {
+      if (error.message === 'Assignment not found') {
+        return { ok: false, error: error.message, code: 'NOT_FOUND' }
+      }
+      return { ok: false, error: error.message, code: 'VALIDATION' }
+    }
+    return {
+      ok: false,
+      error: 'Failed to update',
+      code: 'VALIDATION',
+    }
+  }
 }
 
 export async function deleteDietPlanAssignment(id: string) {

@@ -77,6 +77,7 @@ export async function createDietPlan(data: CreateDietPlan) {
           dayNumber: item.dayNumber,
           mealType: item.mealType,
           mealOrder: item.mealOrder ?? 1,
+          scheduledTime: item.scheduledTime ?? null,
         }))
       )
     }
@@ -107,6 +108,7 @@ export async function getDietPlanById(id: string) {
         dayNumber: dietPlanMeal.dayNumber,
         mealType: dietPlanMeal.mealType,
         mealOrder: dietPlanMeal.mealOrder,
+        scheduledTime: dietPlanMeal.scheduledTime,
       })
       .from(dietPlanMeal)
       .innerJoin(meal, eq(dietPlanMeal.mealId, meal.id))
@@ -170,6 +172,7 @@ export async function getDietPlanById(id: string) {
       dayNumber: pm.dayNumber,
       mealType: pm.mealType,
       mealOrder: pm.mealOrder,
+      scheduledTime: pm.scheduledTime,
       mealItems: mealItemsByMealId.get(pm.mealId) ?? [],
     })),
   }
@@ -309,11 +312,12 @@ async function applyDietPlanMutations(
   if (update?.length) {
     const promises = update
       .map((u) => {
-        const setData: Record<string, string | number | undefined> = {}
+        const setData: Record<string, string | number | null | undefined> = {}
         if (u.mealId !== undefined) setData.mealId = u.mealId
         if (u.dayNumber !== undefined) setData.dayNumber = u.dayNumber
         if (u.mealType !== undefined) setData.mealType = u.mealType
         if (u.mealOrder !== undefined) setData.mealOrder = u.mealOrder
+        if (u.scheduledTime !== undefined) setData.scheduledTime = u.scheduledTime
         if (Object.keys(setData).length === 0) return null
         return tx
           .update(dietPlanMeal)
@@ -331,6 +335,7 @@ async function applyDietPlanMutations(
         dayNumber: item.dayNumber,
         mealType: item.mealType,
         mealOrder: item.mealOrder ?? 1,
+        scheduledTime: item.scheduledTime ?? null,
       }))
     )
   }

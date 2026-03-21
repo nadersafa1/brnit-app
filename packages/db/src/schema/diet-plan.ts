@@ -43,6 +43,7 @@ export const dietPlanMeal = pgTable(
     dayNumber: integer('day_number').notNull(), // 0 = repeat all days, >= 1 = specific day
     mealType: text('meal_type').notNull(),
     mealOrder: integer('meal_order').notNull().default(1),
+    scheduledTime: text('scheduled_time'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [
@@ -162,6 +163,41 @@ export const dietPlanMealItemOverride = pgTable(
   ],
 )
 
+export const dietPlanMealTimeOverride = pgTable(
+  'diet_plan_meal_time_override',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    dietPlanAssignmentId: text('diet_plan_assignment_id')
+      .notNull()
+      .references(() => dietPlanAssignment.id, { onDelete: 'cascade' }),
+    dietPlanMealId: text('diet_plan_meal_id')
+      .notNull()
+      .references(() => dietPlanMeal.id, { onDelete: 'cascade' }),
+    scheduledTime: text('scheduled_time').notNull(),
+    /** NULL = future only (applies when resolution date >= today); non-null = this date only. */
+    effectiveDate: date('effective_date'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index('diet_plan_meal_time_override_assignment_idx').on(table.dietPlanAssignmentId),
+    index('diet_plan_meal_time_override_assignment_meal_idx').on(
+      table.dietPlanAssignmentId,
+      table.dietPlanMealId
+    ),
+    uniqueIndex('diet_plan_meal_time_override_unique_idx').on(
+      table.dietPlanAssignmentId,
+      table.dietPlanMealId,
+      table.effectiveDate
+    ),
+  ]
+)
+
 export const dietPlanMealConsumptionItem = pgTable(
   'diet_plan_meal_consumption_item',
   {
@@ -202,6 +238,7 @@ export const dietPlanMealRelations = relations(
     }),
     consumptions: many(dietPlanMealConsumption),
     mealItemOverrides: many(dietPlanMealItemOverride),
+    mealTimeOverrides: many(dietPlanMealTimeOverride),
   }),
 )
 
@@ -222,6 +259,7 @@ export const dietPlanAssignmentRelations = relations(
     }),
     consumptions: many(dietPlanMealConsumption),
     mealItemOverrides: many(dietPlanMealItemOverride),
+    mealTimeOverrides: many(dietPlanMealTimeOverride),
   }),
 )
 
@@ -258,6 +296,20 @@ export const dietPlanMealItemOverrideRelations = relations(
     foodItem: one(foodItem, {
       fields: [dietPlanMealItemOverride.foodItemId],
       references: [foodItem.id],
+    }),
+  }),
+)
+
+export const dietPlanMealTimeOverrideRelations = relations(
+  dietPlanMealTimeOverride,
+  ({ one }) => ({
+    dietPlanAssignment: one(dietPlanAssignment, {
+      fields: [dietPlanMealTimeOverride.dietPlanAssignmentId],
+      references: [dietPlanAssignment.id],
+    }),
+    dietPlanMeal: one(dietPlanMeal, {
+      fields: [dietPlanMealTimeOverride.dietPlanMealId],
+      references: [dietPlanMeal.id],
     }),
   }),
 )

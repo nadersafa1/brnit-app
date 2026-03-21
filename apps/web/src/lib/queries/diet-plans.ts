@@ -18,6 +18,7 @@ export interface DietPlanMeal {
   dayNumber: number
   mealType: string
   mealOrder: number
+  scheduledTime?: string | null
   mealItems?: DietPlanMealItemSummary[]
 }
 
