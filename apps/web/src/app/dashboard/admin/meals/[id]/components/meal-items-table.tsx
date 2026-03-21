@@ -9,7 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import type { MealItem } from '@/lib/queries/meals'
 import { getMacroFactor } from '@/lib/helpers/macros'
-import { mealQuantityStep } from '@/lib/helpers/food-unit-display'
+import { formatMealQuantityWithUnit, mealQuantityStep } from '@/lib/helpers/food-unit-display'
 
 interface MealItemsTableProps {
   mealItems: MealItem[]
@@ -29,26 +29,6 @@ function scaleNutrient(
   const factor = getMacroFactor(quantity, unit)
   const v = Math.round(factor * perUnit * 10) / 10
   return String(v)
-}
-
-function formatQuantityQty(quantity: number): string {
-  return Number.isInteger(quantity) || quantity % 1 === 0
-    ? String(quantity)
-    : (Math.round(quantity * 1000) / 1000).toString()
-}
-
-function formatQuantityWithUnit(quantity: number, unit: MealItem['unit']): string {
-  if (unit === 'piece') return `${quantity} pcs`
-  if (unit === 'liters') {
-    const q = formatQuantityQty(quantity)
-    return `${q}L`
-  }
-  if (unit === 'cup') {
-    const q = formatQuantityQty(quantity)
-    return `${q} cup${quantity === 1 ? '' : 's'}`
-  }
-  if (unit === 'tbsp') return `${formatQuantityQty(quantity)} tbsp`
-  return `${quantity} g`
 }
 
 export function MealItemsTable({
@@ -154,7 +134,7 @@ export function MealItemsTable({
                   </div>
                 ) : (
                   <button type='button' className='hover:underline text-left' onClick={() => startEdit(item)}>
-                    {formatQuantityWithUnit(item.quantity, item.unit)}
+                    {formatMealQuantityWithUnit(item.quantity, item.unit)}
                   </button>
                 )}
               </TableCell>

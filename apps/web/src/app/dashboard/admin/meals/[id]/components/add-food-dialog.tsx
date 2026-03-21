@@ -10,7 +10,11 @@ import { useFoodItems } from '@/hooks/use-food-items'
 import { useFoodCategories } from '@/hooks/use-food-categories'
 import type { DataSource } from '@/lib/queries/keys'
 import type { FoodItem } from '@/lib/queries/food-items'
-import { mealQuantityPlaceholder, mealQuantityStep } from '@/lib/helpers/food-unit-display'
+import {
+  mealQuantityPlaceholder,
+  mealQuantityStep,
+  mealQuantitySuffix,
+} from '@/lib/helpers/food-unit-display'
 
 interface AddFoodDialogProps {
   open: boolean
@@ -52,9 +56,11 @@ export function AddFoodDialog({
 
   const { data: categories } = useFoodCategories({ page: 1, perPage: 100 }, source)
 
-  const filteredItems = useMemo(() => {
-    return foodItems.filter(f => !excludeFoodIds.includes(f.id))
-  }, [foodItems, excludeFoodIds])
+  const excludedFoodIdSet = useMemo(() => new Set(excludeFoodIds), [excludeFoodIds])
+  const filteredItems = useMemo(
+    () => foodItems.filter((f) => !excludedFoodIdSet.has(f.id)),
+    [foodItems, excludedFoodIdSet]
+  )
 
   const reset = () => {
     setSearchInput('')
@@ -83,20 +89,13 @@ export function AddFoodDialog({
       await onAdd(selectedFood.id, q)
       setSelectedFood(null)
       setQuantity('')
+    } catch {
+      setQuantityError('Could not add this item. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
   }
-
-  let quantitySuffix = ''
-  if (selectedFood) {
-    const u = selectedFood.unit
-    if (u === 'piece') quantitySuffix = ' (pieces)'
-    else if (u === 'liters') quantitySuffix = ' (L)'
-    else if (u === 'cup') quantitySuffix = ' (cups)'
-    else if (u === 'tbsp') quantitySuffix = ' (tbsp)'
-    else quantitySuffix = ' (g)'
-  }
+  const quantitySuffix = mealQuantitySuffix(selectedFood?.unit)
 
   let listContent: React.ReactNode
   if (isLoading) {

@@ -45,3 +45,38 @@ export function mealQuantityPlaceholder(unit: FoodUnit | undefined): string {
       return 'e.g. 100'
   }
 }
+
+/** Label suffix used by quantity inputs in meal editing UIs. */
+export function mealQuantitySuffix(unit: FoodUnit | undefined): string {
+  if (unit == null) return ''
+  switch (unit) {
+    case 'piece':
+      return ' (pieces)'
+    case 'liters':
+      return ' (L)'
+    case 'cup':
+      return ' (cups)'
+    case 'tbsp':
+      return ' (tbsp)'
+    default:
+      return ' (g)'
+  }
+}
+
+function compactQuantity(quantity: number): string {
+  return Number.isInteger(quantity) || quantity % 1 === 0
+    ? String(quantity)
+    : (Math.round(quantity * 1000) / 1000).toString()
+}
+
+/** Readable quantity text in meal tables (e.g. 2 pcs, 0.5L, 1 cup). */
+export function formatMealQuantityWithUnit(quantity: number, unit: FoodUnit): string {
+  if (unit === 'piece') return `${quantity} pcs`
+  if (unit === 'liters') return `${compactQuantity(quantity)}L`
+  if (unit === 'cup') {
+    const q = compactQuantity(quantity)
+    return `${q} cup${quantity === 1 ? '' : 's'}`
+  }
+  if (unit === 'tbsp') return `${compactQuantity(quantity)} tbsp`
+  return `${quantity} g`
+}
