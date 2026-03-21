@@ -116,14 +116,11 @@ export type FoodDetails = {
  * Null/undefined DB values are coerced to 0 so macro math never produces NaN.
  * Missing IDs are absent from the map; callers use ZERO_NUTRITION and default unit '100g'.
  */
-async function getFoodDetailsForIds(
-  foodItemIds: Set<string>
-): Promise<Map<string, FoodDetails>> {
+async function getFoodDetailsForIds(foodItemIds: Set<string>): Promise<Map<string, FoodDetails>> {
   const map = new Map<string, FoodDetails>()
   if (foodItemIds.size === 0) return map
 
-  const toNum = (v: string | null | undefined): number =>
-    v != null && Number.isFinite(Number(v)) ? Number(v) : 0
+  const toNum = (v: string | null | undefined): number => (v != null && Number.isFinite(Number(v)) ? Number(v) : 0)
 
   const rows = await db
     .select({
@@ -195,8 +192,11 @@ function buildCurrentDietPlanDays(
     const mealsForDay = dietPlanMeals
       .filter(pm => pm.dayNumber === 0 || pm.dayNumber === planDay)
       .sort((a, b) => {
-        if (a.mealType === b.mealType) return a.mealOrder - b.mealOrder
-        return a.mealType.localeCompare(b.mealType)
+        const byMealOrder = a.mealOrder - b.mealOrder
+        if (byMealOrder !== 0) return byMealOrder
+        const byMealType = a.mealType.localeCompare(b.mealType)
+        if (byMealType !== 0) return byMealType
+        return a.id.localeCompare(b.id)
       })
       .map<CurrentDietPlanMeal>(pm => {
         const key = `${pm.id}:${date}`
@@ -206,11 +206,7 @@ function buildCurrentDietPlanDays(
           const foodItemId = override?.foodItemId ?? item.foodItemId
           const quantity = override?.quantity ?? item.quantity
           const details = foodDetailsMap.get(foodItemId) ?? DEFAULT_FOOD_DETAILS
-          const macros = calculateMacrosForMealItemWithUnit(
-            quantity,
-            details.nutrition,
-            details.unit
-          )
+          const macros = calculateMacrosForMealItemWithUnit(quantity, details.nutrition, details.unit)
           if (override) {
             const overrideDetails = foodDetailsMap.get(override.foodItemId) ?? DEFAULT_FOOD_DETAILS
             const originalDetails = foodDetailsMap.get(item.foodItemId) ?? DEFAULT_FOOD_DETAILS
