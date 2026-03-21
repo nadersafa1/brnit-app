@@ -240,7 +240,7 @@ export async function getDisplayedFoodAndQuantityForMealItem(
     }
   }
 
-  const date = resolutionDate ?? getTodayUTC()
+  const date = resolutionDate ?? getTodayUtcDateString()
   const [miRows, overrides] = await Promise.all([
     db
       .select({ foodItemId: mealItem.foodItemId, quantity: mealItem.quantity })
