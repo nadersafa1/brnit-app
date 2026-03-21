@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -37,10 +37,6 @@ export default function FoodItemDetailPage() {
   const deleteItem = useDeleteFoodItem()
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(showDelete)
-
-  useEffect(() => {
-    setDeleteOpen(showDelete)
-  }, [showDelete])
 
   const handleUpdate = useCallback(
     async (data: UpdateFoodItem, options?: { file?: File; clearImage?: boolean }) => {
@@ -132,7 +128,7 @@ export default function FoodItemDetailPage() {
             </div>
           )}
           <div className='grid grid-cols-2 gap-4 text-sm'>
-            <div>Calories: {item.calories ?? '–'}</div>
+            <div>Calories: {item.calories ?? '–'} kcal</div>
             <div>Protein: {item.protein ?? '–'} g</div>
             <div>Carbs: {item.carbs ?? '–'} g</div>
             <div>Fat: {item.fat ?? '–'} g</div>
