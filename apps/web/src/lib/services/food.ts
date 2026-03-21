@@ -364,16 +364,22 @@ export async function updateFoodItem(
   },
   options?: { file?: File; clearImage?: boolean }
 ): Promise<FoodItemUpdateResult> {
-  const [existing] = await db
-    .select({ imagePublicId: foodItem.imagePublicId })
-    .from(foodItem)
-    .where(eq(foodItem.id, id))
-    .limit(1)
+  // Existence + blocking-reference checks are independent, so run them together.
+  const [existingRows, hasBlockingRefs] = await Promise.all([
+    db
+      .select({ imagePublicId: foodItem.imagePublicId })
+      .from(foodItem)
+      .where(eq(foodItem.id, id))
+      .limit(1),
+    foodItemHasBlockingReferences(id),
+  ])
+  const existing = existingRows[0]
+
   if (!existing) {
     return { ok: false, error: 'Food item not found', code: 'NOT_FOUND' }
   }
 
-  if (await foodItemHasBlockingReferences(id)) {
+  if (hasBlockingRefs) {
     return {
       ok: false,
       error:
@@ -416,12 +422,18 @@ export async function updateFoodItem(
  */
 export async function deleteFoodItem(id: string): Promise<FoodItemDeleteResult> {
   return db.transaction(async (tx) => {
-    const [row] = await tx.select({ id: foodItem.id }).from(foodItem).where(eq(foodItem.id, id)).limit(1)
+    // Keep read validations in one transaction snapshot and parallelize independent lookups.
+    const [rows, hasBlockingRefs] = await Promise.all([
+      tx.select({ id: foodItem.id }).from(foodItem).where(eq(foodItem.id, id)).limit(1),
+      foodItemHasBlockingReferences(id, tx),
+    ])
+    const row = rows[0]
+
     if (!row) {
       return { ok: false, error: 'Food item not found', code: 'NOT_FOUND' }
     }
 
-    if (await foodItemHasBlockingReferences(id, tx)) {
+    if (hasBlockingRefs) {
       return {
         ok: false,
         error:

@@ -38,7 +38,7 @@ export type GetAlternativesResult =
 
 /**
  * Computes reference macros from quantity in the reference food's unit.
- * For 100g: factor = quantity/100. For piece or liters: factor = quantity.
+ * For 100g: factor = quantity/100. For all other units (piece/liters/cup/tbsp): factor = quantity.
  */
 function referenceMacros(
   quantity: number,
@@ -59,7 +59,7 @@ function referenceMacros(
 
 /**
  * Quantity in the candidate's unit that matches reference calories: factor = R_cal / c_cal;
- * for 100g suggestedQuantity = factor * 100 (grams); for piece/liters suggestedQuantity = factor (count or L).
+ * for 100g suggestedQuantity = factor * 100 (grams); for non-100g units suggestedQuantity = factor.
  */
 function suggestedQuantityInUnit(
   factor: number,
@@ -67,6 +67,51 @@ function suggestedQuantityInUnit(
 ): number {
   if (candidateUnit === '100g') return Math.round(factor * 1000) / 10
   return Math.round(factor * 10) / 10
+}
+
+type ReferenceMacros = { R_cal: number; R_prot: number; R_carb: number; R_fat: number }
+
+type MacroTolerance = {
+  protMin: number
+  protMax: number
+  carbMin: number
+  carbMax: number
+  fatMin: number
+  fatMax: number
+}
+
+function buildMacroTolerance(reference: ReferenceMacros) {
+  const tol = getAlternativesToleranceConfig()
+  return {
+    protMin: reference.R_prot * (1 - tol.proteinPct / 100),
+    protMax: reference.R_prot * (1 + tol.proteinPct / 100),
+    carbMin: reference.R_carb * (1 - tol.carbsPct / 100),
+    carbMax: reference.R_carb * (1 + tol.carbsPct / 100),
+    fatMin: reference.R_fat * (1 - tol.fatPct / 100),
+    fatMax: reference.R_fat * (1 + tol.fatPct / 100),
+  } satisfies MacroTolerance
+}
+
+function matchesTolerance(
+  protein: number,
+  carbs: number,
+  fat: number,
+  tolerance: MacroTolerance
+): boolean {
+  if (protein < tolerance.protMin || protein > tolerance.protMax) return false
+  if (carbs < tolerance.carbMin || carbs > tolerance.carbMax) return false
+  if (fat < tolerance.fatMin || fat > tolerance.fatMax) return false
+  return true
+}
+
+function toSuggestedQuantityGrams(
+  unit: FoodUnit,
+  suggestedQuantity: number,
+  gramsPerUnit: number | null
+): number | undefined {
+  if (unit === '100g') return suggestedQuantity
+  if (gramsPerUnit == null) return undefined
+  return suggestedQuantity * gramsPerUnit
 }
 
 export async function getFoodItemAlternatives(
@@ -118,7 +163,7 @@ export async function getFoodItemAlternatives(
     }
   }
 
-  const { R_cal, R_prot, R_carb, R_fat } = referenceMacros(
+  const reference = referenceMacros(
     quantity,
     refUnit,
     cal,
@@ -126,14 +171,7 @@ export async function getFoodItemAlternatives(
     carb,
     fat
   )
-
-  const tol = getAlternativesToleranceConfig()
-  const protMin = R_prot * (1 - tol.proteinPct / 100)
-  const protMax = R_prot * (1 + tol.proteinPct / 100)
-  const carbMin = R_carb * (1 - tol.carbsPct / 100)
-  const carbMax = R_carb * (1 + tol.carbsPct / 100)
-  const fatMin = R_fat * (1 - tol.fatPct / 100)
-  const fatMax = R_fat * (1 + tol.fatPct / 100)
+  const tolerance = buildMacroTolerance(reference)
 
   const candidates = await db
     .select({
@@ -169,18 +207,16 @@ export async function getFoodItemAlternatives(
     const c_carb = toNum(row.carbs)
     const c_fat = toNum(row.fat)
     const candidateUnit = (row.unit ?? '100g') as FoodUnit
-    const gramsPerUnit = row.gramsPerUnit != null ? Number(row.gramsPerUnit) : null
+    const gramsPerUnit = row.gramsPerUnit == null ? null : Number(row.gramsPerUnit)
 
     if (c_cal <= 0) continue
 
-    const factor = R_cal / c_cal
+    const factor = reference.R_cal / c_cal
     const C_prot = factor * c_prot
     const C_carb = factor * c_carb
     const C_fat = factor * c_fat
 
-    if (C_prot < protMin || C_prot > protMax) continue
-    if (C_carb < carbMin || C_carb > carbMax) continue
-    if (C_fat < fatMin || C_fat > fatMax) continue
+    if (!matchesTolerance(C_prot, C_carb, C_fat, tolerance)) continue
 
     const suggestedQ = suggestedQuantityInUnit(factor, candidateUnit)
     const totalCal = factor * c_cal
@@ -188,12 +224,7 @@ export async function getFoodItemAlternatives(
     const totalCarb = C_carb
     const totalFat = C_fat
 
-    const suggestedQuantityGrams =
-      candidateUnit === '100g'
-        ? suggestedQ
-        : gramsPerUnit != null
-          ? suggestedQ * gramsPerUnit
-          : undefined
+    const suggestedQuantityGrams = toSuggestedQuantityGrams(candidateUnit, suggestedQ, gramsPerUnit)
 
     results.push({
       foodItemId: row.id,
@@ -206,15 +237,15 @@ export async function getFoodItemAlternatives(
       protein: Math.round(totalProt * 10) / 10,
       carbs: Math.round(totalCarb * 10) / 10,
       fat: Math.round(totalFat * 10) / 10,
-      deltaCalories: Math.round((totalCal - R_cal) * 10) / 10,
-      deltaProtein: Math.round((totalProt - R_prot) * 10) / 10,
-      deltaCarbs: Math.round((totalCarb - R_carb) * 10) / 10,
-      deltaFat: Math.round((totalFat - R_fat) * 10) / 10,
+      deltaCalories: Math.round((totalCal - reference.R_cal) * 10) / 10,
+      deltaProtein: Math.round((totalProt - reference.R_prot) * 10) / 10,
+      deltaCarbs: Math.round((totalCarb - reference.R_carb) * 10) / 10,
+      deltaFat: Math.round((totalFat - reference.R_fat) * 10) / 10,
       ...(suggestedQuantityGrams !== undefined && { suggestedQuantityGrams }),
     })
   }
 
-  results.sort((a, b) => Math.abs(a.calories - R_cal) - Math.abs(b.calories - R_cal))
+  results.sort((a, b) => Math.abs(a.calories - reference.R_cal) - Math.abs(b.calories - reference.R_cal))
 
   const totalItems = results.length
   const items = results.slice(offset, offset + limit)

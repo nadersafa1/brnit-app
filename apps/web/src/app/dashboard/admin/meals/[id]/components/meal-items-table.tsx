@@ -10,7 +10,6 @@ import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import type { MealItem } from '@/lib/queries/meals'
 import { getMacroFactor } from '@/lib/helpers/macros'
 import { mealQuantityStep } from '@/lib/helpers/food-unit-display'
-import type { FoodUnit } from '@/types/api/food.schemas'
 
 interface MealItemsTableProps {
   mealItems: MealItem[]
@@ -141,7 +140,7 @@ export function MealItemsTable({
                     <Input
                       type='number'
                       min={0.1}
-                      step={mealQuantityStep(item.unit as FoodUnit)}
+                      step={mealQuantityStep(item.unit)}
                       value={editValue}
                       onChange={e => setEditValue(e.target.value)}
                       className='w-20 h-8'

@@ -1,38 +1,38 @@
-import { View, StyleSheet } from "react-native";
-import { Controller, UseFormReturn } from "react-hook-form";
-import { Input, Text, FieldError } from "@/components/ui";
-import { spacing } from "@/theme/spacing";
-import type { FoodItem } from "@/lib/api/member-food-types";
-import type { QuantityFormValues } from "./schema";
+import { View, StyleSheet } from 'react-native'
+import { Controller, UseFormReturn } from 'react-hook-form'
+import { Input, Text, FieldError } from '@/components/ui'
+import { spacing } from '@/theme/spacing'
+import type { FoodItem } from '@/lib/api/member-food-types'
+import type { QuantityFormValues } from './schema'
 
-import type { FoodUnit } from "@/lib/utils/numbers";
+import type { FoodUnit } from '@/lib/utils/numbers'
 
 function quantityLabel(unit: FoodUnit): string {
-  if (unit === "100g") return "Enter amount (grams)";
-  if (unit === "liters") return "Enter amount (liters)";
-  if (unit === "cup") return "Enter amount (cups)";
-  if (unit === "tbsp") return "Enter amount (tbsp)";
-  return "Enter amount (pieces)";
+  if (unit === '100g') return 'Enter amount (grams)'
+  if (unit === 'liters') return 'Enter amount (liters)'
+  if (unit === 'cup') return 'Enter amount (cups)'
+  if (unit === 'tbsp') return 'Enter amount (tbsp)'
+  return 'Enter amount (pieces)'
 }
 
 function quantityPlaceholder(unit: FoodUnit): string {
-  if (unit === "100g") return "e.g. 100";
-  if (unit === "liters") return "e.g. 0.5";
-  if (unit === "cup" || unit === "tbsp") return "e.g. 1";
-  return "e.g. 2";
+  if (unit === '100g') return 'e.g. 100'
+  if (unit === 'liters') return 'e.g. 0.5'
+  if (unit === 'cup' || unit === 'tbsp') return 'e.g. 1'
+  return 'e.g. 2'
 }
 
 interface InputStateProps {
-  foodItem: FoodItem | null;
-  form: UseFormReturn<QuantityFormValues>;
+  foodItem: FoodItem | null
+  form: UseFormReturn<QuantityFormValues>
 }
 
 export function InputState({ foodItem, form }: Readonly<InputStateProps>) {
   const {
     control,
     formState: { errors },
-  } = form;
-  const unit = foodItem?.unit ?? '100g';
+  } = form
+  const unit = foodItem?.unit ?? '100g'
 
   return (
     <View style={styles.container}>
@@ -53,11 +53,11 @@ export function InputState({ foodItem, form }: Readonly<InputStateProps>) {
 
       <Controller
         control={control}
-        name="quantity"
+        name='quantity'
         render={({ field: { onChange, onBlur, value } }) => (
           <Input
             placeholder={quantityPlaceholder(unit)}
-            keyboardType="numeric"
+            keyboardType='numeric'
             value={value}
             onChangeText={onChange}
             onBlur={onBlur}
@@ -66,11 +66,9 @@ export function InputState({ foodItem, form }: Readonly<InputStateProps>) {
         )}
       />
 
-      {errors.quantity && (
-        <FieldError error={errors.quantity.message ?? "Invalid quantity"} />
-      )}
+      {errors.quantity && <FieldError error={errors.quantity.message ?? 'Invalid quantity'} />}
     </View>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -83,4 +81,4 @@ const styles = StyleSheet.create({
   label: {
     marginBottom: spacing[2],
   },
-});
+})

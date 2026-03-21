@@ -86,37 +86,39 @@ export async function createDietPlan(data: CreateDietPlan) {
 }
 
 export async function getDietPlanById(id: string) {
-  const [plan] = await db
-    .select({
-      id: dietPlan.id,
-      name: dietPlan.name,
-      description: dietPlan.description,
-      createdAt: dietPlan.createdAt,
-      updatedAt: dietPlan.updatedAt,
-    })
-    .from(dietPlan)
-    .where(eq(dietPlan.id, id))
-    .limit(1)
-
+  // These two reads only depend on plan id, so fetch them concurrently.
+  const [planRows, planMeals] = await Promise.all([
+    db
+      .select({
+        id: dietPlan.id,
+        name: dietPlan.name,
+        description: dietPlan.description,
+        createdAt: dietPlan.createdAt,
+        updatedAt: dietPlan.updatedAt,
+      })
+      .from(dietPlan)
+      .where(eq(dietPlan.id, id))
+      .limit(1),
+    db
+      .select({
+        id: dietPlanMeal.id,
+        mealId: dietPlanMeal.mealId,
+        mealName: meal.name,
+        dayNumber: dietPlanMeal.dayNumber,
+        mealType: dietPlanMeal.mealType,
+        mealOrder: dietPlanMeal.mealOrder,
+      })
+      .from(dietPlanMeal)
+      .innerJoin(meal, eq(dietPlanMeal.mealId, meal.id))
+      .where(eq(dietPlanMeal.dietPlanId, id))
+      .orderBy(
+        asc(dietPlanMeal.dayNumber),
+        asc(dietPlanMeal.mealType),
+        asc(dietPlanMeal.mealOrder)
+      ),
+  ])
+  const plan = planRows[0]
   if (!plan) return null
-
-  const planMeals = await db
-    .select({
-      id: dietPlanMeal.id,
-      mealId: dietPlanMeal.mealId,
-      mealName: meal.name,
-      dayNumber: dietPlanMeal.dayNumber,
-      mealType: dietPlanMeal.mealType,
-      mealOrder: dietPlanMeal.mealOrder,
-    })
-    .from(dietPlanMeal)
-    .innerJoin(meal, eq(dietPlanMeal.mealId, meal.id))
-    .where(eq(dietPlanMeal.dietPlanId, id))
-    .orderBy(
-      asc(dietPlanMeal.dayNumber),
-      asc(dietPlanMeal.mealType),
-      asc(dietPlanMeal.mealOrder)
-    )
 
   const mealIds = [...new Set(planMeals.map((pm) => pm.mealId))]
   type MealItemRow = {

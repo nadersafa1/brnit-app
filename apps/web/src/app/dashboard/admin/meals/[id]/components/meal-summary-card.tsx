@@ -2,23 +2,28 @@
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import type { MealItem } from '@/lib/queries/meals'
+import { getMacroFactor } from '@/lib/helpers/macros'
 
 interface MealSummaryCardProps {
   mealItems: MealItem[]
 }
 
-function scaleNutrient(per100: number | null, quantity: number): number {
-  if (per100 == null) return 0
-  return Math.round((per100 / 100) * quantity * 10) / 10
+/**
+ * Nutrition values are stored per 1 unit (per 100g or per selected food unit),
+ * so we reuse the shared macro factor logic for consistent totals.
+ */
+function scaleNutrient(perUnit: number | null, quantity: number, unit: MealItem['unit']): number {
+  if (perUnit == null) return 0
+  return Math.round(getMacroFactor(quantity, unit) * perUnit * 10) / 10
 }
 
 export function MealSummaryCard({ mealItems }: Readonly<MealSummaryCardProps>) {
   const totals = mealItems.reduce(
     (acc, mi) => ({
-      calories: acc.calories + scaleNutrient(mi.calories, mi.quantity),
-      protein: acc.protein + scaleNutrient(mi.protein, mi.quantity),
-      carbs: acc.carbs + scaleNutrient(mi.carbs, mi.quantity),
-      fat: acc.fat + scaleNutrient(mi.fat, mi.quantity),
+      calories: acc.calories + scaleNutrient(mi.calories, mi.quantity, mi.unit),
+      protein: acc.protein + scaleNutrient(mi.protein, mi.quantity, mi.unit),
+      carbs: acc.carbs + scaleNutrient(mi.carbs, mi.quantity, mi.unit),
+      fat: acc.fat + scaleNutrient(mi.fat, mi.quantity, mi.unit),
     }),
     { calories: 0, protein: 0, carbs: 0, fat: 0 }
   )
