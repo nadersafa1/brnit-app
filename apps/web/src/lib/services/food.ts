@@ -13,6 +13,10 @@ import {
   deleteCloudinaryImage,
   uploadFileToCloudinary,
 } from '@/lib/cloudinary-utils'
+import {
+  roundNutritionMacroNullable,
+  roundNutritionMacroRequired,
+} from '@/lib/helpers/nutrition-numbers'
 import type { FoodCategoriesQuery, FoodItemsQuery, FoodUnit } from '@/types/api/food.schemas'
 
 const FOOD_ITEM_IMAGE_FOLDER = 'food-items'
@@ -126,6 +130,27 @@ export async function getFoodCategoryById(id: string) {
   return category ?? null
 }
 
+type FoodNumericFields = {
+  calories: string | number | null | undefined
+  protein: string | number | null | undefined
+  carbs: string | number | null | undefined
+  fat: string | number | null | undefined
+  servingSize: string | number | null | undefined
+  gramsPerUnit: string | number | null | undefined
+}
+
+/** Converts DB numeric columns into API-safe numbers; macros are rounded to 2 decimals. */
+function normalizeFoodNumericFields(row: FoodNumericFields) {
+  return {
+    calories: roundNutritionMacroRequired(row.calories),
+    protein: roundNutritionMacroNullable(row.protein),
+    carbs: roundNutritionMacroNullable(row.carbs),
+    fat: roundNutritionMacroNullable(row.fat),
+    servingSize: row.servingSize == null ? null : Number(row.servingSize),
+    gramsPerUnit: row.gramsPerUnit == null ? null : Number(row.gramsPerUnit),
+  }
+}
+
 // --- Food items (list, get by id, crud) ---
 
 /** List food items with optional search, category filter, and sort. Count and rows run in parallel. */
@@ -177,19 +202,15 @@ export async function listFoodItems(query: FoodItemsQuery) {
       .offset(offset),
   ])
 
+  // Normalize DB numerics to API-safe numbers; only macro fields are precision-clamped.
   const items = rows.map((row) => ({
     id: row.id,
     name: row.name,
     fdcId: row.fdcId,
     categoryId: row.categoryId,
     categoryName: row.categoryName,
-    calories: row.calories,
-    protein: row.protein,
-    carbs: row.carbs,
-    fat: row.fat,
-    servingSize: row.servingSize,
+    ...normalizeFoodNumericFields(row),
     unit: row.unit,
-    gramsPerUnit: row.gramsPerUnit == null ? null : Number(row.gramsPerUnit),
     imageUrl: row.imagePublicId ? buildCloudinaryUrl(row.imagePublicId) : null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -228,7 +249,7 @@ export async function getFoodItemById(id: string) {
   if (!row) return null
   return {
     ...row,
-    gramsPerUnit: row.gramsPerUnit == null ? null : Number(row.gramsPerUnit),
+    ...normalizeFoodNumericFields(row),
     imageUrl: row.imagePublicId ? buildCloudinaryUrl(row.imagePublicId) : null,
   }
 }

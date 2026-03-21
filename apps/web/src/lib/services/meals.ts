@@ -9,6 +9,10 @@ import {
 } from '@burn-app/db/schema'
 import { count, asc, desc, ilike, eq, and, inArray } from 'drizzle-orm'
 import { calculateOffset, combineConditions } from '@/lib/api-helpers/query-builders'
+import {
+  roundNutritionMacroNullable,
+  roundNutritionMacroRequired,
+} from '@/lib/helpers/nutrition-numbers'
 import type { MealsQuery, CreateMeal, UpdateMeal } from '@/types/api/meal.schemas'
 
 /** Lists meals with optional search and sort; count and items are fetched in parallel. */
@@ -56,51 +60,54 @@ export async function listMeals(query: MealsQuery) {
  * Fetches a single meal by id with its items (food details). Returns null if not found.
  */
 export async function getMealById(id: string) {
-  const [mealRow] = await db
-    .select({
-      id: meal.id,
-      name: meal.name,
-      description: meal.description,
-      createdAt: meal.createdAt,
-      updatedAt: meal.updatedAt,
-    })
-    .from(meal)
-    .where(eq(meal.id, id))
-    .limit(1)
-
+  // Meal header and meal items are independent reads; run in parallel to reduce latency.
+  const [mealRows, mealItems] = await Promise.all([
+    db
+      .select({
+        id: meal.id,
+        name: meal.name,
+        description: meal.description,
+        createdAt: meal.createdAt,
+        updatedAt: meal.updatedAt,
+      })
+      .from(meal)
+      .where(eq(meal.id, id))
+      .limit(1),
+    db
+      .select({
+        id: mealItem.id,
+        foodItemId: mealItem.foodItemId,
+        foodName: foodItem.name,
+        categoryName: foodCategory.name,
+        quantity: mealItem.quantity,
+        calories: foodItem.calories,
+        protein: foodItem.protein,
+        carbs: foodItem.carbs,
+        fat: foodItem.fat,
+        unit: foodItem.unit,
+        gramsPerUnit: foodItem.gramsPerUnit,
+      })
+      .from(mealItem)
+      .innerJoin(foodItem, eq(mealItem.foodItemId, foodItem.id))
+      .leftJoin(foodCategory, eq(foodItem.categoryId, foodCategory.id))
+      .where(eq(mealItem.mealId, id)),
+  ])
+  const mealRow = mealRows[0]
   if (!mealRow) return null
-
-  const mealItems = await db
-    .select({
-      id: mealItem.id,
-      foodItemId: mealItem.foodItemId,
-      foodName: foodItem.name,
-      categoryName: foodCategory.name,
-      quantity: mealItem.quantity,
-      calories: foodItem.calories,
-      protein: foodItem.protein,
-      carbs: foodItem.carbs,
-      fat: foodItem.fat,
-      unit: foodItem.unit,
-      gramsPerUnit: foodItem.gramsPerUnit,
-    })
-    .from(mealItem)
-    .innerJoin(foodItem, eq(mealItem.foodItemId, foodItem.id))
-    .leftJoin(foodCategory, eq(foodItem.categoryId, foodCategory.id))
-    .where(eq(mealItem.mealId, id))
 
   return {
     ...mealRow,
+    // Normalize DB numerics to API-safe numbers and clamp macro precision for stable UI display.
     mealItems: mealItems.map((mi) => ({
       id: mi.id,
       foodItemId: mi.foodItemId,
       foodName: mi.foodName,
       categoryName: mi.categoryName,
       quantity: Number(mi.quantity),
-      calories: mi.calories ? Number(mi.calories) : null,
-      protein: mi.protein ? Number(mi.protein) : null,
-      carbs: mi.carbs ? Number(mi.carbs) : null,
-      fat: mi.fat ? Number(mi.fat) : null,
+      calories: roundNutritionMacroRequired(mi.calories),
+      protein: roundNutritionMacroNullable(mi.protein),
+      carbs: roundNutritionMacroNullable(mi.carbs),
+      fat: roundNutritionMacroNullable(mi.fat),
       unit: mi.unit ?? '100g',
       gramsPerUnit: mi.gramsPerUnit == null ? null : Number(mi.gramsPerUnit),
     })),
