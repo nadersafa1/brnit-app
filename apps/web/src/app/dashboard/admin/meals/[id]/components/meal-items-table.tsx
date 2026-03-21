@@ -9,8 +9,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import type { MealItem } from '@/lib/queries/meals'
 import { getMacroFactor } from '@/lib/helpers/macros'
-import { formatMealQuantityWithUnit, mealQuantityStep } from '@/lib/helpers/food-unit-display'
+import {
+  formatMealQuantityWithUnit,
+  mealQuantityMin,
+  mealQuantityStep,
+} from '@/lib/helpers/food-unit-display'
 
+/** Editable meal lines: quantity step/min follow `food-unit-display`; macros scale via `getMacroFactor`. */
 interface MealItemsTableProps {
   mealItems: MealItem[]
   onQuantityChange: (mealItemId: string, quantity: number) => Promise<void>
@@ -119,7 +124,7 @@ export function MealItemsTable({
                   <div className='flex items-center gap-1'>
                     <Input
                       type='number'
-                      min={0.1}
+                      min={mealQuantityMin(item.unit)}
                       step={mealQuantityStep(item.unit)}
                       value={editValue}
                       onChange={e => setEditValue(e.target.value)}

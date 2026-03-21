@@ -16,9 +16,9 @@ function quantityLabel(unit: FoodUnit): string {
 }
 
 function quantityPlaceholder(unit: FoodUnit): string {
-  if (unit === '100g') return 'e.g. 100'
-  if (unit === 'liters') return 'e.g. 0.5'
-  if (unit === 'cup' || unit === 'tbsp') return 'e.g. 1'
+  if (unit === '100g') return 'e.g. 150 (50g steps)'
+  if (unit === 'liters') return 'e.g. 1 (0.5 L steps)'
+  if (unit === 'cup' || unit === 'tbsp') return 'e.g. 1 (0.5 steps)'
   return 'e.g. 2'
 }
 

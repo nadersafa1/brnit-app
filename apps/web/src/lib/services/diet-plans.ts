@@ -120,6 +120,7 @@ export async function getDietPlanById(id: string) {
   const plan = planRows[0]
   if (!plan) return null
 
+  // Batch-load meal lines for all slots (one query; group by mealId in memory).
   const mealIds = [...new Set(planMeals.map((pm) => pm.mealId))]
   type MealItemRow = {
     mealItemId: string

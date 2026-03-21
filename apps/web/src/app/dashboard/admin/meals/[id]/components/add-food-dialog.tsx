@@ -11,6 +11,7 @@ import { useFoodCategories } from '@/hooks/use-food-categories'
 import type { DataSource } from '@/lib/queries/keys'
 import type { FoodItem } from '@/lib/queries/food-items'
 import {
+  mealQuantityMin,
   mealQuantityPlaceholder,
   mealQuantityStep,
   mealQuantitySuffix,
@@ -24,6 +25,43 @@ interface AddFoodDialogProps {
   source?: DataSource
 }
 
+/** Renders search results list; stateless aside from selection callback. */
+function FoodItemPickerList({
+  isLoading,
+  items,
+  selectedId,
+  onSelect,
+}: Readonly<{
+  isLoading: boolean
+  items: FoodItem[]
+  selectedId: string | undefined
+  onSelect: (item: FoodItem) => void
+}>) {
+  if (isLoading) {
+    return <div className='p-4 text-sm text-muted-foreground'>Loading…</div>
+  }
+  if (items.length === 0) {
+    return <div className='p-4 text-sm text-muted-foreground'>No food items found.</div>
+  }
+  return (
+    <div className='divide-y'>
+      {items.map(item => (
+        <button
+          key={item.id}
+          type='button'
+          className={`w-full px-4 py-2 text-left text-sm hover:bg-muted/50 ${
+            selectedId === item.id ? 'bg-muted' : ''
+          }`}
+          onClick={() => onSelect(item)}
+        >
+          <span className='font-medium'>{item.name}</span>
+          {item.categoryName && <span className='text-muted-foreground ml-2'>({item.categoryName})</span>}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export function AddFoodDialog({
   open,
   onOpenChange,
@@ -31,6 +69,7 @@ export function AddFoodDialog({
   excludeFoodIds = [],
   source = 'admin',
 }: Readonly<AddFoodDialogProps>) {
+  // Local search + category filter; debounce reduces API churn while typing.
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [categoryId, setCategoryId] = useState<string | undefined>(undefined)
@@ -56,6 +95,7 @@ export function AddFoodDialog({
 
   const { data: categories } = useFoodCategories({ page: 1, perPage: 100 }, source)
 
+  // O(1) exclusion lookup for meals that already contain some foods.
   const excludedFoodIdSet = useMemo(() => new Set(excludeFoodIds), [excludeFoodIds])
   const filteredItems = useMemo(
     () => foodItems.filter((f) => !excludedFoodIdSet.has(f.id)),
@@ -97,31 +137,6 @@ export function AddFoodDialog({
   }
   const quantitySuffix = mealQuantitySuffix(selectedFood?.unit)
 
-  let listContent: React.ReactNode
-  if (isLoading) {
-    listContent = <div className='p-4 text-sm text-muted-foreground'>Loading…</div>
-  } else if (filteredItems.length === 0) {
-    listContent = <div className='p-4 text-sm text-muted-foreground'>No food items found.</div>
-  } else {
-    listContent = (
-      <div className='divide-y'>
-        {filteredItems.map(item => (
-          <button
-            key={item.id}
-            type='button'
-            className={`w-full px-4 py-2 text-left text-sm hover:bg-muted/50 ${
-              selectedFood?.id === item.id ? 'bg-muted' : ''
-            }`}
-            onClick={() => setSelectedFood(item)}
-          >
-            <span className='font-medium'>{item.name}</span>
-            {item.categoryName && <span className='text-muted-foreground ml-2'>({item.categoryName})</span>}
-          </button>
-        ))}
-      </div>
-    )
-  }
-
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className='max-h-[90vh] flex flex-col max-w-lg'>
@@ -157,14 +172,21 @@ export function AddFoodDialog({
             </Select>
           </div>
 
-          <div className='flex-1 overflow-auto rounded-md border min-h-[120px] max-h-[200px]'>{listContent}</div>
+          <div className='flex-1 overflow-auto rounded-md border min-h-[120px] max-h-[200px]'>
+            <FoodItemPickerList
+              isLoading={isLoading}
+              items={filteredItems}
+              selectedId={selectedFood?.id}
+              onSelect={setSelectedFood}
+            />
+          </div>
 
           <Field>
             <FieldLabel htmlFor='add-quantity'>Quantity{quantitySuffix}</FieldLabel>
             <Input
               id='add-quantity'
               type='number'
-              min={0.1}
+              min={selectedFood ? mealQuantityMin(selectedFood.unit) : 0.1}
               step={selectedFood ? mealQuantityStep(selectedFood.unit) : 1}
               value={quantity}
               onChange={e => setQuantity(e.target.value)}

@@ -1,10 +1,21 @@
+/**
+ * Food alternatives: same-category candidates whose scaled macros fall within configured
+ * tolerance vs a reference food at the requested quantity. Suggested quantities are snapped
+ * to unit steps via `snapMealQuantityToStep` (shared with meal UI).
+ */
 import { db } from '@burn-app/db'
 import { foodItem, foodCategory } from '@burn-app/db/schema'
 import { and, eq, ne, isNotNull } from 'drizzle-orm'
 import { getAlternativesToleranceConfig } from '@/lib/config/alternatives-tolerance'
+import { snapMealQuantityToStep } from '@/lib/helpers/food-unit-display'
 import type { FoodUnit } from '@/lib/helpers/macros'
 
 const MAX_PER_PAGE = 20
+
+/** One-decimal display for macro fields in API responses (unchanged rounding behavior). */
+function roundMacroDisplay(value: number): number {
+  return Math.round(value * 10) / 10
+}
 
 function toNum(val: string | null | undefined): number {
   if (val === null || val === undefined) return 0
@@ -36,6 +47,13 @@ export type GetAlternativesResult =
   | { ok: true; items: FoodItemAlternativeItem[]; totalItems: number }
   | { ok: false; error: string; code: 'REFERENCE_INVALID' | 'REFERENCE_NOT_FOUND' }
 
+type ReferenceMacroTotals = {
+  R_cal: number
+  R_prot: number
+  R_carb: number
+  R_fat: number
+}
+
 /**
  * Computes reference macros from quantity in the reference food's unit.
  * For 100g: factor = quantity/100. For all other units (piece/liters/cup/tbsp): factor = quantity.
@@ -47,7 +65,7 @@ function referenceMacros(
   prot: number,
   carb: number,
   fat: number
-): { R_cal: number; R_prot: number; R_carb: number; R_fat: number } {
+): ReferenceMacroTotals {
   const factor = unit === '100g' ? quantity / 100 : quantity
   return {
     R_cal: factor * cal,
@@ -58,18 +76,19 @@ function referenceMacros(
 }
 
 /**
- * Quantity in the candidate's unit that matches reference calories: factor = R_cal / c_cal;
- * for 100g suggestedQuantity = factor * 100 (grams); for non-100g units suggestedQuantity = factor.
+ * Raw quantity in the candidate's unit from calorie matching, then snapped to unit step
+ * (50g, 1 piece, 0.5 L/cup/tbsp) via shared meal quantity rules.
  */
 function suggestedQuantityInUnit(
   factor: number,
   candidateUnit: FoodUnit
 ): number {
-  if (candidateUnit === '100g') return Math.round(factor * 1000) / 10
-  return Math.round(factor * 10) / 10
+  const raw =
+    candidateUnit === '100g'
+      ? Math.round(factor * 1000) / 10
+      : Math.round(factor * 10) / 10
+  return snapMealQuantityToStep(raw, candidateUnit)
 }
-
-type ReferenceMacros = { R_cal: number; R_prot: number; R_carb: number; R_fat: number }
 
 type MacroTolerance = {
   protMin: number
@@ -80,7 +99,7 @@ type MacroTolerance = {
   fatMax: number
 }
 
-function buildMacroTolerance(reference: ReferenceMacros) {
+function buildMacroTolerance(reference: ReferenceMacroTotals) {
   const tol = getAlternativesToleranceConfig()
   return {
     protMin: reference.R_prot * (1 - tol.proteinPct / 100),
@@ -123,6 +142,7 @@ export async function getFoodItemAlternatives(
   const limit = Math.min(Math.max(1, perPage), MAX_PER_PAGE)
   const offset = Math.max(0, (page - 1) * limit)
 
+  // --- Load reference food (macros + unit drive calorie matching) ---
   const [refRow] = await db
     .select({
       id: foodItem.id,
@@ -143,6 +163,7 @@ export async function getFoodItemAlternatives(
     return { ok: false, error: 'Food item not found', code: 'REFERENCE_NOT_FOUND' }
   }
 
+  // --- Validate reference row has required fields for matching ---
   const cal = toNum(refRow.calories)
   const prot = toNum(refRow.protein)
   const carb = toNum(refRow.carbs)
@@ -163,16 +184,10 @@ export async function getFoodItemAlternatives(
     }
   }
 
-  const reference = referenceMacros(
-    quantity,
-    refUnit,
-    cal,
-    prot,
-    carb,
-    fat
-  )
+  const reference = referenceMacros(quantity, refUnit, cal, prot, carb, fat)
   const tolerance = buildMacroTolerance(reference)
 
+  // --- Same-category candidates with full macros (filtering is in-memory below) ---
   const candidates = await db
     .select({
       id: foodItem.id,
@@ -201,6 +216,7 @@ export async function getFoodItemAlternatives(
 
   const results: FoodItemAlternativeItem[] = []
 
+  // --- Score each candidate: calorie scale factor → macro deltas vs reference; tolerance gate ---
   for (const row of candidates) {
     const c_cal = toNum(row.calories)
     const c_prot = toNum(row.protein)
@@ -233,18 +249,19 @@ export async function getFoodItemAlternatives(
       categoryName: row.categoryName,
       suggestedQuantity: suggestedQ,
       unit: candidateUnit,
-      calories: Math.round(totalCal * 10) / 10,
-      protein: Math.round(totalProt * 10) / 10,
-      carbs: Math.round(totalCarb * 10) / 10,
-      fat: Math.round(totalFat * 10) / 10,
-      deltaCalories: Math.round((totalCal - reference.R_cal) * 10) / 10,
-      deltaProtein: Math.round((totalProt - reference.R_prot) * 10) / 10,
-      deltaCarbs: Math.round((totalCarb - reference.R_carb) * 10) / 10,
-      deltaFat: Math.round((totalFat - reference.R_fat) * 10) / 10,
+      calories: roundMacroDisplay(totalCal),
+      protein: roundMacroDisplay(totalProt),
+      carbs: roundMacroDisplay(totalCarb),
+      fat: roundMacroDisplay(totalFat),
+      deltaCalories: roundMacroDisplay(totalCal - reference.R_cal),
+      deltaProtein: roundMacroDisplay(totalProt - reference.R_prot),
+      deltaCarbs: roundMacroDisplay(totalCarb - reference.R_carb),
+      deltaFat: roundMacroDisplay(totalFat - reference.R_fat),
       ...(suggestedQuantityGrams !== undefined && { suggestedQuantityGrams }),
     })
   }
 
+  // --- Sort by closeness to reference calories, then paginate (totalItems = full list length) ---
   results.sort((a, b) => Math.abs(a.calories - reference.R_cal) - Math.abs(b.calories - reference.R_cal))
 
   const totalItems = results.length

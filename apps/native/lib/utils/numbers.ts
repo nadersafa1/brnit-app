@@ -20,7 +20,11 @@ export type FoodUnit = '100g' | 'piece' | 'liters' | 'cup' | 'tbsp'
  * Formats quantity with unit for display (e.g. "150g", "2 pieces", "0.5L", "1 cup").
  */
 export function formatQuantityWithUnit(quantity: number, unit: FoodUnit): string {
-  if (unit === '100g') return `${quantity}g`
+  if (unit === '100g') {
+    const q =
+      quantity % 1 === 0 ? String(quantity) : (Math.round(quantity * 10) / 10).toString()
+    return `${q}g`
+  }
   if (unit === 'liters') {
     const q = quantity % 1 === 0 ? String(quantity) : quantity.toFixed(1)
     return `${q}L`

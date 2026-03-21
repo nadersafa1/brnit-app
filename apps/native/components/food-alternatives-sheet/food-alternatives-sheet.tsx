@@ -13,6 +13,7 @@ import { useFoodItemAlternatives } from '@/hooks/use-food-item-alternatives'
 import { spacing } from '@/theme/spacing'
 import type { FoodItemAlternative } from '@/lib/api/member-food-types'
 import { formatQuantityWithUnit } from '@/lib/utils/numbers'
+import { mealQuantityStep, snapMealQuantityToStep } from '@/lib/utils/food-quantity-step'
 import { quantitySchema, type QuantityFormValues } from './schema'
 import { InputState } from './input-state'
 import { ResultsState } from './results-state'
@@ -59,7 +60,16 @@ export function FoodAlternativesSheet({ foodItem, onClose }: Readonly<FoodAltern
   }, [onClose])
 
   const handleSubmit = form.handleSubmit(values => {
-    setQuantity(Number(values.quantity))
+    const unit = foodItem?.unit ?? '100g'
+    const n = Number(values.quantity)
+    if (Math.abs(n - snapMealQuantityToStep(n, unit)) > 1e-5) {
+      form.setError('quantity', {
+        type: 'manual',
+        message: `Use multiples of ${mealQuantityStep(unit)} for this unit`,
+      })
+      return
+    }
+    setQuantity(n)
     setSheetState('results')
   })
 
