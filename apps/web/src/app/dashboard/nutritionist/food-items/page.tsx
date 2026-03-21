@@ -1,10 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useState } from 'react'
-import { authClient } from '@/lib/auth-client'
-import { useOrganizationContext } from '@/hooks/authorization/use-organization-context'
-import { canAccessNutritionistFeatures } from '@/lib/authorization/nutritionist-access'
+import { useCallback, useState } from 'react'
 import { EntityListPageLayout } from '../../shared/entity-list-page-layout'
 import { FoodItemsTable } from '../../admin/food-items/components/food-items-table'
 import { useFoodItems } from '@/hooks/use-food-items'
@@ -15,8 +12,6 @@ import { UtensilsCrossed } from 'lucide-react'
 
 export default function NutritionistFoodItemsPage() {
   const router = useRouter()
-  const { data: session } = authClient.useSession()
-  const { context } = useOrganizationContext()
 
   const [filters, setFilters] = useState<{
     page: number
@@ -34,23 +29,8 @@ export default function NutritionistFoodItemsPage() {
     categoryId: undefined,
   })
 
-  const { data: items, pagination, isLoading, error, refetch } = useFoodItems(
-    filters,
-    'nutritionist'
-  )
-  const { data: categories } = useFoodCategories(
-    { page: 1, perPage: 100 },
-    'nutritionist'
-  )
-
-  useEffect(() => {
-    if (
-      session === null ||
-      !canAccessNutritionistFeatures(session, context)
-    ) {
-      router.replace('/dashboard')
-    }
-  }, [session, context, router])
+  const { data: items, pagination, isLoading, error, refetch } = useFoodItems(filters, 'nutritionist')
+  const { data: categories } = useFoodCategories({ page: 1, perPage: 100 }, 'nutritionist')
 
   const paginationConfig = pagination
     ? {
@@ -75,33 +55,22 @@ export default function NutritionistFoodItemsPage() {
 
   const handleDelete = useCallback(() => {}, [])
 
-  if (!canAccessNutritionistFeatures(session ?? null, context)) return null
-
   return (
-    <EntityListPageLayout
-      title="Food Items"
-      icon={UtensilsCrossed}
-      error={error ?? null}
-      onRetry={refetch}
-    >
+    <EntityListPageLayout title='Food Items' icon={UtensilsCrossed} error={error ?? null} onRetry={refetch}>
       <FoodItemsTable
         items={items}
         categories={categories}
         pagination={paginationConfig}
-        onPageChange={(page) => setFilters((f) => ({ ...f, page }))}
-        onPageSizeChange={(perPage) =>
-          setFilters((f) => ({ ...f, perPage, page: 1 }))
-        }
-        onSearchChange={(q) => setFilters((f) => ({ ...f, q, page: 1 }))}
+        onPageChange={page => setFilters(f => ({ ...f, page }))}
+        onPageSizeChange={perPage => setFilters(f => ({ ...f, perPage, page: 1 }))}
+        onSearchChange={q => setFilters(f => ({ ...f, q, page: 1 }))}
         searchValue={filters.q}
         categoryId={filters.categoryId}
-        onCategoryChange={(categoryId) =>
-          setFilters((f) => ({ ...f, categoryId, page: 1 }))
-        }
+        onCategoryChange={categoryId => setFilters(f => ({ ...f, categoryId, page: 1 }))}
         sortBy={filters.sortBy}
         sortOrder={filters.sortOrder}
         onSortingChange={(sortBy, sortOrder) =>
-          setFilters((f) => ({
+          setFilters(f => ({
             ...f,
             sortBy: sortBy ?? 'createdAt',
             sortOrder: sortOrder ?? 'desc',

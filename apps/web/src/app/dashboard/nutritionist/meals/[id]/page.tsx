@@ -2,7 +2,6 @@
 
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
-import { authClient } from '@/lib/auth-client'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -16,19 +15,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowLeft, Pencil, Trash2, Plus } from 'lucide-react'
 import { useMeal } from '@/hooks/use-meal'
 import { useUpdateMeal, useDeleteMeal } from '@/hooks/use-meal-mutations'
-import { useOrganizationContext } from '@/hooks/authorization/use-organization-context'
-import { canAccessNutritionistFeatures } from '@/lib/authorization/nutritionist-access'
 import { MealMetadataCard } from '../../../admin/meals/[id]/components/meal-metadata-card'
 import { MealSummaryCard } from '../../../admin/meals/[id]/components/meal-summary-card'
 import { MealItemsTable } from '../../../admin/meals/[id]/components/meal-items-table'
@@ -43,8 +34,6 @@ export default function NutritionistMealDetailPage() {
   const id = params.id as string
   const showDelete = searchParams.get('delete') === '1'
 
-  const { data: session } = authClient.useSession()
-  const { context } = useOrganizationContext()
   const { data: meal, isLoading, error, refetch } = useMeal(id, 'nutritionist')
   const updateMeal = useUpdateMeal('nutritionist')
   const deleteMeal = useDeleteMeal('nutritionist')
@@ -54,15 +43,6 @@ export default function NutritionistMealDetailPage() {
   const [addFoodOpen, setAddFoodOpen] = useState(false)
   const [bulkQuantityOpen, setBulkQuantityOpen] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-
-  useEffect(() => {
-    if (
-      session === null ||
-      !canAccessNutritionistFeatures(session, context)
-    ) {
-      router.replace('/dashboard')
-    }
-  }, [session, context, router])
 
   useEffect(() => {
     setDeleteOpen(showDelete)
@@ -123,7 +103,7 @@ export default function NutritionistMealDetailPage() {
       if (selectedIds.length === 0) return
       await updateMeal.mutateAsync({
         id,
-        update: selectedIds.map((mealItemId) => ({ mealItemId, quantity })),
+        update: selectedIds.map(mealItemId => ({ mealItemId, quantity })),
       })
       setSelectedIds([])
       refetch()
@@ -131,35 +111,28 @@ export default function NutritionistMealDetailPage() {
     [id, selectedIds, updateMeal, refetch]
   )
 
-  if (!canAccessNutritionistFeatures(session ?? null, context)) return null
-
   if (isLoading || !meal) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-32" />
+      <div className='space-y-6'>
+        <Skeleton className='h-8 w-32' />
+        <Skeleton className='h-32' />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="space-y-4">
-        <Link href="/dashboard/nutritionist/meals">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
+      <div className='space-y-4'>
+        <Link href='/dashboard/nutritionist/meals'>
+          <Button variant='ghost' size='sm' className='gap-2'>
+            <ArrowLeft className='h-4 w-4' />
             Back to meals
           </Button>
         </Link>
-        <Card className="border-destructive">
-          <CardContent className="pt-6">
-            <p className="text-destructive">{error}</p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-2"
-              onClick={() => refetch()}
-            >
+        <Card className='border-destructive'>
+          <CardContent className='pt-6'>
+            <p className='text-destructive'>{error}</p>
+            <Button variant='outline' size='sm' className='mt-2' onClick={() => refetch()}>
               Retry
             </Button>
           </CardContent>
@@ -171,31 +144,26 @@ export default function NutritionistMealDetailPage() {
   const mealItems = meal.mealItems ?? []
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <Link href="/dashboard/nutritionist/meals">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
+    <div className='space-y-6'>
+      <div className='flex items-center justify-between gap-4'>
+        <Link href='/dashboard/nutritionist/meals'>
+          <Button variant='ghost' size='sm' className='gap-2'>
+            <ArrowLeft className='h-4 w-4' />
             Back to meals
           </Button>
         </Link>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setEditOpen(true)}
-            className="gap-2"
-          >
-            <Pencil className="h-4 w-4" />
+        <div className='flex gap-2'>
+          <Button variant='outline' size='sm' onClick={() => setEditOpen(true)} className='gap-2'>
+            <Pencil className='h-4 w-4' />
             Edit meal
           </Button>
           <Button
-            variant="outline"
-            size="sm"
+            variant='outline'
+            size='sm'
             onClick={() => setDeleteOpen(true)}
-            className="text-destructive hover:text-destructive gap-2"
+            className='text-destructive hover:text-destructive gap-2'
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className='h-4 w-4' />
             Delete meal
           </Button>
         </div>
@@ -206,33 +174,23 @@ export default function NutritionistMealDetailPage() {
       <MealSummaryCard mealItems={mealItems} />
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <h3 className="text-sm font-medium">Food items in this meal</h3>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setAddFoodOpen(true)}
-              className="gap-2"
-            >
-              <Plus className="h-4 w-4" />
+        <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-4'>
+          <h3 className='text-sm font-medium'>Food items in this meal</h3>
+          <div className='flex gap-2'>
+            <Button size='sm' variant='outline' onClick={() => setAddFoodOpen(true)} className='gap-2'>
+              <Plus className='h-4 w-4' />
               Add food
             </Button>
             {selectedIds.length > 0 && (
               <>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setBulkQuantityOpen(true)}
-                  className="gap-2"
-                >
+                <Button size='sm' variant='outline' onClick={() => setBulkQuantityOpen(true)} className='gap-2'>
                   Bulk set quantity
                 </Button>
                 <Button
-                  size="sm"
-                  variant="outline"
+                  size='sm'
+                  variant='outline'
                   onClick={handleBulkRemove}
-                  className="text-destructive hover:text-destructive gap-2"
+                  className='text-destructive hover:text-destructive gap-2'
                   disabled={updateMeal.isPending}
                 >
                   Delete selected ({selectedIds.length})
@@ -256,9 +214,7 @@ export default function NutritionistMealDetailPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit meal</DialogTitle>
-            <DialogDescription>
-              Update the meal name and description.
-            </DialogDescription>
+            <DialogDescription>Update the meal name and description.</DialogDescription>
           </DialogHeader>
           <MealForm
             defaultValues={{
@@ -276,8 +232,8 @@ export default function NutritionistMealDetailPage() {
         open={addFoodOpen}
         onOpenChange={setAddFoodOpen}
         onAdd={handleAddFood}
-        excludeFoodIds={mealItems.map((mi) => mi.foodItemId)}
-        source="nutritionist"
+        excludeFoodIds={mealItems.map(mi => mi.foodItemId)}
+        source='nutritionist'
       />
 
       <BulkSetQuantityDialog
@@ -291,16 +247,14 @@ export default function NutritionistMealDetailPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete meal</AlertDialogTitle>
-            <AlertDialogDescription>
-              Delete &quot;{meal.name}&quot;? This cannot be undone.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Delete &quot;{meal.name}&quot;? This cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteMeal}
               disabled={deleteMeal.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
             >
               {deleteMeal.isPending ? 'Deleting…' : 'Delete'}
             </AlertDialogAction>

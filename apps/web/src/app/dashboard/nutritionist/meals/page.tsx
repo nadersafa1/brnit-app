@@ -1,10 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useState } from 'react'
-import { authClient } from '@/lib/auth-client'
-import { useOrganizationContext } from '@/hooks/authorization/use-organization-context'
-import { canAccessNutritionistFeatures } from '@/lib/authorization/nutritionist-access'
+import { useCallback, useState } from 'react'
 import { EntityListPageLayout } from '../../shared/entity-list-page-layout'
 import { MealsTable } from '../../admin/meals/components/meals-table'
 import { CreateMealDialog } from '../../admin/meals/components/create-meal-dialog'
@@ -16,8 +13,6 @@ import { Button } from '@/components/ui/button'
 
 export default function NutritionistMealsPage() {
   const router = useRouter()
-  const { data: session } = authClient.useSession()
-  const { context } = useOrganizationContext()
 
   const [filters, setFilters] = useState<{
     page: number
@@ -34,19 +29,7 @@ export default function NutritionistMealsPage() {
   })
   const [createOpen, setCreateOpen] = useState(false)
 
-  const { data: meals, pagination, isLoading, error, refetch } = useMeals(
-    filters,
-    'nutritionist'
-  )
-
-  useEffect(() => {
-    if (
-      session === null ||
-      !canAccessNutritionistFeatures(session, context)
-    ) {
-      router.replace('/dashboard')
-    }
-  }, [session, context, router])
+  const { data: meals, pagination, isLoading, error, refetch } = useMeals(filters, 'nutritionist')
 
   const paginationConfig = pagination
     ? {
@@ -76,21 +59,14 @@ export default function NutritionistMealsPage() {
     [router]
   )
 
-  if (!canAccessNutritionistFeatures(session ?? null, context)) return null
-
   return (
     <>
       <EntityListPageLayout
-        title="Meals"
+        title='Meals'
         icon={UtensilsCrossed}
         createButton={
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setCreateOpen(true)}
-            className="gap-2"
-          >
-            <Plus className="h-4 w-4" />
+          <Button size='sm' variant='outline' onClick={() => setCreateOpen(true)} className='gap-2'>
+            <Plus className='h-4 w-4' />
             Create meal
           </Button>
         }
@@ -100,16 +76,14 @@ export default function NutritionistMealsPage() {
         <MealsTable
           meals={meals}
           pagination={paginationConfig}
-          onPageChange={(page) => setFilters((f) => ({ ...f, page }))}
-          onPageSizeChange={(perPage) =>
-            setFilters((f) => ({ ...f, perPage, page: 1 }))
-          }
-          onSearchChange={(q) => setFilters((f) => ({ ...f, q, page: 1 }))}
+          onPageChange={page => setFilters(f => ({ ...f, page }))}
+          onPageSizeChange={perPage => setFilters(f => ({ ...f, perPage, page: 1 }))}
+          onSearchChange={q => setFilters(f => ({ ...f, q, page: 1 }))}
           searchValue={filters.q}
           sortBy={filters.sortBy}
           sortOrder={filters.sortOrder}
           onSortingChange={(sortBy, sortOrder) =>
-            setFilters((f) => ({
+            setFilters(f => ({
               ...f,
               sortBy: sortBy ?? 'name',
               sortOrder: sortOrder ?? 'asc',
@@ -127,7 +101,7 @@ export default function NutritionistMealsPage() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         onSuccess={() => refetch()}
-        source="nutritionist"
+        source='nutritionist'
       />
     </>
   )

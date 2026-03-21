@@ -13,10 +13,7 @@ import type {
   UpdateFoodItemForm,
 } from '@/types/api/food.schemas'
 
-async function fetchWithAuth(
-  url: string,
-  options?: { method?: string; body?: string }
-): Promise<Response> {
+async function fetchWithAuth(url: string, options?: { method?: string; body?: string }): Promise<Response> {
   const res = await fetch(url, {
     credentials: 'include',
     method: options?.method ?? 'GET',
@@ -24,6 +21,16 @@ async function fetchWithAuth(
     body: options?.body,
   })
   return res
+}
+
+async function getApiErrorMessage(response: Response, fallbackMessage: string): Promise<string> {
+  const errorPayload = await response.json().catch(() => null)
+  return typeof errorPayload?.error === 'string' ? errorPayload.error : fallbackMessage
+}
+
+async function requireSuccess(response: Response, fallbackMessage: string): Promise<void> {
+  if (response.ok) return
+  throw new Error(await getApiErrorMessage(response, fallbackMessage))
 }
 
 export function useCreateFoodCategory() {
@@ -34,10 +41,7 @@ export function useCreateFoodCategory() {
         method: 'POST',
         body: JSON.stringify(body),
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err?.error ?? 'Failed to create category')
-      }
+      await requireSuccess(res, 'Failed to create category')
       return res.json()
     },
     onSuccess: () => {
@@ -56,10 +60,7 @@ export function useUpdateFoodCategory() {
         method: 'PATCH',
         body: JSON.stringify(body),
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err?.error ?? 'Failed to update category')
-      }
+      await requireSuccess(res, 'Failed to update category')
       return res.json()
     },
     onSuccess: (_, variables) => {
@@ -78,10 +79,7 @@ export function useDeleteFoodCategory() {
       const res = await fetchWithAuth(API_ENDPOINTS.admin.foodCategory(id), {
         method: 'DELETE',
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err?.error ?? 'Failed to delete category')
-      }
+      await requireSuccess(res, 'Failed to delete category')
       return res.json()
     },
     onSuccess: () => {
@@ -96,11 +94,12 @@ function buildCreateFoodItemFormData(data: CreateFoodItemForm, file?: File): For
   const formData = new FormData()
   formData.append('name', data.name)
   formData.append('categoryId', data.categoryId)
-  if (data.fdcId != null) formData.append('fdcId', String(data.fdcId))
   if (data.calories != null) formData.append('calories', String(data.calories))
   if (data.protein != null) formData.append('protein', String(data.protein))
   if (data.carbs != null) formData.append('carbs', String(data.carbs))
   if (data.fat != null) formData.append('fat', String(data.fat))
+  if (data.unit != null) formData.append('unit', String(data.unit))
+  if (data.gramsPerUnit != null) formData.append('gramsPerUnit', String(data.gramsPerUnit))
   if (data.servingSize != null) formData.append('servingSize', String(data.servingSize))
   if (file) formData.append('file', file)
   return formData
@@ -117,10 +116,7 @@ export function useCreateFoodItem() {
         method: 'POST',
         body: formData,
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err?.error ?? 'Failed to create food item')
-      }
+      await requireSuccess(res, 'Failed to create food item')
       return res.json()
     },
     onSuccess: () => {
@@ -138,11 +134,12 @@ function buildUpdateFoodItemFormData(
   const formData = new FormData()
   if (data.name != null) formData.append('name', data.name)
   if (data.categoryId != null) formData.append('categoryId', data.categoryId)
-  if (data.fdcId != null) formData.append('fdcId', String(data.fdcId))
   if (data.calories != null) formData.append('calories', String(data.calories))
   if (data.protein != null) formData.append('protein', String(data.protein))
   if (data.carbs != null) formData.append('carbs', String(data.carbs))
   if (data.fat != null) formData.append('fat', String(data.fat))
+  if (data.unit != null) formData.append('unit', String(data.unit))
+  if (data.gramsPerUnit != null) formData.append('gramsPerUnit', String(data.gramsPerUnit))
   if (data.servingSize != null) formData.append('servingSize', String(data.servingSize))
   if (options?.file) formData.append('file', options.file)
   if (options?.clearImage) formData.append('clearImage', 'true')
@@ -152,9 +149,7 @@ function buildUpdateFoodItemFormData(
 export function useUpdateFoodItem() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (
-      payload: UpdateFoodItem & { id: string; file?: File; clearImage?: boolean }
-    ) => {
+    mutationFn: async (payload: UpdateFoodItem & { id: string; file?: File; clearImage?: boolean }) => {
       const { id, file, clearImage, ...data } = payload
       const formData = buildUpdateFoodItemFormData(data, { file, clearImage })
       const res = await fetch(API_ENDPOINTS.admin.foodItem(id), {
@@ -162,10 +157,7 @@ export function useUpdateFoodItem() {
         method: 'PATCH',
         body: formData,
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err?.error ?? 'Failed to update food item')
-      }
+      await requireSuccess(res, 'Failed to update food item')
       return res.json()
     },
     onSuccess: (_, variables) => {
@@ -184,10 +176,7 @@ export function useDeleteFoodItem() {
       const res = await fetchWithAuth(API_ENDPOINTS.admin.foodItem(id), {
         method: 'DELETE',
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err?.error ?? 'Failed to delete food item')
-      }
+      await requireSuccess(res, 'Failed to delete food item')
       return res.json()
     },
     onSuccess: () => {

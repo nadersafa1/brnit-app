@@ -1,7 +1,6 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { useEffect, useCallback, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 
 import { authClient } from '@/lib/auth-client'
@@ -22,8 +21,6 @@ import { useAdminUsers } from './hooks/use-admin-users'
 import type { AdminUser } from './types'
 
 const AdminPage = () => {
-  const router = useRouter()
-  const { data: session } = authClient.useSession()
   const {
     users,
     pagination,
@@ -39,12 +36,6 @@ const AdminPage = () => {
   const [deleteUser, setDeleteUser] = useState<AdminUser | null>(null)
   const [roleUser, setRoleUser] = useState<AdminUser | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
-
-  useEffect(() => {
-    if (session === null || (session?.user && session.user.role !== 'admin')) {
-      router.replace('/dashboard')
-    }
-  }, [session, router])
 
   const handleImpersonate = useCallback(
     (user: AdminUser) => {
@@ -139,8 +130,6 @@ const AdminPage = () => {
       }
     )
   }, [deleteUser, refetch])
-
-  if (session?.user?.role !== 'admin') return null
 
   if (error) {
     return (

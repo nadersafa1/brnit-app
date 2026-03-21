@@ -2,7 +2,6 @@
 
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
-import { authClient } from '@/lib/auth-client'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -16,17 +15,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowLeft, Pencil, Trash2, Plus } from 'lucide-react'
-import { useOrganizationContext } from '@/hooks/authorization/use-organization-context'
-import { canAccessNutritionistFeatures } from '@/lib/authorization/nutritionist-access'
 import { useDietPlan } from '@/hooks/use-diet-plan'
 import { useUpdateDietPlan, useDeleteDietPlan } from '@/hooks/use-diet-plan-mutations'
 import {
@@ -46,8 +37,6 @@ export default function NutritionistDietPlanDetailPage() {
   const id = params.id as string
   const showDelete = searchParams.get('delete') === '1'
 
-  const { data: session } = authClient.useSession()
-  const { context } = useOrganizationContext()
   const { data: plan, isLoading, error, refetch } = useDietPlan(id, 'nutritionist')
   const updatePlan = useUpdateDietPlan('nutritionist')
   const deletePlan = useDeleteDietPlan('nutritionist')
@@ -58,15 +47,6 @@ export default function NutritionistDietPlanDetailPage() {
   const [slotToEdit, setSlotToEdit] = useState<DietPlanMeal | null>(null)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [deleteOpen, setDeleteOpen] = useState(showDelete)
-
-  useEffect(() => {
-    if (
-      session === null ||
-      !canAccessNutritionistFeatures(session, context)
-    ) {
-      router.replace('/dashboard')
-    }
-  }, [session, context, router])
 
   useEffect(() => {
     setDeleteOpen(showDelete)
@@ -149,30 +129,28 @@ export default function NutritionistDietPlanDetailPage() {
     router.push('/dashboard/nutritionist/diet-plans')
   }, [id, deletePlan, router])
 
-  if (!canAccessNutritionistFeatures(session, context)) return null
-
   if (isLoading || !plan) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-32" />
+      <div className='space-y-6'>
+        <Skeleton className='h-8 w-32' />
+        <Skeleton className='h-32' />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="space-y-4">
-        <Link href="/dashboard/nutritionist/diet-plans">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
+      <div className='space-y-4'>
+        <Link href='/dashboard/nutritionist/diet-plans'>
+          <Button variant='ghost' size='sm' className='gap-2'>
+            <ArrowLeft className='h-4 w-4' />
             Back to diet plans
           </Button>
         </Link>
-        <Card className="border-destructive">
-          <CardContent className="pt-6">
-            <p className="text-destructive">{error}</p>
-            <Button variant="outline" size="sm" className="mt-2" onClick={() => refetch()}>
+        <Card className='border-destructive'>
+          <CardContent className='pt-6'>
+            <p className='text-destructive'>{error}</p>
+            <Button variant='outline' size='sm' className='mt-2' onClick={() => refetch()}>
               Retry
             </Button>
           </CardContent>
@@ -184,26 +162,26 @@ export default function NutritionistDietPlanDetailPage() {
   const meals = plan.dietPlanMeals ?? []
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <Link href="/dashboard/nutritionist/diet-plans">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
+    <div className='space-y-6'>
+      <div className='flex items-center justify-between gap-4'>
+        <Link href='/dashboard/nutritionist/diet-plans'>
+          <Button variant='ghost' size='sm' className='gap-2'>
+            <ArrowLeft className='h-4 w-4' />
             Back to diet plans
           </Button>
         </Link>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)} className="gap-2">
-            <Pencil className="h-4 w-4" />
+        <div className='flex gap-2'>
+          <Button variant='outline' size='sm' onClick={() => setEditOpen(true)} className='gap-2'>
+            <Pencil className='h-4 w-4' />
             Edit plan
           </Button>
           <Button
-            variant="outline"
-            size="sm"
+            variant='outline'
+            size='sm'
             onClick={() => setDeleteOpen(true)}
-            className="text-destructive hover:text-destructive gap-2"
+            className='text-destructive hover:text-destructive gap-2'
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className='h-4 w-4' />
             Delete plan
           </Button>
         </div>
@@ -212,24 +190,19 @@ export default function NutritionistDietPlanDetailPage() {
       <DietPlanMetadataCard plan={plan} />
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <h3 className="text-sm font-medium">Meal slots in this plan</h3>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setAddMealOpen(true)}
-              className="gap-2"
-            >
-              <Plus className="h-4 w-4" />
+        <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-4'>
+          <h3 className='text-sm font-medium'>Meal slots in this plan</h3>
+          <div className='flex gap-2'>
+            <Button size='sm' variant='outline' onClick={() => setAddMealOpen(true)} className='gap-2'>
+              <Plus className='h-4 w-4' />
               Add meal
             </Button>
             {selectedIds.length > 0 && (
               <Button
-                size="sm"
-                variant="outline"
+                size='sm'
+                variant='outline'
                 onClick={handleBulkRemoveMeals}
-                className="text-destructive hover:text-destructive gap-2"
+                className='text-destructive hover:text-destructive gap-2'
                 disabled={updatePlan.isPending}
               >
                 Delete selected ({selectedIds.length})
@@ -260,7 +233,7 @@ export default function NutritionistDietPlanDetailPage() {
             onSubmit={handleUpdateMetadata}
             onCancel={() => setEditOpen(false)}
             isLoading={updatePlan.isPending}
-            submitLabel="Save"
+            submitLabel='Save'
           />
         </DialogContent>
       </Dialog>
@@ -269,7 +242,7 @@ export default function NutritionistDietPlanDetailPage() {
         open={addMealOpen}
         onOpenChange={setAddMealOpen}
         onAdd={handleAddMeal}
-        source="nutritionist"
+        source='nutritionist'
       />
 
       <EditDietPlanMealDialog
@@ -277,23 +250,21 @@ export default function NutritionistDietPlanDetailPage() {
         onOpenChange={setEditSlotOpen}
         slot={slotToEdit}
         onUpdate={handleUpdateMealSlot}
-        source="nutritionist"
+        source='nutritionist'
       />
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete diet plan</AlertDialogTitle>
-            <AlertDialogDescription>
-              Delete &quot;{plan.name}&quot;? This cannot be undone.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Delete &quot;{plan.name}&quot;? This cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeletePlan}
               disabled={deletePlan.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
             >
               {deletePlan.isPending ? 'Deleting…' : 'Delete'}
             </AlertDialogAction>

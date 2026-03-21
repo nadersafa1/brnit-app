@@ -10,7 +10,7 @@ import {
   member,
 } from '@burn-app/auth/permissions'
 
-export const authClient = createAuthClient({
+const authClient = createAuthClient({
   plugins: [
     adminClient(),
     organizationClient({
@@ -34,3 +34,6 @@ export const authClient = createAuthClient({
     }),
   ],
 })
+
+export { authClient }
+export type Session = (typeof authClient)['$Infer']['Session']

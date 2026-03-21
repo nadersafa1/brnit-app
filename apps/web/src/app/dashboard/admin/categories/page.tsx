@@ -1,8 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useState } from 'react'
-import { authClient } from '@/lib/auth-client'
+import { useCallback, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { FolderTree, Plus } from 'lucide-react'
@@ -14,7 +13,6 @@ import type { FoodCategory } from '@/lib/queries/food-categories'
 
 export default function CategoriesPage() {
   const router = useRouter()
-  const { data: session } = authClient.useSession()
 
   const [filters, setFilters] = useState<{
     page: number
@@ -32,12 +30,6 @@ export default function CategoriesPage() {
   const [createOpen, setCreateOpen] = useState(false)
 
   const { data: categories, pagination, isLoading, error, refetch } = useFoodCategories(filters)
-
-  useEffect(() => {
-    if (session === null || (session?.user && session.user.role !== 'admin')) {
-      router.replace('/dashboard')
-    }
-  }, [session, router])
 
   const paginationConfig = pagination
     ? {
@@ -66,8 +58,6 @@ export default function CategoriesPage() {
     },
     [router]
   )
-
-  if (session?.user?.role !== 'admin') return null
 
   return (
     <div className="space-y-6">

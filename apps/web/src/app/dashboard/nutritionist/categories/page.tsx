@@ -1,10 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useState } from 'react'
-import { authClient } from '@/lib/auth-client'
-import { useOrganizationContext } from '@/hooks/authorization/use-organization-context'
-import { canAccessNutritionistFeatures } from '@/lib/authorization/nutritionist-access'
+import { useCallback, useState } from 'react'
 import { EntityListPageLayout } from '../../shared/entity-list-page-layout'
 import { CategoriesTable } from '../../admin/categories/components/categories-table'
 import { useFoodCategories } from '@/hooks/use-food-categories'
@@ -14,8 +11,6 @@ import { FolderTree } from 'lucide-react'
 
 export default function NutritionistCategoriesPage() {
   const router = useRouter()
-  const { data: session } = authClient.useSession()
-  const { context } = useOrganizationContext()
 
   const [filters, setFilters] = useState<{
     page: number
@@ -31,17 +26,7 @@ export default function NutritionistCategoriesPage() {
     sortOrder: 'asc',
   })
 
-  const { data: categories, pagination, isLoading, error, refetch } =
-    useFoodCategories(filters, 'nutritionist')
-
-  useEffect(() => {
-    if (
-      session === null ||
-      !canAccessNutritionistFeatures(session, context)
-    ) {
-      router.replace('/dashboard')
-    }
-  }, [session, context, router])
+  const { data: categories, pagination, isLoading, error, refetch } = useFoodCategories(filters, 'nutritionist')
 
   const paginationConfig = pagination
     ? {
@@ -66,28 +51,19 @@ export default function NutritionistCategoriesPage() {
 
   const handleDelete = useCallback(() => {}, [])
 
-  if (!canAccessNutritionistFeatures(session ?? null, context)) return null
-
   return (
-    <EntityListPageLayout
-      title="Food Categories"
-      icon={FolderTree}
-      error={error ?? null}
-      onRetry={refetch}
-    >
+    <EntityListPageLayout title='Food Categories' icon={FolderTree} error={error ?? null} onRetry={refetch}>
       <CategoriesTable
         categories={categories}
         pagination={paginationConfig}
-        onPageChange={(page) => setFilters((f) => ({ ...f, page }))}
-        onPageSizeChange={(perPage) =>
-          setFilters((f) => ({ ...f, perPage, page: 1 }))
-        }
-        onSearchChange={(q) => setFilters((f) => ({ ...f, q, page: 1 }))}
+        onPageChange={page => setFilters(f => ({ ...f, page }))}
+        onPageSizeChange={perPage => setFilters(f => ({ ...f, perPage, page: 1 }))}
+        onSearchChange={q => setFilters(f => ({ ...f, q, page: 1 }))}
         searchValue={filters.q}
         sortBy={filters.sortBy}
         sortOrder={filters.sortOrder}
         onSortingChange={(sortBy, sortOrder) =>
-          setFilters((f) => ({
+          setFilters(f => ({
             ...f,
             sortBy: sortBy ?? 'name',
             sortOrder: sortOrder ?? 'asc',
