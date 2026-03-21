@@ -1,6 +1,7 @@
 'use client'
 
 import { queryOptions } from '@tanstack/react-query'
+import { fetchJsonWithCredentials } from '@/lib/api/fetch-with-credentials'
 import { API_ENDPOINTS } from '@/lib/api/endpoints'
 import { getKeys, type DataSource } from './keys'
 import type { PaginationMeta } from '@/lib/api-helpers/pagination'
@@ -41,20 +42,6 @@ export interface MealsResponse {
   pagination: PaginationMeta
 }
 
-async function fetchWithAuth(url: string, options?: { method?: string; body?: string }) {
-  const res = await fetch(url, {
-    credentials: 'include',
-    method: options?.method ?? 'GET',
-    headers: options?.body ? { 'Content-Type': 'application/json' } : undefined,
-    body: options?.body,
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err?.error ?? `Request failed: ${res.status}`)
-  }
-  return res.json()
-}
-
 export function fetchMeals(
   filters: MealsFilters,
   source: DataSource = 'admin'
@@ -71,7 +58,7 @@ export function fetchMeals(
       ? API_ENDPOINTS.nutritionist.meals
       : API_ENDPOINTS.admin.meals
   const url = `${base}?${params.toString()}`
-  return fetchWithAuth(url)
+  return fetchJsonWithCredentials<MealsResponse>(url)
 }
 
 export function fetchMeal(id: string, source: DataSource = 'admin'): Promise<{ data: Meal }> {
@@ -79,7 +66,7 @@ export function fetchMeal(id: string, source: DataSource = 'admin'): Promise<{ d
     source === 'nutritionist'
       ? API_ENDPOINTS.nutritionist.meal(id)
       : API_ENDPOINTS.admin.meal(id)
-  return fetchWithAuth(url)
+  return fetchJsonWithCredentials<{ data: Meal }>(url)
 }
 
 export function mealsQueryOptions(filters: MealsFilters, source: DataSource = 'admin') {

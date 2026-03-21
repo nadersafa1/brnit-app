@@ -2,7 +2,9 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { requireJsonSuccess } from '@/lib/api/error-handling'
 import { API_ENDPOINTS } from '@/lib/api/endpoints'
+import { fetchWithCredentials } from '@/lib/api/fetch-with-credentials'
 import { adminKeys } from '@/lib/queries/keys'
 import type {
   CreateFoodCategory,
@@ -13,36 +15,17 @@ import type {
   UpdateFoodItemForm,
 } from '@/types/api/food.schemas'
 
-async function fetchWithAuth(url: string, options?: { method?: string; body?: string }): Promise<Response> {
-  const res = await fetch(url, {
-    credentials: 'include',
-    method: options?.method ?? 'GET',
-    headers: options?.body ? { 'Content-Type': 'application/json' } : undefined,
-    body: options?.body,
-  })
-  return res
-}
-
-async function getApiErrorMessage(response: Response, fallbackMessage: string): Promise<string> {
-  const errorPayload = await response.json().catch(() => null)
-  return typeof errorPayload?.error === 'string' ? errorPayload.error : fallbackMessage
-}
-
-async function requireSuccess(response: Response, fallbackMessage: string): Promise<void> {
-  if (response.ok) return
-  throw new Error(await getApiErrorMessage(response, fallbackMessage))
-}
+// --- Food categories (JSON API) ---
 
 export function useCreateFoodCategory() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (body: CreateFoodCategory) => {
-      const res = await fetchWithAuth(API_ENDPOINTS.admin.foodCategories, {
+      const res = await fetchWithCredentials(API_ENDPOINTS.admin.foodCategories, {
         method: 'POST',
         body: JSON.stringify(body),
       })
-      await requireSuccess(res, 'Failed to create category')
-      return res.json()
+      return requireJsonSuccess(res, 'Failed to create category')
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'food-categories'] })
@@ -56,12 +39,11 @@ export function useUpdateFoodCategory() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async ({ id, ...body }: UpdateFoodCategory & { id: string }) => {
-      const res = await fetchWithAuth(API_ENDPOINTS.admin.foodCategory(id), {
+      const res = await fetchWithCredentials(API_ENDPOINTS.admin.foodCategory(id), {
         method: 'PATCH',
         body: JSON.stringify(body),
       })
-      await requireSuccess(res, 'Failed to update category')
-      return res.json()
+      return requireJsonSuccess(res, 'Failed to update category')
     },
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: adminKeys.foodCategory(variables.id) })
@@ -76,11 +58,10 @@ export function useDeleteFoodCategory() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetchWithAuth(API_ENDPOINTS.admin.foodCategory(id), {
+      const res = await fetchWithCredentials(API_ENDPOINTS.admin.foodCategory(id), {
         method: 'DELETE',
       })
-      await requireSuccess(res, 'Failed to delete category')
-      return res.json()
+      return requireJsonSuccess(res, 'Failed to delete category')
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'food-categories'] })
@@ -89,6 +70,8 @@ export function useDeleteFoodCategory() {
     onError: (e: Error) => toast.error(e.message),
   })
 }
+
+// --- Food items (multipart for create/update) ---
 
 function buildCreateFoodItemFormData(data: CreateFoodItemForm, file?: File): FormData {
   const formData = new FormData()
@@ -111,13 +94,11 @@ export function useCreateFoodItem() {
     mutationFn: async (payload: CreateFoodItem & { file?: File }) => {
       const { file, ...data } = payload
       const formData = buildCreateFoodItemFormData(data, file)
-      const res = await fetch(API_ENDPOINTS.admin.foodItems, {
-        credentials: 'include',
+      const res = await fetchWithCredentials(API_ENDPOINTS.admin.foodItems, {
         method: 'POST',
         body: formData,
       })
-      await requireSuccess(res, 'Failed to create food item')
-      return res.json()
+      return requireJsonSuccess(res, 'Failed to create food item')
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'food-items'] })
@@ -152,13 +133,11 @@ export function useUpdateFoodItem() {
     mutationFn: async (payload: UpdateFoodItem & { id: string; file?: File; clearImage?: boolean }) => {
       const { id, file, clearImage, ...data } = payload
       const formData = buildUpdateFoodItemFormData(data, { file, clearImage })
-      const res = await fetch(API_ENDPOINTS.admin.foodItem(id), {
-        credentials: 'include',
+      const res = await fetchWithCredentials(API_ENDPOINTS.admin.foodItem(id), {
         method: 'PATCH',
         body: formData,
       })
-      await requireSuccess(res, 'Failed to update food item')
-      return res.json()
+      return requireJsonSuccess(res, 'Failed to update food item')
     },
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: adminKeys.foodItem(variables.id) })
@@ -173,11 +152,10 @@ export function useDeleteFoodItem() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetchWithAuth(API_ENDPOINTS.admin.foodItem(id), {
+      const res = await fetchWithCredentials(API_ENDPOINTS.admin.foodItem(id), {
         method: 'DELETE',
       })
-      await requireSuccess(res, 'Failed to delete food item')
-      return res.json()
+      return requireJsonSuccess(res, 'Failed to delete food item')
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'food-items'] })

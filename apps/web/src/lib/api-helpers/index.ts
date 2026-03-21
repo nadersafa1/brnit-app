@@ -1,3 +1,4 @@
+export * from './api-error-response'
 export * from './admin-auth'
 export * from './delete-responses'
 export * from './nutritionist-auth'

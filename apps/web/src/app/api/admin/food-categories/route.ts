@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { flattenError } from 'zod'
+import { apiErrorResponse } from '@/lib/api-helpers/api-error-response'
 import { requireAdmin } from '@/lib/api-helpers/admin-auth'
 import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
 import { createFoodCategory, listFoodCategories } from '@/lib/services/food'
@@ -25,10 +26,7 @@ const getHandler = async (request: NextRequest) => {
   })
 
   if (!parseResult.success) {
-    return NextResponse.json(
-      { error: 'Invalid query parameters', details: flattenError(parseResult.error) },
-      { status: 400 }
-    )
+    return apiErrorResponse('Invalid query parameters', 400, flattenError(parseResult.error))
   }
 
   const { page, perPage } = parseResult.data
@@ -45,16 +43,13 @@ const postHandler = async (request: NextRequest) => {
   const parseResult = createFoodCategorySchema.safeParse(body)
 
   if (!parseResult.success) {
-    return NextResponse.json(
-      { error: 'Invalid request body', details: flattenError(parseResult.error) },
-      { status: 400 }
-    )
+    return apiErrorResponse('Invalid request body', 400, flattenError(parseResult.error))
   }
 
   const newCategory = await createFoodCategory(parseResult.data)
 
   if (!newCategory) {
-    return NextResponse.json({ error: 'Failed to create category' }, { status: 500 })
+    return apiErrorResponse('Failed to create category', 500)
   }
 
   return NextResponse.json({ data: newCategory }, { status: 201 })

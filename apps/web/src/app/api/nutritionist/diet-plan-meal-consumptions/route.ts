@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { flattenError } from 'zod'
+import { apiErrorResponse } from '@/lib/api-helpers/api-error-response'
 import { requireNutritionistOrgContext } from '@/lib/api-helpers/nutritionist-auth'
 import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
 import {
@@ -30,10 +31,7 @@ const getHandler = async (request: NextRequest) => {
   })
 
   if (!parseResult.success) {
-    return NextResponse.json(
-      { error: 'Invalid query parameters', details: flattenError(parseResult.error) },
-      { status: 400 }
-    )
+    return apiErrorResponse('Invalid query parameters', 400, flattenError(parseResult.error))
   }
 
   const { page, perPage } = parseResult.data
@@ -50,29 +48,23 @@ const postHandler = async (request: NextRequest) => {
   const parseResult = createDietPlanMealConsumptionSchema.safeParse(body)
 
   if (!parseResult.success) {
-    return NextResponse.json(
-      { error: 'Invalid request body', details: flattenError(parseResult.error) },
-      { status: 400 }
-    )
+    return apiErrorResponse('Invalid request body', 400, flattenError(parseResult.error))
   }
 
   const result = await logDietPlanMealConsumption(parseResult.data)
 
   if (!result.ok) {
     if (result.code === 'DUPLICATE') {
-      return NextResponse.json({ error: result.error }, { status: 409 })
+      return apiErrorResponse(result.error, 409)
     }
     if (result.code === 'OUT_OF_ALLOWED_DATE_RANGE') {
-      return NextResponse.json(
-        {
-          error:
-            'consumedAt must not be in the future and must be within the allowed backdate window',
-          details: { reason: result.error },
-        },
-        { status: 400 }
+      return apiErrorResponse(
+        'consumedAt must not be in the future and must be within the allowed backdate window',
+        400,
+        { reason: result.error }
       )
     }
-    return NextResponse.json({ error: result.error }, { status: 400 })
+    return apiErrorResponse(result.error, 400)
   }
 
   return NextResponse.json({ data: result.data }, { status: 201 })

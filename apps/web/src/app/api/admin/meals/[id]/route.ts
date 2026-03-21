@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { flattenError } from 'zod'
+import { apiErrorResponse } from '@/lib/api-helpers/api-error-response'
 import { deleteSuccessWithBody } from '@/lib/api-helpers/delete-responses'
 import { requireAdmin } from '@/lib/api-helpers/admin-auth'
 import { getMealById, updateMeal, deleteMeal } from '@/lib/services/meals'
@@ -16,7 +17,7 @@ const getHandler = async (request: NextRequest, { params }: Params) => {
   const mealData = await getMealById(id)
 
   if (!mealData) {
-    return NextResponse.json({ error: 'Meal not found' }, { status: 404 })
+    return apiErrorResponse('Meal not found', 404)
   }
 
   return NextResponse.json({ data: mealData })
@@ -31,19 +32,16 @@ const patchHandler = async (request: NextRequest, { params }: Params) => {
   const parseResult = updateMealSchema.safeParse(body)
 
   if (!parseResult.success) {
-    return NextResponse.json(
-      { error: 'Invalid request body', details: flattenError(parseResult.error) },
-      { status: 400 }
-    )
+    return apiErrorResponse('Invalid request body', 400, flattenError(parseResult.error))
   }
 
   const result = await updateMeal(id, parseResult.data)
 
   if (!result.ok) {
     if (result.code === 'NOT_FOUND') {
-      return NextResponse.json({ error: result.error }, { status: 404 })
+      return apiErrorResponse(result.error, 404)
     }
-    return NextResponse.json({ error: result.error }, { status: 400 })
+    return apiErrorResponse(result.error, 400)
   }
 
   return NextResponse.json({ data: result.data })
@@ -57,7 +55,7 @@ const deleteHandler = async (request: NextRequest, { params }: Params) => {
   const deleted = await deleteMeal(id)
 
   if (!deleted) {
-    return NextResponse.json({ error: 'Meal not found' }, { status: 404 })
+    return apiErrorResponse('Meal not found', 404)
   }
 
   return deleteSuccessWithBody(deleted)

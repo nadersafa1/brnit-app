@@ -1,7 +1,9 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
+import { requireJsonSuccess } from '@/lib/api/error-handling'
 import { API_ENDPOINTS } from '@/lib/api/endpoints'
+import { fetchWithCredentials } from '@/lib/api/fetch-with-credentials'
 import { nutritionistKeys } from '@/lib/queries/keys'
 
 export interface DietPlanAssignment {
@@ -19,13 +21,9 @@ export interface MemberAssignmentsResponse {
   pagination: { page: number; perPage: number; totalItems: number; totalPages: number }
 }
 
-async function fetchWithAuth(url: string) {
-  const res = await fetch(url, { credentials: 'include' })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err?.error ?? `Request failed: ${res.status}`)
-  }
-  return res.json()
+async function fetchMemberAssignments(url: string): Promise<MemberAssignmentsResponse> {
+  const res = await fetchWithCredentials(url)
+  return requireJsonSuccess<MemberAssignmentsResponse>(res, `Request failed: ${res.status}`)
 }
 
 export function useMemberAssignments(memberId: string | null, organizationId: string | null) {
@@ -38,7 +36,7 @@ export function useMemberAssignments(memberId: string | null, organizationId: st
 
   const query = useQuery({
     queryKey: [...nutritionistKeys.dietPlanAssignments({ memberId: memberId ?? undefined }), organizationId],
-    queryFn: () => fetchWithAuth(url),
+    queryFn: () => fetchMemberAssignments(url),
     enabled,
   })
 

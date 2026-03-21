@@ -2,41 +2,36 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { requireJsonSuccess } from '@/lib/api/error-handling'
 import { API_ENDPOINTS } from '@/lib/api/endpoints'
+import { fetchWithCredentials } from '@/lib/api/fetch-with-credentials'
 import { getKeys, type DataSource } from '@/lib/queries/keys'
 import type { CreateDietPlan, UpdateDietPlan } from '@/types/api/diet-plan.schemas'
 
-async function fetchWithAuth(
-  url: string,
-  options?: { method?: string; body?: string }
-): Promise<Response> {
-  const res = await fetch(url, {
-    credentials: 'include',
-    method: options?.method ?? 'GET',
-    headers: options?.body ? { 'Content-Type': 'application/json' } : undefined,
-    body: options?.body,
-  })
-  return res
+/** Matches POST diet-plans route: `NextResponse.json({ data: newPlan }, { status: 201 })`. */
+type CreateDietPlanApiResponse = { data: { id: string } }
+
+function dietPlanResourceUrl(source: DataSource, id: string) {
+  return source === 'nutritionist'
+    ? API_ENDPOINTS.nutritionist.dietPlan(id)
+    : API_ENDPOINTS.admin.dietPlan(id)
 }
 
 export function useCreateDietPlan(source: DataSource = 'admin') {
   const qc = useQueryClient()
   const keys = getKeys(source)
-  const url =
+  const listUrl =
     source === 'nutritionist'
       ? API_ENDPOINTS.nutritionist.dietPlans
       : API_ENDPOINTS.admin.dietPlans
+
   return useMutation({
     mutationFn: async (body: CreateDietPlan) => {
-      const res = await fetchWithAuth(url, {
+      const res = await fetchWithCredentials(listUrl, {
         method: 'POST',
         body: JSON.stringify(body),
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err?.error ?? 'Failed to create diet plan')
-      }
-      return res.json()
+      return requireJsonSuccess<CreateDietPlanApiResponse>(res, 'Failed to create diet plan')
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keys.dietPlans({}).slice(0, 2) })
@@ -49,21 +44,14 @@ export function useCreateDietPlan(source: DataSource = 'admin') {
 export function useUpdateDietPlan(source: DataSource = 'admin') {
   const qc = useQueryClient()
   const keys = getKeys(source)
-  const getUrl = (id: string) =>
-    source === 'nutritionist'
-      ? API_ENDPOINTS.nutritionist.dietPlan(id)
-      : API_ENDPOINTS.admin.dietPlan(id)
+
   return useMutation({
     mutationFn: async ({ id, ...body }: UpdateDietPlan & { id: string }) => {
-      const res = await fetchWithAuth(getUrl(id), {
+      const res = await fetchWithCredentials(dietPlanResourceUrl(source, id), {
         method: 'PATCH',
         body: JSON.stringify(body),
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err?.error ?? err?.details ?? 'Failed to update diet plan')
-      }
-      return res.json()
+      return requireJsonSuccess(res, 'Failed to update diet plan')
     },
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: keys.dietPlan(variables.id) })
@@ -77,20 +65,13 @@ export function useUpdateDietPlan(source: DataSource = 'admin') {
 export function useDeleteDietPlan(source: DataSource = 'admin') {
   const qc = useQueryClient()
   const keys = getKeys(source)
-  const getUrl = (id: string) =>
-    source === 'nutritionist'
-      ? API_ENDPOINTS.nutritionist.dietPlan(id)
-      : API_ENDPOINTS.admin.dietPlan(id)
+
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetchWithAuth(getUrl(id), {
+      const res = await fetchWithCredentials(dietPlanResourceUrl(source, id), {
         method: 'DELETE',
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err?.error ?? 'Failed to delete diet plan')
-      }
-      return res.json()
+      return requireJsonSuccess(res, 'Failed to delete diet plan')
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keys.dietPlans({}).slice(0, 2) })

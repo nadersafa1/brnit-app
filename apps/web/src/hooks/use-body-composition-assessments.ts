@@ -2,11 +2,13 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import type { PaginationMeta } from '@/lib/api-helpers/pagination'
+import { requireJsonSuccess } from '@/lib/api/error-handling'
 import { API_ENDPOINTS } from '@/lib/api/endpoints'
+import { fetchWithCredentials } from '@/lib/api/fetch-with-credentials'
 import { directAdminKeys, nutritionistKeys } from '@/lib/queries/keys'
 
 export type AssessmentSource = 'direct_admin' | 'nutritionist'
-import type { PaginationMeta } from '@/lib/api-helpers/pagination'
 
 export interface BodyCompositionAssessment {
   id: string
@@ -38,30 +40,13 @@ export interface BodyCompositionAssessmentsResponse {
   pagination: PaginationMeta
 }
 
-async function fetchWithAuth(
-  url: string,
-  options?: { method?: string; body?: FormData | string }
-): Promise<Response> {
-  const headers: HeadersInit = {}
-  if (options?.body && !(options.body instanceof FormData)) {
-    headers['Content-Type'] = 'application/json'
-  }
-  const res = await fetch(url, {
-    credentials: 'include',
-    method: options?.method ?? 'GET',
-    headers: Object.keys(headers).length ? headers : undefined,
-    body: options?.body,
-  })
-  return res
-}
-
-function getAssessmentsListUrl(source: AssessmentSource): string {
+function assessmentsListBaseUrl(source: AssessmentSource): string {
   return source === 'nutritionist'
     ? API_ENDPOINTS.nutritionist.bodyCompositionAssessments
     : API_ENDPOINTS.directAdmin.bodyCompositionAssessments
 }
 
-export function fetchBodyCompositionAssessments(
+export async function fetchBodyCompositionAssessments(
   filters: BodyCompositionAssessmentsFilters,
   source: AssessmentSource = 'direct_admin'
 ): Promise<BodyCompositionAssessmentsResponse> {
@@ -71,14 +56,9 @@ export function fetchBodyCompositionAssessments(
   if (filters.memberId) params.set('memberId', filters.memberId)
   if (filters.sortBy) params.set('sortBy', filters.sortBy)
   if (filters.sortOrder) params.set('sortOrder', filters.sortOrder)
-  const url = `${getAssessmentsListUrl(source)}?${params.toString()}`
-  return fetchWithAuth(url).then(async res => {
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err?.error ?? `Request failed: ${res.status}`)
-    }
-    return res.json()
-  })
+  const url = `${assessmentsListBaseUrl(source)}?${params.toString()}`
+  const res = await fetchWithCredentials(url)
+  return requireJsonSuccess<BodyCompositionAssessmentsResponse>(res, `Request failed: ${res.status}`)
 }
 
 export function useBodyCompositionAssessments(
@@ -125,15 +105,11 @@ export function useCreateAssessment() {
       fd.set('bodyWaterL', String(formData.bodyWaterL))
       if (formData.file) fd.set('file', formData.file)
 
-      const res = await fetchWithAuth(API_ENDPOINTS.directAdmin.bodyCompositionAssessments, {
+      const res = await fetchWithCredentials(API_ENDPOINTS.directAdmin.bodyCompositionAssessments, {
         method: 'POST',
         body: fd,
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err?.error ?? 'Failed to create assessment')
-      }
-      return res.json()
+      return requireJsonSuccess(res, 'Failed to create assessment')
     },
     onSuccess: (_, variables) => {
       qc.invalidateQueries({
@@ -182,15 +158,11 @@ export function useUpdateAssessment() {
       if (data.clearImage) fd.set('clearImage', '1')
       if (data.file) fd.set('file', data.file)
 
-      const res = await fetchWithAuth(
+      const res = await fetchWithCredentials(
         API_ENDPOINTS.directAdmin.bodyCompositionAssessment(id),
         { method: 'PATCH', body: fd }
       )
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err?.error ?? 'Failed to update assessment')
-      }
-      return res.json()
+      return requireJsonSuccess(res, 'Failed to update assessment')
     },
     onSuccess: (_, variables) => {
       qc.invalidateQueries({
@@ -209,15 +181,11 @@ export function useDeleteAssessment() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async ({ id, memberId }: { id: string; memberId: string }) => {
-      const res = await fetchWithAuth(
+      const res = await fetchWithCredentials(
         API_ENDPOINTS.directAdmin.bodyCompositionAssessment(id),
         { method: 'DELETE' }
       )
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err?.error ?? 'Failed to delete assessment')
-      }
-      return res.json()
+      return requireJsonSuccess(res, 'Failed to delete assessment')
     },
     onSuccess: (_, variables) => {
       qc.invalidateQueries({

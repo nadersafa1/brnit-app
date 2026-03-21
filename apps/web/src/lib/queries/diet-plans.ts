@@ -1,6 +1,7 @@
 'use client'
 
 import { queryOptions } from '@tanstack/react-query'
+import { fetchJsonWithCredentials } from '@/lib/api/fetch-with-credentials'
 import { getKeys, type DataSource } from './keys'
 import { API_ENDPOINTS } from '@/lib/api/endpoints'
 import type { PaginationMeta } from '@/lib/api-helpers/pagination'
@@ -43,20 +44,6 @@ export interface DietPlansResponse {
   pagination: PaginationMeta
 }
 
-async function fetchWithAuth(url: string, options?: { method?: string; body?: string }) {
-  const res = await fetch(url, {
-    credentials: 'include',
-    method: options?.method ?? 'GET',
-    headers: options?.body ? { 'Content-Type': 'application/json' } : undefined,
-    body: options?.body,
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err?.error ?? `Request failed: ${res.status}`)
-  }
-  return res.json()
-}
-
 export function fetchDietPlans(
   filters: DietPlansFilters,
   source: DataSource = 'admin'
@@ -73,7 +60,7 @@ export function fetchDietPlans(
       ? API_ENDPOINTS.nutritionist.dietPlans
       : API_ENDPOINTS.admin.dietPlans
   const url = `${base}?${params.toString()}`
-  return fetchWithAuth(url)
+  return fetchJsonWithCredentials<DietPlansResponse>(url)
 }
 
 export function fetchDietPlan(
@@ -84,7 +71,7 @@ export function fetchDietPlan(
     source === 'nutritionist'
       ? API_ENDPOINTS.nutritionist.dietPlan(id)
       : API_ENDPOINTS.admin.dietPlan(id)
-  return fetchWithAuth(url)
+  return fetchJsonWithCredentials<{ data: DietPlan }>(url)
 }
 
 export function dietPlansQueryOptions(

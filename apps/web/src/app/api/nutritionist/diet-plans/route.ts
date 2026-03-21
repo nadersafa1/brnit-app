@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { flattenError } from 'zod'
+import { apiErrorResponse } from '@/lib/api-helpers/api-error-response'
 import { requireNutritionist } from '@/lib/api-helpers/nutritionist-auth'
 import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
 import { listDietPlans, createDietPlan } from '@/lib/services/diet-plans'
@@ -22,10 +23,7 @@ const getHandler = async (request: NextRequest) => {
   })
 
   if (!parseResult.success) {
-    return NextResponse.json(
-      { error: 'Invalid query parameters', details: flattenError(parseResult.error) },
-      { status: 400 }
-    )
+    return apiErrorResponse('Invalid query parameters', 400, flattenError(parseResult.error))
   }
 
   const { page, perPage } = parseResult.data
@@ -42,16 +40,13 @@ const postHandler = async (request: NextRequest) => {
   const parseResult = createDietPlanSchema.safeParse(body)
 
   if (!parseResult.success) {
-    return NextResponse.json(
-      { error: 'Invalid request body', details: flattenError(parseResult.error) },
-      { status: 400 }
-    )
+    return apiErrorResponse('Invalid request body', 400, flattenError(parseResult.error))
   }
 
   const newPlan = await createDietPlan(parseResult.data)
 
   if (!newPlan) {
-    return NextResponse.json({ error: 'Failed to create diet plan' }, { status: 500 })
+    return apiErrorResponse('Failed to create diet plan', 500)
   }
 
   return NextResponse.json({ data: newPlan }, { status: 201 })

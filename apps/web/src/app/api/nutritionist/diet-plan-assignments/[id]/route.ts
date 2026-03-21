@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { flattenError } from 'zod'
+import { apiErrorResponse } from '@/lib/api-helpers/api-error-response'
 import { deleteSuccessWithBody } from '@/lib/api-helpers/delete-responses'
 import { requireNutritionistOrgContext } from '@/lib/api-helpers/nutritionist-auth'
 import {
@@ -20,14 +21,11 @@ async function checkAssignmentOrgAccess(
   activeOrgId: string | null
 ): Promise<NextResponse | null> {
   if (!activeOrgId) {
-    return NextResponse.json(
-      { error: 'Active organization required' },
-      { status: 403 }
-    )
+    return apiErrorResponse('Active organization required', 403)
   }
   const belongs = await assignmentMemberBelongsToOrg(assignmentId, activeOrgId)
   if (!belongs) {
-    return NextResponse.json({ error: 'Assignment not found' }, { status: 404 })
+    return apiErrorResponse('Assignment not found', 404)
   }
   return null
 }
@@ -47,7 +45,7 @@ const getHandler = async (request: NextRequest, { params }: Params) => {
   ])
 
   if (!assignment) {
-    return NextResponse.json({ error: 'Assignment not found' }, { status: 404 })
+    return apiErrorResponse('Assignment not found', 404)
   }
   if (accessError) return accessError
 
@@ -69,22 +67,19 @@ const patchHandler = async (request: NextRequest, { params }: Params) => {
   const parseResult = updateDietPlanAssignmentSchema.safeParse(body)
 
   if (!parseResult.success) {
-    return NextResponse.json(
-      { error: 'Invalid request body', details: flattenError(parseResult.error) },
-      { status: 400 }
-    )
+    return apiErrorResponse('Invalid request body', 400, flattenError(parseResult.error))
   }
 
   const result = await updateDietPlanAssignment(id, parseResult.data)
 
   if (!result.ok) {
     if (result.code === 'VALIDATION') {
-      return NextResponse.json({ error: result.error }, { status: 400 })
+      return apiErrorResponse(result.error, 400)
     }
     if (result.code === 'OVERLAP') {
-      return NextResponse.json({ error: result.error }, { status: 409 })
+      return apiErrorResponse(result.error, 409)
     }
-    return NextResponse.json({ error: result.error }, { status: 404 })
+    return apiErrorResponse(result.error, 404)
   }
 
   return NextResponse.json({ data: result.data })
@@ -104,7 +99,7 @@ const deleteHandler = async (request: NextRequest, { params }: Params) => {
   const deleted = await deleteDietPlanAssignment(id)
 
   if (!deleted) {
-    return NextResponse.json({ error: 'Assignment not found' }, { status: 404 })
+    return apiErrorResponse('Assignment not found', 404)
   }
 
   return deleteSuccessWithBody(deleted)

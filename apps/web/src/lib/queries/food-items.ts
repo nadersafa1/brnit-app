@@ -1,6 +1,7 @@
 'use client'
 
 import { queryOptions } from '@tanstack/react-query'
+import { fetchJsonWithCredentials } from '@/lib/api/fetch-with-credentials'
 import { API_ENDPOINTS } from '@/lib/api/endpoints'
 import { getKeys, type DataSource } from './keys'
 import type { PaginationMeta } from '@/lib/api-helpers/pagination'
@@ -39,15 +40,6 @@ export interface FoodItemsResponse {
   pagination: PaginationMeta
 }
 
-async function fetchWithAuth(url: string) {
-  const res = await fetch(url, { credentials: 'include' })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err?.error ?? `Request failed: ${res.status}`)
-  }
-  return res.json()
-}
-
 export function fetchFoodItems(
   filters: FoodItemsFilters,
   source: DataSource = 'admin'
@@ -55,7 +47,7 @@ export function fetchFoodItems(
   const params = new URLSearchParams()
   if (filters.page != null) params.set('page', String(filters.page))
   if (filters.perPage != null) params.set('perPage', String(filters.perPage))
-  if (filters.q != null && filters.q.trim()) params.set('q', filters.q)
+  if (filters.q?.trim()) params.set('q', filters.q)
   if (filters.sortBy != null) params.set('sortBy', filters.sortBy)
   if (filters.sortOrder != null) params.set('sortOrder', filters.sortOrder)
   if (filters.categoryId != null) params.set('categoryId', filters.categoryId)
@@ -64,7 +56,7 @@ export function fetchFoodItems(
       ? API_ENDPOINTS.nutritionist.foodItems
       : API_ENDPOINTS.admin.foodItems
   const url = `${base}?${params.toString()}`
-  return fetchWithAuth(url)
+  return fetchJsonWithCredentials<FoodItemsResponse>(url)
 }
 
 export function fetchFoodItem(
@@ -75,7 +67,7 @@ export function fetchFoodItem(
     source === 'nutritionist'
       ? API_ENDPOINTS.nutritionist.foodItem(id)
       : API_ENDPOINTS.admin.foodItem(id)
-  return fetchWithAuth(url)
+  return fetchJsonWithCredentials<{ data: FoodItem }>(url)
 }
 
 export function foodItemsQueryOptions(

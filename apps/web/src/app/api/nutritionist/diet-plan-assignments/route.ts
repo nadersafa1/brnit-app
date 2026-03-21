@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { flattenError } from 'zod'
+import { apiErrorResponse } from '@/lib/api-helpers/api-error-response'
 import { requireNutritionistOrgContext } from '@/lib/api-helpers/nutritionist-auth'
 import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
 import {
@@ -20,10 +21,7 @@ const getHandler = async (request: NextRequest) => {
 
   const activeOrgId = authResult.context?.activeOrgId ?? null
   if (!activeOrgId) {
-    return NextResponse.json(
-      { error: 'Active organization required for listing assignments' },
-      { status: 403 }
-    )
+    return apiErrorResponse('Active organization required for listing assignments', 403)
   }
 
   const { searchParams } = new URL(request.url)
@@ -40,10 +38,7 @@ const getHandler = async (request: NextRequest) => {
   })
 
   if (!parseResult.success) {
-    return NextResponse.json(
-      { error: 'Invalid query parameters', details: flattenError(parseResult.error) },
-      { status: 400 }
-    )
+    return apiErrorResponse('Invalid query parameters', 400, flattenError(parseResult.error))
   }
 
   const { page, perPage } = parseResult.data
@@ -58,20 +53,14 @@ const postHandler = async (request: NextRequest) => {
 
   const activeOrgId = authResult.context?.activeOrgId ?? null
   if (!activeOrgId) {
-    return NextResponse.json(
-      { error: 'Active organization required for creating assignments' },
-      { status: 403 }
-    )
+    return apiErrorResponse('Active organization required for creating assignments', 403)
   }
 
   const body = await request.json()
   const parseResult = createDietPlanAssignmentNutritionistSchema.safeParse(body)
 
   if (!parseResult.success) {
-    return NextResponse.json(
-      { error: 'Invalid request body', details: flattenError(parseResult.error) },
-      { status: 400 }
-    )
+    return apiErrorResponse('Invalid request body', 400, flattenError(parseResult.error))
   }
 
   const result = await createDietPlanAssignment({
@@ -81,12 +70,12 @@ const postHandler = async (request: NextRequest) => {
 
   if (!result.ok) {
     if (result.code === 'OVERLAP') {
-      return NextResponse.json({ error: result.error }, { status: 409 })
+      return apiErrorResponse(result.error, 409)
     }
     if (result.code === 'NOT_FOUND') {
-      return NextResponse.json({ error: result.error }, { status: 404 })
+      return apiErrorResponse(result.error, 404)
     }
-    return NextResponse.json({ error: result.error }, { status: 400 })
+    return apiErrorResponse(result.error, 400)
   }
 
   return NextResponse.json({ data: result.data }, { status: 201 })

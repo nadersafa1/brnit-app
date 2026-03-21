@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
+import { apiErrorResponse } from '@/lib/api-helpers/api-error-response'
 import { logger } from '@/lib/server-logger'
 import { deriveActionName, deriveResource, writeAuditLog } from '@/lib/audit/audit-log-writer'
 
@@ -168,7 +169,7 @@ export function withRequestLogging<C = unknown>(
         })
       }
 
-      const out = NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+      const out = apiErrorResponse('Internal Server Error', 500)
       out.headers.set('x-request-id', requestId)
       return out
     }

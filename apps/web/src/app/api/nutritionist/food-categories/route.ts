@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { flattenError } from 'zod'
+import { apiErrorResponse } from '@/lib/api-helpers/api-error-response'
 import { requireNutritionist } from '@/lib/api-helpers/nutritionist-auth'
 import { createPaginatedResponse } from '@/lib/api-helpers/pagination'
 import { listFoodCategories } from '@/lib/services/food'
@@ -22,10 +23,7 @@ const getHandler = async (request: NextRequest) => {
   })
 
   if (!parseResult.success) {
-    return NextResponse.json(
-      { error: 'Invalid query parameters', details: flattenError(parseResult.error) },
-      { status: 400 }
-    )
+    return apiErrorResponse('Invalid query parameters', 400, flattenError(parseResult.error))
   }
 
   const { page, perPage } = parseResult.data
