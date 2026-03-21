@@ -69,7 +69,7 @@ export const dietPlanAssignment = pgTable(
     userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
     dietPlanId: text('diet_plan_id')
       .notNull()
-      .references(() => dietPlan.id, { onDelete: 'cascade' }),
+      .references(() => dietPlan.id, { onDelete: 'restrict' }),
     startDate: date('start_date').notNull(),
     endDate: date('end_date').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),

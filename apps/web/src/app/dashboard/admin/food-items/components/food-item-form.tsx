@@ -127,7 +127,7 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
           <Input
             id='item-calories'
             type='number'
-            step='0.01'
+            step='0.1'
             {...form.register('calories', { valueAsNumber: true })}
             placeholder='0'
             disabled={isLoading}
@@ -138,7 +138,7 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
           <Input
             id='item-protein'
             type='number'
-            step='0.01'
+            step='0.1'
             {...form.register('protein', { valueAsNumber: true })}
             placeholder='0'
             disabled={isLoading}
@@ -149,7 +149,7 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
           <Input
             id='item-carbs'
             type='number'
-            step='0.01'
+            step='0.1'
             {...form.register('carbs', { valueAsNumber: true })}
             placeholder='0'
             disabled={isLoading}
@@ -160,7 +160,7 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
           <Input
             id='item-fat'
             type='number'
-            step='0.01'
+            step='0.1'
             {...form.register('fat', { valueAsNumber: true })}
             placeholder='0'
             disabled={isLoading}
@@ -173,7 +173,7 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
         <Input
           id='item-serving'
           type='number'
-          step='0.01'
+          step='0.1'
           {...form.register('servingSize', { valueAsNumber: true })}
           placeholder='e.g. 100'
           disabled={isLoading}
@@ -218,9 +218,7 @@ export function FoodItemForm({ item, categories, onSubmit, onCancel, isLoading =
       )}
 
       <Field>
-        <FieldLabel htmlFor='item-image'>
-          {isEdit ? 'Replace image (optional)' : 'Image (optional)'}
-        </FieldLabel>
+        <FieldLabel htmlFor='item-image'>{isEdit ? 'Replace image (optional)' : 'Image (optional)'}</FieldLabel>
         <Input
           id='item-image'
           type='file'

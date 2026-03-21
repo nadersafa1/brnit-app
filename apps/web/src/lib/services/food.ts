@@ -1,5 +1,11 @@
 import { db } from '@burn-app/db'
-import { foodCategory, foodItem } from '@burn-app/db/schema'
+import {
+  foodCategory,
+  foodItem,
+  mealItem,
+  dietPlanMealItemOverride,
+  dietPlanMealConsumptionItem,
+} from '@burn-app/db/schema'
 import { count, asc, desc, ilike, eq } from 'drizzle-orm'
 import { calculateOffset, combineConditions } from '@/lib/api-helpers/query-builders'
 import {
@@ -10,6 +16,50 @@ import {
 import type { FoodCategoriesQuery, FoodItemsQuery } from '@/types/api/food.schemas'
 
 const FOOD_ITEM_IMAGE_FOLDER = 'food-items'
+
+type DbClient = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+/**
+ * True if the food item is referenced anywhere that would block delete/update (meal lines,
+ * per-assignment overrides, or logged consumption rows). Uses the same client as the
+ * surrounding transaction when provided so checks participate in the same snapshot.
+ */
+export async function foodItemHasBlockingReferences(
+  foodItemId: string,
+  client: DbClient | typeof db = db
+): Promise<boolean> {
+  const [mealRef, overrideRef, consumptionRef] = await Promise.all([
+    client
+      .select({ id: mealItem.id })
+      .from(mealItem)
+      .where(eq(mealItem.foodItemId, foodItemId))
+      .limit(1),
+    client
+      .select({ id: dietPlanMealItemOverride.id })
+      .from(dietPlanMealItemOverride)
+      .where(eq(dietPlanMealItemOverride.foodItemId, foodItemId))
+      .limit(1),
+    client
+      .select({ id: dietPlanMealConsumptionItem.id })
+      .from(dietPlanMealConsumptionItem)
+      .where(eq(dietPlanMealConsumptionItem.foodItemId, foodItemId))
+      .limit(1),
+  ])
+  return mealRef[0] != null || overrideRef[0] != null || consumptionRef[0] != null
+}
+
+export type FoodItemUpdateSuccess = Omit<(typeof foodItem.$inferSelect), 'gramsPerUnit'> & {
+  gramsPerUnit: number | null
+  imageUrl: string | null
+}
+
+export type FoodItemUpdateResult =
+  | { ok: true; data: FoodItemUpdateSuccess }
+  | { ok: false; error: string; code: 'NOT_FOUND' | 'CONFLICT' | 'VALIDATION' }
+
+export type FoodItemDeleteResult =
+  | { ok: true; data: (typeof foodItem.$inferSelect) }
+  | { ok: false; error: string; code: 'NOT_FOUND' | 'CONFLICT' }
 
 /**
  * Resolves new image public ID for a food item update: clear image, replace with file, or leave unchanged.
@@ -139,7 +189,7 @@ export async function listFoodItems(query: FoodItemsQuery) {
     fat: row.fat,
     servingSize: row.servingSize,
     unit: row.unit,
-    gramsPerUnit: row.gramsPerUnit != null ? Number(row.gramsPerUnit) : null,
+    gramsPerUnit: row.gramsPerUnit == null ? null : Number(row.gramsPerUnit),
     imageUrl: row.imagePublicId ? buildCloudinaryUrl(row.imagePublicId) : null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -178,7 +228,7 @@ export async function getFoodItemById(id: string) {
   if (!row) return null
   return {
     ...row,
-    gramsPerUnit: row.gramsPerUnit != null ? Number(row.gramsPerUnit) : null,
+    gramsPerUnit: row.gramsPerUnit == null ? null : Number(row.gramsPerUnit),
     imageUrl: row.imagePublicId ? buildCloudinaryUrl(row.imagePublicId) : null,
   }
 }
@@ -210,10 +260,11 @@ export async function deleteFoodCategory(id: string) {
   return deleted ?? null
 }
 
-// --- Food item crud (single insert/update; no transaction. Image upload before insert to avoid orphan rows.) ---
+// --- Food item crud ---
 
 /**
- * Create a food item. Uploads image first if provided; then single insert.
+ * Create a food item. Uploads image first if provided; then single insert (no DB transaction:
+ * Cloudinary runs first so we never insert a row without a successful upload when a file is given).
  * API layer enforces required macros (calories, protein, carbs, fat) via schema.
  */
 export async function createFoodItem(
@@ -255,14 +306,47 @@ export async function createFoodItem(
   if (!created) return null
   return {
     ...created,
-    gramsPerUnit: created.gramsPerUnit != null ? Number(created.gramsPerUnit) : null,
+    gramsPerUnit: created.gramsPerUnit == null ? null : Number(created.gramsPerUnit),
     imageUrl: created.imagePublicId ? buildCloudinaryUrl(created.imagePublicId) : null,
   }
 }
 
+function buildFoodItemUpdatePayload(
+  data: {
+    name?: string
+    categoryId?: string
+    fdcId?: number | null
+    calories?: number | null
+    protein?: number | null
+    carbs?: number | null
+    fat?: number | null
+    servingSize?: number | null
+    unit?: '100g' | 'piece' | null
+    gramsPerUnit?: number | null
+  },
+  newImagePublicId: string | null | undefined
+): Record<string, string | number | null | undefined> {
+  const updateData: Record<string, string | number | null | undefined> = {}
+  if (data.name !== undefined) updateData.name = data.name
+  if (data.categoryId !== undefined) updateData.categoryId = data.categoryId
+  if (data.fdcId !== undefined) updateData.fdcId = data.fdcId
+  if (data.calories !== undefined) updateData.calories = data.calories?.toString() ?? null
+  if (data.protein !== undefined) updateData.protein = data.protein?.toString() ?? null
+  if (data.carbs !== undefined) updateData.carbs = data.carbs?.toString() ?? null
+  if (data.fat !== undefined) updateData.fat = data.fat?.toString() ?? null
+  if (data.servingSize !== undefined)
+    updateData.servingSize = data.servingSize?.toString() ?? null
+  if (data.unit !== undefined) updateData.unit = data.unit
+  if (data.gramsPerUnit !== undefined)
+    updateData.gramsPerUnit = data.gramsPerUnit?.toString() ?? null
+  if (newImagePublicId !== undefined) updateData.imagePublicId = newImagePublicId
+  return updateData
+}
+
 /**
- * Update a food item. Fetches current image id, resolves new image (clear/replace/keep), then single update.
- * No transaction: image changes are external (Cloudinary); DB update is one statement.
+ * Update a food item. Order: load row → block if referenced → Cloudinary (external) → single DB update.
+ * Not wrapped in a DB transaction because Cloudinary is outside the database; blocking checks run
+ * before any side effects outside the DB.
  */
 export async function updateFoodItem(
   id: string,
@@ -279,52 +363,77 @@ export async function updateFoodItem(
     gramsPerUnit?: number | null
   },
   options?: { file?: File; clearImage?: boolean }
-) {
-  const existing = await db
+): Promise<FoodItemUpdateResult> {
+  const [existing] = await db
     .select({ imagePublicId: foodItem.imagePublicId })
     .from(foodItem)
     .where(eq(foodItem.id, id))
     .limit(1)
-    .then((rows) => rows[0] ?? null)
-  if (!existing) return null
+  if (!existing) {
+    return { ok: false, error: 'Food item not found', code: 'NOT_FOUND' }
+  }
+
+  if (await foodItemHasBlockingReferences(id)) {
+    return {
+      ok: false,
+      error:
+        'Cannot edit this food item while it is used in meals, diet plan overrides, or consumption logs',
+      code: 'CONFLICT',
+    }
+  }
 
   const newImagePublicId = await resolveFoodItemImageUpdate(
     existing.imagePublicId,
     options
   )
 
-  const updateData: Record<string, string | number | null | undefined> = {}
-  if (data.name !== undefined) updateData.name = data.name
-  if (data.categoryId !== undefined) updateData.categoryId = data.categoryId
-  if (data.fdcId !== undefined) updateData.fdcId = data.fdcId
-  if (data.calories !== undefined) updateData.calories = data.calories?.toString() ?? null
-  if (data.protein !== undefined) updateData.protein = data.protein?.toString() ?? null
-  if (data.carbs !== undefined) updateData.carbs = data.carbs?.toString() ?? null
-  if (data.fat !== undefined) updateData.fat = data.fat?.toString() ?? null
-  if (data.servingSize !== undefined)
-    updateData.servingSize = data.servingSize?.toString() ?? null
-  if (data.unit !== undefined) updateData.unit = data.unit
-  if (data.gramsPerUnit !== undefined)
-    updateData.gramsPerUnit = data.gramsPerUnit?.toString() ?? null
-  if (newImagePublicId !== undefined) updateData.imagePublicId = newImagePublicId
-
-  if (Object.keys(updateData).length === 0) return null
+  const updateData = buildFoodItemUpdatePayload(data, newImagePublicId)
+  if (Object.keys(updateData).length === 0) {
+    return { ok: false, error: 'No changes to apply', code: 'VALIDATION' }
+  }
 
   const [updated] = await db
     .update(foodItem)
     .set(updateData)
     .where(eq(foodItem.id, id))
     .returning()
-  if (!updated) return null
+  if (!updated) {
+    return { ok: false, error: 'Food item not found', code: 'NOT_FOUND' }
+  }
   return {
-    ...updated,
-    gramsPerUnit: updated.gramsPerUnit != null ? Number(updated.gramsPerUnit) : null,
-    imageUrl: updated.imagePublicId ? buildCloudinaryUrl(updated.imagePublicId) : null,
+    ok: true,
+    data: {
+      ...updated,
+      gramsPerUnit: updated.gramsPerUnit == null ? null : Number(updated.gramsPerUnit),
+      imageUrl: updated.imagePublicId ? buildCloudinaryUrl(updated.imagePublicId) : null,
+    },
   }
 }
 
-/** Delete a food item by id. Returns the deleted row or null if not found. */
-export async function deleteFoodItem(id: string) {
-  const [deleted] = await db.delete(foodItem).where(eq(foodItem.id, id)).returning()
-  return deleted ?? null
+/**
+ * Delete a food item. Transaction ties existence + blocking checks + delete so the row cannot
+ * gain a new reference between validation and delete.
+ */
+export async function deleteFoodItem(id: string): Promise<FoodItemDeleteResult> {
+  return db.transaction(async (tx) => {
+    const [row] = await tx.select({ id: foodItem.id }).from(foodItem).where(eq(foodItem.id, id)).limit(1)
+    if (!row) {
+      return { ok: false, error: 'Food item not found', code: 'NOT_FOUND' }
+    }
+
+    if (await foodItemHasBlockingReferences(id, tx)) {
+      return {
+        ok: false,
+        error:
+          'Cannot delete this food item while it is used in meals, diet plan overrides, or consumption logs',
+        code: 'CONFLICT',
+      }
+    }
+
+    const [deleted] = await tx.delete(foodItem).where(eq(foodItem.id, id)).returning()
+    if (!deleted) {
+      return { ok: false, error: 'Food item not found', code: 'NOT_FOUND' }
+    }
+    return { ok: true, data: deleted }
+  })
 }

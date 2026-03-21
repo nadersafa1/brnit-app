@@ -1,5 +1,13 @@
 import { relations } from 'drizzle-orm'
-import { pgEnum, pgTable, text, timestamp, integer, numeric, index } from 'drizzle-orm/pg-core'
+import {
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  integer,
+  numeric,
+  index,
+} from 'drizzle-orm/pg-core'
 import { foodCategory } from './food-category'
 
 /** Unit for food quantity and per-unit nutrition (100g = quantity in grams; piece = count). */
@@ -16,7 +24,7 @@ export const foodItem = pgTable(
     categoryId: text('category_id')
       .notNull()
       .references(() => foodCategory.id, { onDelete: 'restrict' }),
-    calories: numeric('calories'),
+    calories: numeric('calories').notNull().default('0'),
     protein: numeric('protein'),
     carbs: numeric('carbs'),
     fat: numeric('fat'),

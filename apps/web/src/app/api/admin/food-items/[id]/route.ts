@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { flattenError } from 'zod'
+import { apiErrorResponse } from '@/lib/api-helpers/api-error-response'
 import { deleteSuccessWithBody } from '@/lib/api-helpers/delete-responses'
 import { requireAdmin } from '@/lib/api-helpers/admin-auth'
 import {
@@ -33,7 +34,7 @@ const getHandler = async (request: NextRequest, { params }: Params) => {
   const item = await getFoodItemById(id)
 
   if (!item) {
-    return NextResponse.json({ error: 'Food item not found' }, { status: 404 })
+    return apiErrorResponse('Food item not found', 404)
   }
 
   return NextResponse.json({ data: item })
@@ -60,10 +61,7 @@ const patchHandler = async (request: NextRequest, { params }: Params) => {
 
   const parseResult = updateFoodItemFormSchema.safeParse(parsed)
   if (!parseResult.success) {
-    return NextResponse.json(
-      { error: 'Invalid request body', details: flattenError(parseResult.error) },
-      { status: 400 }
-    )
+    return apiErrorResponse('Invalid request body', 400, flattenError(parseResult.error))
   }
 
   const uploadFile = file instanceof File && file.size > 0 ? file : undefined
@@ -72,22 +70,28 @@ const patchHandler = async (request: NextRequest, { params }: Params) => {
   delete (formPayload as Record<string, unknown>)['clearImage']
   const hasFormFields = FORM_FIELDS.some((k) => parsed[k] !== undefined)
   if (!hasFormFields && !uploadFile && !clearImage) {
-    return NextResponse.json(
-      { error: 'At least one field, file, or clearImage must be provided for update' },
-      { status: 400 }
+    return apiErrorResponse(
+      'At least one field, file, or clearImage must be provided for update',
+      400
     )
   }
 
-  const updated = await updateFoodItem(id, formPayload, {
+  const result = await updateFoodItem(id, formPayload, {
     file: uploadFile,
     clearImage,
   })
 
-  if (!updated) {
-    return NextResponse.json({ error: 'Food item not found' }, { status: 404 })
+  if (!result.ok) {
+    if (result.code === 'NOT_FOUND') {
+      return apiErrorResponse(result.error, 404)
+    }
+    if (result.code === 'CONFLICT') {
+      return apiErrorResponse(result.error, 409)
+    }
+    return apiErrorResponse(result.error, 400)
   }
 
-  return NextResponse.json({ data: updated })
+  return NextResponse.json({ data: result.data })
 }
 
 const deleteHandler = async (request: NextRequest, { params }: Params) => {
@@ -95,13 +99,16 @@ const deleteHandler = async (request: NextRequest, { params }: Params) => {
   if (authResult.error) return authResult.error
 
   const { id } = await params
-  const deleted = await deleteFoodItem(id)
+  const result = await deleteFoodItem(id)
 
-  if (!deleted) {
-    return NextResponse.json({ error: 'Food item not found' }, { status: 404 })
+  if (!result.ok) {
+    if (result.code === 'NOT_FOUND') {
+      return apiErrorResponse(result.error, 404)
+    }
+    return apiErrorResponse(result.error, 409)
   }
 
-  return deleteSuccessWithBody(deleted)
+  return deleteSuccessWithBody(result.data)
 }
 
 export const GET = withRequestLogging(getHandler)

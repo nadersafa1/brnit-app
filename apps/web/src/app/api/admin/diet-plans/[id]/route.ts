@@ -43,6 +43,9 @@ const patchHandler = async (request: NextRequest, { params }: Params) => {
     if (result.code === 'NOT_FOUND') {
       return apiErrorResponse(result.error, 404)
     }
+    if (result.code === 'CONFLICT') {
+      return apiErrorResponse(result.error, 409)
+    }
     return apiErrorResponse(result.error, 400)
   }
 
@@ -56,13 +59,16 @@ const deleteHandler = async (request: NextRequest, { params }: Params) => {
   if (authResult.error) return authResult.error
 
   const { id } = await params
-  const deleted = await deleteDietPlan(id)
+  const result = await deleteDietPlan(id)
 
-  if (!deleted) {
-    return apiErrorResponse('Diet plan not found', 404)
+  if (!result.ok) {
+    if (result.code === 'NOT_FOUND') {
+      return apiErrorResponse(result.error, 404)
+    }
+    return apiErrorResponse(result.error, 409)
   }
 
-  return deleteSuccessWithBody(deleted)
+  return deleteSuccessWithBody(result.data)
 }
 
 export const GET = withRequestLogging(getHandler)

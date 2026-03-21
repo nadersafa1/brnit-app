@@ -1,5 +1,12 @@
 import { db } from '@burn-app/db'
-import { meal, mealItem, foodItem, foodCategory } from '@burn-app/db/schema'
+import {
+  meal,
+  mealItem,
+  foodItem,
+  foodCategory,
+  dietPlanMeal,
+  dietPlanAssignment,
+} from '@burn-app/db/schema'
 import { count, asc, desc, ilike, eq, and, inArray } from 'drizzle-orm'
 import { calculateOffset, combineConditions } from '@/lib/api-helpers/query-builders'
 import type { MealsQuery, CreateMeal, UpdateMeal } from '@/types/api/meal.schemas'
@@ -127,12 +134,17 @@ export async function createMeal(data: CreateMeal) {
 
 export type UpdateMealResult =
   | { ok: true; data: (typeof meal.$inferSelect) }
-  | { ok: false; error: string; code: 'NOT_FOUND' | 'VALIDATION' }
+  | { ok: false; error: string; code: 'NOT_FOUND' | 'VALIDATION' | 'CONFLICT' }
 
-type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+export type DeleteMealResult =
+  | { ok: true; data: (typeof meal.$inferSelect) }
+  | { ok: false; error: string; code: 'NOT_FOUND' | 'CONFLICT' }
+
+/** Drizzle transaction client (same surface as `db` for queries used here). */
+type DbClient = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 async function validateMealItemIdsInMeal(
-  tx: Transaction,
+  tx: DbClient,
   mealId: string,
   mealItemIdsToCheck: string[]
 ): Promise<UpdateMealResult | null> {
@@ -171,7 +183,7 @@ function validateRemoveUpdateOverlap(
 }
 
 async function validateFoodItemIdsExist(
-  tx: Transaction,
+  tx: DbClient,
   foodIdsToAdd: string[]
 ): Promise<UpdateMealResult | null> {
   if (foodIdsToAdd.length === 0) return null
@@ -202,7 +214,26 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
     const [mealRow] = await tx.select().from(meal).where(eq(meal.id, id)).limit(1)
     if (!mealRow) return { ok: false, error: 'Meal not found', code: 'NOT_FOUND' }
 
-    // Run sync overlap check first; then parallelize independent DB validations.
+    // Block edits when this meal appears in any diet plan that has an active assignment.
+    const [mealInAssignedPlan] = await tx
+      .select({ id: dietPlanMeal.id })
+      .from(dietPlanMeal)
+      .innerJoin(
+        dietPlanAssignment,
+        eq(dietPlanAssignment.dietPlanId, dietPlanMeal.dietPlanId)
+      )
+      .where(eq(dietPlanMeal.mealId, id))
+      .limit(1)
+    if (mealInAssignedPlan) {
+      return {
+        ok: false,
+        error:
+          'Cannot edit this meal while it is part of a diet plan assigned to a member or user',
+        code: 'CONFLICT',
+      }
+    }
+
+    // Sync overlap check (CPU-only); then run independent FK validations in parallel.
     const overlapError = validateRemoveUpdateOverlap(remove, update)
     if (overlapError) return overlapError
 
@@ -218,6 +249,7 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
     const validationError = mealItemValidationError ?? foodValidationError
     if (validationError) return validationError
 
+    // Apply metadata and line-item changes in order: meal row → deletes → updates → inserts.
     const updateData: Record<string, string | null | undefined> = {}
     if (name !== undefined) updateData.name = name
     if (description !== undefined) updateData.description = description
@@ -255,8 +287,49 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
   })
 }
 
-/** Deletes a meal by id. Returns the deleted row or null if not found. */
-export async function deleteMeal(id: string) {
-  const [deleted] = await db.delete(meal).where(eq(meal.id, id)).returning()
-  return deleted ?? null
+/**
+ * Deletes a meal by id. Uses a transaction so the existence checks and delete are atomic
+ * (avoids a race where items or plan slots appear between read and delete).
+ */
+export async function deleteMeal(id: string): Promise<DeleteMealResult> {
+  return db.transaction(async (tx) => {
+    const [mealRow] = await tx.select({ id: meal.id }).from(meal).where(eq(meal.id, id)).limit(1)
+    if (!mealRow) {
+      return { ok: false, error: 'Meal not found', code: 'NOT_FOUND' }
+    }
+
+    // Meal-item count and diet-plan membership are independent; evaluate together.
+    const [[itemCountRow], [referencedByPlan]] = await Promise.all([
+      tx.select({ count: count() }).from(mealItem).where(eq(mealItem.mealId, id)),
+      tx
+        .select({ id: dietPlanMeal.id })
+        .from(dietPlanMeal)
+        .where(eq(dietPlanMeal.mealId, id))
+        .limit(1),
+    ])
+
+    const itemCount = Number(itemCountRow?.count ?? 0)
+    if (itemCount > 0) {
+      return {
+        ok: false,
+        error: 'Cannot delete a meal that still has meal items; remove them first',
+        code: 'CONFLICT',
+      }
+    }
+
+    if (referencedByPlan) {
+      return {
+        ok: false,
+        error:
+          'Cannot delete a meal that is used in a diet plan; remove it from the plan first',
+        code: 'CONFLICT',
+      }
+    }
+
+    const [deleted] = await tx.delete(meal).where(eq(meal.id, id)).returning()
+    if (!deleted) {
+      return { ok: false, error: 'Meal not found', code: 'NOT_FOUND' }
+    }
+    return { ok: true, data: deleted }
+  })
 }

@@ -1,5 +1,12 @@
 import { db } from '@burn-app/db'
-import { dietPlan, dietPlanMeal, meal, mealItem, foodItem } from '@burn-app/db/schema'
+import {
+  dietPlan,
+  dietPlanMeal,
+  dietPlanAssignment,
+  meal,
+  mealItem,
+  foodItem,
+} from '@burn-app/db/schema'
 import { count, asc, desc, ilike, eq, and, inArray } from 'drizzle-orm'
 import { calculateOffset, combineConditions } from '@/lib/api-helpers/query-builders'
 import type { DietPlansQuery, CreateDietPlan, UpdateDietPlan } from '@/types/api/diet-plan.schemas'
@@ -50,26 +57,31 @@ export async function listDietPlans(query: DietPlansQuery) {
   }
 }
 
+/**
+ * Creates a plan and its slots in one transaction so we never persist a plan without its
+ * slots if the second insert fails.
+ */
 export async function createDietPlan(data: CreateDietPlan) {
   const { name, description, dietPlanMeals } = data
 
-  const [newPlan] = await db.insert(dietPlan).values({ name, description }).returning()
+  return db.transaction(async (tx) => {
+    const [newPlan] = await tx.insert(dietPlan).values({ name, description }).returning()
+    if (!newPlan) return null
 
-  if (!newPlan) return null
+    if (dietPlanMeals.length > 0) {
+      await tx.insert(dietPlanMeal).values(
+        dietPlanMeals.map((item) => ({
+          dietPlanId: newPlan.id,
+          mealId: item.mealId,
+          dayNumber: item.dayNumber,
+          mealType: item.mealType,
+          mealOrder: item.mealOrder ?? 1,
+        }))
+      )
+    }
 
-  if (dietPlanMeals.length > 0) {
-    await db.insert(dietPlanMeal).values(
-      dietPlanMeals.map((item) => ({
-        dietPlanId: newPlan.id,
-        mealId: item.mealId,
-        dayNumber: item.dayNumber,
-        mealType: item.mealType,
-        mealOrder: item.mealOrder ?? 1,
-      }))
-    )
-  }
-
-  return newPlan
+    return newPlan
+  })
 }
 
 export async function getDietPlanById(id: string) {
@@ -203,9 +215,26 @@ export async function getDietPlanSlotsForMember(id: string) {
 
 export type UpdateDietPlanResult =
   | { ok: true; data: (typeof dietPlan.$inferSelect) }
-  | { ok: false; error: string; code: 'NOT_FOUND' | 'VALIDATION' }
+  | { ok: false; error: string; code: 'NOT_FOUND' | 'VALIDATION' | 'CONFLICT' }
 
-type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+export type DeleteDietPlanResult =
+  | { ok: true; data: (typeof dietPlan.$inferSelect) }
+  | { ok: false; error: string; code: 'NOT_FOUND' | 'CONFLICT' }
+
+type DbClient = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+/** True if the plan has at least one member or user assignment. */
+export async function dietPlanHasAssignments(
+  planId: string,
+  client: DbClient | typeof db = db
+): Promise<boolean> {
+  const [row] = await client
+    .select({ id: dietPlanAssignment.id })
+    .from(dietPlanAssignment)
+    .where(eq(dietPlanAssignment.dietPlanId, planId))
+    .limit(1)
+  return row != null
+}
 
 function validateRemoveUpdateOverlap(
   remove: UpdateDietPlan['remove'],
@@ -223,7 +252,7 @@ function validateRemoveUpdateOverlap(
 }
 
 async function validateSlotAndMealIdsInPlan(
-  tx: Transaction,
+  tx: DbClient,
   planId: string,
   idsToCheck: string[],
   mealIdsToAdd: string[]
@@ -255,8 +284,9 @@ async function validateSlotAndMealIdsInPlan(
   return slotErr ?? mealErr
 }
 
+/** Applies slot mutations in FK-safe order: plan metadata → remove slots → patch slots → add slots. */
 async function applyDietPlanMutations(
-  tx: Transaction,
+  tx: DbClient,
   planId: string,
   data: UpdateDietPlan
 ): Promise<void> {
@@ -316,6 +346,16 @@ export async function updateDietPlan(
     const [planRow] = await tx.select().from(dietPlan).where(eq(dietPlan.id, id)).limit(1)
     if (!planRow) return { ok: false, error: 'Diet plan not found', code: 'NOT_FOUND' }
 
+    // Assigned plans are immutable via this API (members rely on stable structure).
+    if (await dietPlanHasAssignments(id, tx)) {
+      return {
+        ok: false,
+        error:
+          'Cannot edit a diet plan while it is assigned to a member or user',
+        code: 'CONFLICT',
+      }
+    }
+
     const overlapError = validateRemoveUpdateOverlap(remove, update)
     if (overlapError) return overlapError
 
@@ -331,7 +371,35 @@ export async function updateDietPlan(
   })
 }
 
-export async function deleteDietPlan(id: string) {
-  const [deleted] = await db.delete(dietPlan).where(eq(dietPlan.id, id)).returning()
-  return deleted ?? null
+/**
+ * Deletes a diet plan. Transaction keeps the assignment check and delete atomic (no delete
+ * if an assignment row is inserted between read and delete).
+ */
+export async function deleteDietPlan(id: string): Promise<DeleteDietPlanResult> {
+  return db.transaction(async (tx) => {
+    const [planRows, hasAssignment] = await Promise.all([
+      tx.select({ id: dietPlan.id }).from(dietPlan).where(eq(dietPlan.id, id)).limit(1),
+      dietPlanHasAssignments(id, tx),
+    ])
+    const planRow = planRows[0]
+
+    if (!planRow) {
+      return { ok: false, error: 'Diet plan not found', code: 'NOT_FOUND' }
+    }
+
+    if (hasAssignment) {
+      return {
+        ok: false,
+        error:
+          'Cannot delete a diet plan while it is assigned to a member or user',
+        code: 'CONFLICT',
+      }
+    }
+
+    const [deleted] = await tx.delete(dietPlan).where(eq(dietPlan.id, id)).returning()
+    if (!deleted) {
+      return { ok: false, error: 'Diet plan not found', code: 'NOT_FOUND' }
+    }
+    return { ok: true, data: deleted }
+  })
 }
