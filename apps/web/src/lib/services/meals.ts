@@ -3,7 +3,6 @@ import {
   meal,
   mealItem,
   foodItem,
-  foodCategory,
   dietPlanMeal,
   dietPlanAssignment,
 } from '@burn-app/db/schema'
@@ -74,23 +73,32 @@ export async function getMealById(id: string) {
       .where(eq(meal.id, id))
       .limit(1),
     db
-      .select({
-        id: mealItem.id,
-        foodItemId: mealItem.foodItemId,
-        foodName: foodItem.name,
-        categoryName: foodCategory.name,
-        quantity: mealItem.quantity,
-        calories: foodItem.calories,
-        protein: foodItem.protein,
-        carbs: foodItem.carbs,
-        fat: foodItem.fat,
-        unit: foodItem.unit,
-        gramsPerUnit: foodItem.gramsPerUnit,
-      })
-      .from(mealItem)
-      .innerJoin(foodItem, eq(mealItem.foodItemId, foodItem.id))
-      .leftJoin(foodCategory, eq(foodItem.categoryId, foodCategory.id))
-      .where(eq(mealItem.mealId, id)),
+      .query.mealItem.findMany({
+        where: eq(mealItem.mealId, id),
+        columns: {
+          id: true,
+          foodItemId: true,
+          quantity: true,
+        },
+        with: {
+          foodItem: {
+            columns: {
+              name: true,
+              calories: true,
+              protein: true,
+              carbs: true,
+              fat: true,
+              unit: true,
+              gramsPerUnit: true,
+            },
+            with: {
+              category: {
+                columns: { name: true },
+              },
+            },
+          },
+        },
+      }),
   ])
   const mealRow = mealRows[0]
   if (!mealRow) return null
@@ -101,15 +109,15 @@ export async function getMealById(id: string) {
     mealItems: mealItems.map((mi) => ({
       id: mi.id,
       foodItemId: mi.foodItemId,
-      foodName: mi.foodName,
-      categoryName: mi.categoryName,
+      foodName: mi.foodItem.name,
+      categoryName: mi.foodItem.category?.name ?? null,
       quantity: Number(mi.quantity),
-      calories: roundNutritionMacroRequired(mi.calories),
-      protein: roundNutritionMacroNullable(mi.protein),
-      carbs: roundNutritionMacroNullable(mi.carbs),
-      fat: roundNutritionMacroNullable(mi.fat),
-      unit: mi.unit ?? '100g',
-      gramsPerUnit: mi.gramsPerUnit == null ? null : Number(mi.gramsPerUnit),
+      calories: roundNutritionMacroRequired(mi.foodItem.calories),
+      protein: roundNutritionMacroNullable(mi.foodItem.protein),
+      carbs: roundNutritionMacroNullable(mi.foodItem.carbs),
+      fat: roundNutritionMacroNullable(mi.foodItem.fat),
+      unit: mi.foodItem.unit ?? '100g',
+      gramsPerUnit: mi.foodItem.gramsPerUnit == null ? null : Number(mi.foodItem.gramsPerUnit),
     })),
   }
 }
@@ -221,6 +229,8 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
     const [mealRow] = await tx.select().from(meal).where(eq(meal.id, id)).limit(1)
     if (!mealRow) return { ok: false, error: 'Meal not found', code: 'NOT_FOUND' }
 
+    // Intentional join strategy: existence check across plan slots + assignments is cheapest
+    // and clearest as a direct join with a single limit(1) probe.
     // Block edits when this meal appears in any diet plan that has an active assignment.
     const [mealInAssignedPlan] = await tx
       .select({ id: dietPlanMeal.id })

@@ -2,7 +2,6 @@ import { db } from '@burn-app/db'
 import {
   bodyCompositionAssessment,
   member,
-  user,
 } from '@burn-app/db/schema'
 import { and, eq, asc, inArray } from 'drizzle-orm'
 
@@ -91,20 +90,19 @@ export async function getOrganizationLeaderboard(
   organizationName: string,
   currentMemberId: string
 ): Promise<OrganizationLeaderboardResult> {
-  // Load all org members with role "member" and their display names (for leaderboard only).
-  const membersWithUser = await db
-    .select({
-      memberId: member.id,
-      userName: user.name,
-    })
-    .from(member)
-    .innerJoin(user, eq(member.userId, user.id))
-    .where(
-      and(
-        eq(member.organizationId, organizationId),
-        eq(member.role, MEMBER_ROLE)
-      )
-    )
+  // Use member->user relation for display names while keeping the same org/member-role filters.
+  const membersWithUser = await db.query.member.findMany({
+    where: and(
+      eq(member.organizationId, organizationId),
+      eq(member.role, MEMBER_ROLE)
+    ),
+    columns: { id: true },
+    with: {
+      user: {
+        columns: { name: true },
+      },
+    },
+  })
 
   if (membersWithUser.length === 0) {
     return {
@@ -116,7 +114,7 @@ export async function getOrganizationLeaderboard(
   }
 
   // Single query: all assessments for these members, ordered by member then assessedAt for grouping.
-  const memberIds = membersWithUser.map(m => m.memberId)
+  const memberIds = membersWithUser.map(m => m.id)
   const assessmentsRows = await db
     .select({
       memberId: bodyCompositionAssessment.memberId,
@@ -141,7 +139,7 @@ export async function getOrganizationLeaderboard(
   // Compute one entry per member that has at least two assessments (baseline = first, latest = last).
   const entries: LeaderboardRow[] = []
   for (const m of membersWithUser) {
-    const list = byMember.get(m.memberId)
+    const list = byMember.get(m.id)
     if (!list || list.length < 2) continue
 
     const baseline = list[0]
@@ -151,8 +149,8 @@ export async function getOrganizationLeaderboard(
     const fatLossPoints = startPct - endPct
 
     entries.push({
-      memberId: m.memberId,
-      name: m.userName ?? DISPLAY_NAME_UNKNOWN,
+      memberId: m.id,
+      name: m.user?.name ?? DISPLAY_NAME_UNKNOWN,
       fatLossPoints,
       startBodyFatPercent: startPct,
       endBodyFatPercent: endPct,

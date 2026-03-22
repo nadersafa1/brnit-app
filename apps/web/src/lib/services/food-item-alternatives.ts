@@ -4,7 +4,7 @@
  * to unit steps via `snapMealQuantityToStep` (shared with meal UI).
  */
 import { db } from '@burn-app/db'
-import { foodItem, foodCategory } from '@burn-app/db/schema'
+import { foodItem } from '@burn-app/db/schema'
 import { and, eq, ne, isNotNull } from 'drizzle-orm'
 import { getAlternativesToleranceConfig } from '@/lib/config/alternatives-tolerance'
 import { snapMealQuantityToStep } from '@/lib/helpers/food-unit-display'
@@ -143,21 +143,20 @@ export async function getFoodItemAlternatives(
   const offset = Math.max(0, (page - 1) * limit)
 
   // --- Load reference food (macros + unit drive calorie matching) ---
-  const [refRow] = await db
-    .select({
-      id: foodItem.id,
-      name: foodItem.name,
-      categoryId: foodItem.categoryId,
-      calories: foodItem.calories,
-      protein: foodItem.protein,
-      carbs: foodItem.carbs,
-      fat: foodItem.fat,
-      unit: foodItem.unit,
-      gramsPerUnit: foodItem.gramsPerUnit,
-    })
-    .from(foodItem)
-    .where(eq(foodItem.id, foodItemId))
-    .limit(1)
+  const refRow = await db.query.foodItem.findFirst({
+    where: eq(foodItem.id, foodItemId),
+    columns: {
+      id: true,
+      name: true,
+      categoryId: true,
+      calories: true,
+      protein: true,
+      carbs: true,
+      fat: true,
+      unit: true,
+      gramsPerUnit: true,
+    },
+  })
 
   if (!refRow) {
     return { ok: false, error: 'Food item not found', code: 'REFERENCE_NOT_FOUND' }
@@ -189,30 +188,32 @@ export async function getFoodItemAlternatives(
 
   // --- Same-category candidates with full macros (filtering is in-memory below) ---
   const candidates = await db
-    .select({
-      id: foodItem.id,
-      name: foodItem.name,
-      categoryId: foodItem.categoryId,
-      categoryName: foodCategory.name,
-      calories: foodItem.calories,
-      protein: foodItem.protein,
-      carbs: foodItem.carbs,
-      fat: foodItem.fat,
-      unit: foodItem.unit,
-      gramsPerUnit: foodItem.gramsPerUnit,
-    })
-    .from(foodItem)
-    .innerJoin(foodCategory, eq(foodItem.categoryId, foodCategory.id))
-    .where(
-      and(
+    .query.foodItem.findMany({
+      where: and(
         eq(foodItem.categoryId, refRow.categoryId),
         ne(foodItem.id, foodItemId),
         isNotNull(foodItem.calories),
         isNotNull(foodItem.protein),
         isNotNull(foodItem.carbs),
         isNotNull(foodItem.fat)
-      )
-    )
+      ),
+      columns: {
+        id: true,
+        name: true,
+        categoryId: true,
+        calories: true,
+        protein: true,
+        carbs: true,
+        fat: true,
+        unit: true,
+        gramsPerUnit: true,
+      },
+      with: {
+        category: {
+          columns: { name: true },
+        },
+      },
+    })
 
   const results: FoodItemAlternativeItem[] = []
 
@@ -246,7 +247,7 @@ export async function getFoodItemAlternatives(
       foodItemId: row.id,
       name: row.name,
       categoryId: row.categoryId,
-      categoryName: row.categoryName,
+      categoryName: row.category?.name ?? '',
       suggestedQuantity: suggestedQ,
       unit: candidateUnit,
       calories: roundMacroDisplay(totalCal),

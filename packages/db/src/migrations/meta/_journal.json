@@ -141,6 +141,13 @@
       "when": 1774124417603,
       "tag": "0019_vengeful_genesis",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1774189077993,
+      "tag": "0020_cooing_smiling_tiger",
+      "breakpoints": true
     }
   ]
 }

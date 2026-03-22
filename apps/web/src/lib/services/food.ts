@@ -176,30 +176,33 @@ export async function listFoodItems(query: FoodItemsQuery) {
 
   const [countResult, rows] = await Promise.all([
     db.select({ count: count() }).from(foodItem).where(where),
-    db
-      .select({
-        id: foodItem.id,
-        name: foodItem.name,
-        fdcId: foodItem.fdcId,
-        categoryId: foodItem.categoryId,
-        categoryName: foodCategory.name,
-        calories: foodItem.calories,
-        protein: foodItem.protein,
-        carbs: foodItem.carbs,
-        fat: foodItem.fat,
-        servingSize: foodItem.servingSize,
-        unit: foodItem.unit,
-        gramsPerUnit: foodItem.gramsPerUnit,
-        imagePublicId: foodItem.imagePublicId,
-        createdAt: foodItem.createdAt,
-        updatedAt: foodItem.updatedAt,
-      })
-      .from(foodItem)
-      .leftJoin(foodCategory, eq(foodItem.categoryId, foodCategory.id))
-      .where(where)
-      .orderBy(sortDir(sortColumn))
-      .limit(perPage)
-      .offset(offset),
+    db.query.foodItem.findMany({
+      where,
+      orderBy: [sortDir(sortColumn)],
+      limit: perPage,
+      offset,
+      columns: {
+        id: true,
+        name: true,
+        fdcId: true,
+        categoryId: true,
+        calories: true,
+        protein: true,
+        carbs: true,
+        fat: true,
+        servingSize: true,
+        unit: true,
+        gramsPerUnit: true,
+        imagePublicId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      with: {
+        category: {
+          columns: { name: true },
+        },
+      },
+    }),
   ])
 
   // Normalize DB numerics to API-safe numbers; only macro fields are precision-clamped.
@@ -208,7 +211,7 @@ export async function listFoodItems(query: FoodItemsQuery) {
     name: row.name,
     fdcId: row.fdcId,
     categoryId: row.categoryId,
-    categoryName: row.categoryName,
+    categoryName: row.category?.name ?? null,
     ...normalizeFoodNumericFields(row),
     unit: row.unit,
     imageUrl: row.imagePublicId ? buildCloudinaryUrl(row.imagePublicId) : null,
@@ -224,33 +227,37 @@ export async function listFoodItems(query: FoodItemsQuery) {
 
 /** Fetch a single food item by id with category name and image URL. Returns null if not found. */
 export async function getFoodItemById(id: string) {
-  const [row] = await db
-    .select({
-      id: foodItem.id,
-      name: foodItem.name,
-      fdcId: foodItem.fdcId,
-      categoryId: foodItem.categoryId,
-      categoryName: foodCategory.name,
-      calories: foodItem.calories,
-      protein: foodItem.protein,
-      carbs: foodItem.carbs,
-      fat: foodItem.fat,
-      servingSize: foodItem.servingSize,
-      unit: foodItem.unit,
-      gramsPerUnit: foodItem.gramsPerUnit,
-      imagePublicId: foodItem.imagePublicId,
-      createdAt: foodItem.createdAt,
-      updatedAt: foodItem.updatedAt,
-    })
-    .from(foodItem)
-    .leftJoin(foodCategory, eq(foodItem.categoryId, foodCategory.id))
-    .where(eq(foodItem.id, id))
-    .limit(1)
+  const row = await db.query.foodItem.findFirst({
+    where: eq(foodItem.id, id),
+    columns: {
+      id: true,
+      name: true,
+      fdcId: true,
+      categoryId: true,
+      calories: true,
+      protein: true,
+      carbs: true,
+      fat: true,
+      servingSize: true,
+      unit: true,
+      gramsPerUnit: true,
+      imagePublicId: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    with: {
+      category: {
+        columns: { name: true },
+      },
+    },
+  })
   if (!row) return null
+  const { category, ...food } = row
   return {
-    ...row,
-    ...normalizeFoodNumericFields(row),
-    imageUrl: row.imagePublicId ? buildCloudinaryUrl(row.imagePublicId) : null,
+    ...food,
+    categoryName: category?.name ?? null,
+    ...normalizeFoodNumericFields(food),
+    imageUrl: food.imagePublicId ? buildCloudinaryUrl(food.imagePublicId) : null,
   }
 }
 

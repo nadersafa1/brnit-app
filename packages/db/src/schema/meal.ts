@@ -26,7 +26,10 @@ export const mealItem = pgTable(
       .references(() => meal.id, { onDelete: 'cascade' }),
     foodItemId: text('food_item_id')
       .notNull()
-      .references(() => foodItem.id, { onDelete: 'restrict' }),
+      .references(() => foodItem.id, {
+        onDelete: 'restrict',
+        onUpdate: 'restrict',
+      }),
     quantity: numeric('quantity').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },

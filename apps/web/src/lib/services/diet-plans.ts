@@ -31,6 +31,8 @@ export async function listDietPlans(query: DietPlansQuery) {
 
   const [countResult, items] = await Promise.all([
     db.select({ count: count() }).from(dietPlan).where(where),
+    // Intentional join strategy: slotCount is an aggregate over diet_plan_meal rows.
+    // Keeping this grouped join preserves the current SQL shape and performance profile.
     db
       .select({
         id: dietPlan.id,
@@ -87,7 +89,7 @@ export async function createDietPlan(data: CreateDietPlan) {
 }
 
 export async function getDietPlanById(id: string) {
-  // These two reads only depend on plan id, so fetch them concurrently.
+  // Plan header and meal slots only depend on plan id; fetch concurrently.
   const [planRows, planMeals] = await Promise.all([
     db
       .select({
@@ -100,6 +102,7 @@ export async function getDietPlanById(id: string) {
       .from(dietPlan)
       .where(eq(dietPlan.id, id))
       .limit(1),
+    // Intentional join strategy: flat slot query with mealName pulled from the joined table in one pass.
     db
       .select({
         id: dietPlanMeal.id,
@@ -135,6 +138,7 @@ export async function getDietPlanById(id: string) {
   const mealItemsByMealId = new Map<string, MealItemRow[]>()
 
   if (mealIds.length > 0) {
+    // Intentional join strategy: batch-load all lines for all involved meals in one query.
     const items = await db
       .select({
         mealId: mealItem.mealId,

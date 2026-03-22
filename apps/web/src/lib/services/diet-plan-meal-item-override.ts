@@ -286,20 +286,27 @@ export type OverrideRow = {
 
 /** Fetches all override rows for an assignment (used by consumers to resolve per date). */
 export async function getOverridesByAssignmentId(assignmentId: string): Promise<OverrideRow[]> {
-  const rows = await db
-    .select({
-      dietPlanMealId: dietPlanMealItemOverride.dietPlanMealId,
-      mealItemId: dietPlanMealItemOverride.mealItemId,
-      foodItemId: dietPlanMealItemOverride.foodItemId,
-      foodName: foodItem.name,
-      quantity: dietPlanMealItemOverride.quantity,
-      effectiveDate: dietPlanMealItemOverride.effectiveDate,
-    })
-    .from(dietPlanMealItemOverride)
-    .innerJoin(foodItem, eq(dietPlanMealItemOverride.foodItemId, foodItem.id))
-    .where(eq(dietPlanMealItemOverride.dietPlanAssignmentId, assignmentId))
+  const rows = await db.query.dietPlanMealItemOverride.findMany({
+    where: eq(dietPlanMealItemOverride.dietPlanAssignmentId, assignmentId),
+    columns: {
+      dietPlanMealId: true,
+      mealItemId: true,
+      foodItemId: true,
+      quantity: true,
+      effectiveDate: true,
+    },
+    with: {
+      foodItem: {
+        columns: { name: true },
+      },
+    },
+  })
   return rows.map(r => ({
-    ...r,
+    dietPlanMealId: r.dietPlanMealId,
+    mealItemId: r.mealItemId,
+    foodItemId: r.foodItemId,
+    foodName: r.foodItem.name,
+    quantity: r.quantity,
     effectiveDate: r.effectiveDate ?? null,
   }))
 }

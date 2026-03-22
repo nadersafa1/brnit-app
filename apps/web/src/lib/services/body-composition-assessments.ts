@@ -2,7 +2,6 @@ import { db } from '@burn-app/db'
 import {
   bodyCompositionAssessment,
   member,
-  organization,
 } from '@burn-app/db/schema'
 import { count, asc, desc, eq, and, inArray } from 'drizzle-orm'
 import { calculateOffset } from '@/lib/api-helpers/query-builders'
@@ -51,15 +50,16 @@ export async function assessmentBelongsToOrg(
   assessmentId: string,
   organizationId: string
 ): Promise<boolean> {
-  const [row] = await db
-    .select({
-      memberOrganizationId: member.organizationId,
-    })
-    .from(bodyCompositionAssessment)
-    .innerJoin(member, eq(bodyCompositionAssessment.memberId, member.id))
-    .where(eq(bodyCompositionAssessment.id, assessmentId))
-    .limit(1)
-  return row?.memberOrganizationId === organizationId
+  const row = await db.query.bodyCompositionAssessment.findFirst({
+    where: eq(bodyCompositionAssessment.id, assessmentId),
+    columns: {},
+    with: {
+      member: {
+        columns: { organizationId: true },
+      },
+    },
+  })
+  return row?.member.organizationId === organizationId
 }
 
 const BODY_ASSESSMENT_IMAGE_FOLDER = 'body-composition-assessments'
@@ -136,6 +136,8 @@ export async function listBodyCompositionAssessments(
   const sortColumn = sortFieldMap[sortBy ?? 'assessedAt'] ?? bodyCompositionAssessment.assessedAt
   const sortDir = sortOrder === 'asc' ? asc : desc
 
+  // Intentional join strategy: org scoping depends on member.organizationId, which is cleaner and
+  // more predictable here with explicit joins than relation-based findMany + subquery filters.
   const baseQuery = db
     .select()
     .from(bodyCompositionAssessment)
@@ -319,24 +321,24 @@ export async function getRecentAssessmentsForUserAllOrgs(
   userId: string,
   limit: number
 ): Promise<MemberRecentAssessmentsResult> {
-  // Load all memberships for the user with org id and name (needed to attach org per assessment).
-  const membersWithOrg = await db
-    .select({
-      memberId: member.id,
-      organizationId: organization.id,
-      organizationName: organization.name,
-    })
-    .from(member)
-    .innerJoin(organization, eq(member.organizationId, organization.id))
-    .where(eq(member.userId, userId))
+  // Use member→organization relation to load memberships with org details.
+  const membersWithOrg = await db.query.member.findMany({
+    where: eq(member.userId, userId),
+    columns: { id: true },
+    with: {
+      organization: {
+        columns: { id: true, name: true },
+      },
+    },
+  })
 
   if (membersWithOrg.length === 0) {
     return { organization: null, assessments: [] }
   }
 
-  const memberIds = membersWithOrg.map(m => m.memberId)
+  const memberIds = membersWithOrg.map(m => m.id)
   const memberToOrg = new Map(
-    membersWithOrg.map(m => [m.memberId, { id: m.organizationId, name: m.organizationName }])
+    membersWithOrg.map(m => [m.id, { id: m.organization.id, name: m.organization.name }])
   )
 
   // Single query: assessments for any of the user's members, most recent first.

@@ -1,5 +1,5 @@
 import { db } from '@burn-app/db'
-import { dietPlan, dietPlanAssignment, dietPlanMealConsumption, foodItem, member } from '@burn-app/db/schema'
+import { dietPlanAssignment, dietPlanMealConsumption, foodItem, member } from '@burn-app/db/schema'
 import { and, asc, eq, inArray, or, SQL } from 'drizzle-orm'
 import {
   calculateMacrosForDay,
@@ -40,7 +40,6 @@ function diffDaysInclusiveUTC(from: string, to: string): number {
   const diffMs = toDate.getTime() - fromDate.getTime()
   return diffMs / (1000 * 60 * 60 * 24) + 1
 }
-
 
 // --- Response types ---
 
@@ -262,18 +261,21 @@ export async function getCurrentDietPlanForUser(
     assigneeConditions.push(inArray(dietPlanAssignment.memberId, memberIds))
   }
 
-  const rows = await db
-    .select({
-      id: dietPlanAssignment.id,
-      dietPlanId: dietPlanAssignment.dietPlanId,
-      startDate: dietPlanAssignment.startDate,
-      endDate: dietPlanAssignment.endDate,
-      planName: dietPlan.name,
-    })
-    .from(dietPlanAssignment)
-    .innerJoin(dietPlan, eq(dietPlanAssignment.dietPlanId, dietPlan.id))
-    .where(and(or(...assigneeConditions)))
-    .orderBy(asc(dietPlanAssignment.startDate))
+  const rows = await db.query.dietPlanAssignment.findMany({
+    where: and(or(...assigneeConditions)),
+    orderBy: [asc(dietPlanAssignment.startDate)],
+    columns: {
+      id: true,
+      dietPlanId: true,
+      startDate: true,
+      endDate: true,
+    },
+    with: {
+      dietPlan: {
+        columns: { name: true },
+      },
+    },
+  })
 
   if (rows.length === 0) {
     return { data: null }
@@ -358,7 +360,7 @@ export async function getCurrentDietPlanForUser(
         dietPlanId: assignment.dietPlanId,
         startDate: assignment.startDate,
         endDate: assignment.endDate,
-        planName: assignment.planName,
+        planName: assignment.dietPlan.name,
       },
       plan,
       days,

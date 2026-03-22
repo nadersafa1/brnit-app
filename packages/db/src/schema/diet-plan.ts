@@ -136,7 +136,10 @@ export const dietPlanMealItemOverride = pgTable(
       .references(() => mealItem.id, { onDelete: 'cascade' }),
     foodItemId: text('food_item_id')
       .notNull()
-      .references(() => foodItem.id, { onDelete: 'restrict' }),
+      .references(() => foodItem.id, {
+        onDelete: 'restrict',
+        onUpdate: 'restrict',
+      }),
     quantity: numeric('quantity').notNull(),
     /** NULL = future only (applies when resolution date >= today); non-null = this date only. */
     effectiveDate: date('effective_date'),
@@ -185,17 +188,19 @@ export const dietPlanMealTimeOverride = pgTable(
       .notNull(),
   },
   (table) => [
-    index('diet_plan_meal_time_override_assignment_idx').on(table.dietPlanAssignmentId),
+    index('diet_plan_meal_time_override_assignment_idx').on(
+      table.dietPlanAssignmentId,
+    ),
     index('diet_plan_meal_time_override_assignment_meal_idx').on(
       table.dietPlanAssignmentId,
-      table.dietPlanMealId
+      table.dietPlanMealId,
     ),
     uniqueIndex('diet_plan_meal_time_override_unique_idx').on(
       table.dietPlanAssignmentId,
       table.dietPlanMealId,
-      table.effectiveDate
+      table.effectiveDate,
     ),
-  ]
+  ],
 )
 
 export const dietPlanMealConsumptionItem = pgTable(
@@ -209,7 +214,10 @@ export const dietPlanMealConsumptionItem = pgTable(
       .references(() => dietPlanMealConsumption.id, { onDelete: 'cascade' }),
     foodItemId: text('food_item_id')
       .notNull()
-      .references(() => foodItem.id, { onDelete: 'restrict' }),
+      .references(() => foodItem.id, {
+        onDelete: 'restrict',
+        onUpdate: 'restrict',
+      }),
     quantity: numeric('quantity').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
