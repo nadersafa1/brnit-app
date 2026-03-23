@@ -1,5 +1,3 @@
-'use client'
-
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { View, StyleSheet } from 'react-native'
@@ -7,7 +5,7 @@ import { View, StyleSheet } from 'react-native'
 import { Spinner, Text } from '@/components/ui'
 import { authClient } from '@/lib/auth-client'
 import { useColors } from '@/hooks/use-theme-color'
-import { showError } from '@/lib/feedback'
+import { showError, showSuccess } from '@/lib/feedback'
 import { spacing } from '@/theme/spacing'
 
 const REDIRECT_DELAY_MS = 1500
@@ -15,15 +13,21 @@ const REDIRECT_DELAY_MS = 1500
 const AcceptInvitationScreen = () => {
   const colors = useColors()
   const router = useRouter()
-  const { invitationId } = useLocalSearchParams<{ invitationId?: string }>()
+  const { invitationId, email } = useLocalSearchParams<{ invitationId: string; email?: string }>()
   const { data: session, isPending: sessionPending } = authClient.useSession()
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
 
   useEffect(() => {
-    if (status !== 'error') return
-    showError('Could not join organization')
-    const t = setTimeout(() => router.replace('/(tabs)'), REDIRECT_DELAY_MS)
-    return () => clearTimeout(t)
+    if (status === 'done') {
+      showSuccess('You joined the organization')
+      const t = setTimeout(() => router.replace('/(tabs)'), REDIRECT_DELAY_MS)
+      return () => clearTimeout(t)
+    }
+    if (status === 'error') {
+      showError('Could not join organization')
+      const t = setTimeout(() => router.replace('/(tabs)'), REDIRECT_DELAY_MS)
+      return () => clearTimeout(t)
+    }
   }, [status, router])
 
   useEffect(() => {
@@ -63,22 +67,59 @@ const AcceptInvitationScreen = () => {
       <Redirect
         href={{
           pathname: '/(auth)/login',
-          params: { invitationId },
+          params: { invitationId, ...(email ? { email } : {}), callbackUrl: '/accept-invitation/[invitationId]' }
         }}
       />
     )
   }
 
   if (status === 'done') {
-    return <Redirect href='/(tabs)' />
+    return (
+      <View style={[styles.container, { backgroundColor: colors.appBg }]}>
+        <Text
+          size='lg'
+          weight='semibold'
+        >
+          Welcome aboard!
+        </Text>
+        <Text
+          muted
+          style={styles.text}
+        >
+          Redirecting…
+        </Text>
+      </View>
+    )
   }
 
-  if (status === 'loading' || status === 'idle' || status === 'error') {
+  if (status === 'error') {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.appBg }]}>
+        <Text
+          size='lg'
+          weight='semibold'
+        >
+          Something went wrong
+        </Text>
+        <Text
+          muted
+          style={styles.text}
+        >
+          Redirecting…
+        </Text>
+      </View>
+    )
+  }
+
+  if (status === 'loading' || status === 'idle') {
     return (
       <View style={[styles.container, { backgroundColor: colors.appBg }]}>
         <Spinner size='lg' />
-        <Text muted style={styles.text}>
-          {status === 'error' ? 'Redirecting…' : 'Joining organization…'}
+        <Text
+          muted
+          style={styles.text}
+        >
+          Joining organization…
         </Text>
       </View>
     )
@@ -91,11 +132,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'center'
   },
   text: {
-    marginTop: spacing[4],
-  },
+    marginTop: spacing[4]
+  }
 })
 
 export default AcceptInvitationScreen

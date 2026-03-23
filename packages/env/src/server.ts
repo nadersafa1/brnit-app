@@ -5,6 +5,7 @@ export const env = {
   BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET || '',
   BETTER_AUTH_URL: process.env.BETTER_AUTH_URL || '',
   CORS_ORIGIN: process.env.CORS_ORIGIN || '',
+  DEEP_LINK_BASE: process.env.DEEP_LINK_BASE || '',
   NODE_ENV:
     (process.env.NODE_ENV as 'development' | 'production' | 'test') ||
     'development',

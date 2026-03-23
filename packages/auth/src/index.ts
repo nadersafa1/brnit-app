@@ -89,11 +89,13 @@ export const auth = betterAuth({
       allowUserToCreateOrganization: async (user) => user.role === 'admin',
       async sendInvitationEmail(data) {
         const appOrigin =
-          env.CORS_ORIGIN?.replace(/\/$/, '') ||
-          (env.BETTER_AUTH_URL
-            ? new URL(env.BETTER_AUTH_URL).origin
-            : 'http://localhost:3000')
-        const inviteLink = `${appOrigin}/accept-invitation?invitationId=${data.id}`
+          data.invitation.role === 'member'
+            ? env.DEEP_LINK_BASE?.replace(/\/$/, '')
+            : env.CORS_ORIGIN?.replace(/\/$/, '') ||
+              (env.BETTER_AUTH_URL
+                ? new URL(env.BETTER_AUTH_URL).origin
+                : 'http://localhost:3000')
+        const inviteLink = `${appOrigin}/accept-invitation/${data.id}?email=${encodeURIComponent(data.email)}`
         await sendOrganizationInvitation({
           email: data.email,
           invitedByUsername: data.inviter.user.name,
