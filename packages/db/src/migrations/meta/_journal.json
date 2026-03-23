@@ -148,6 +148,13 @@
       "when": 1774189077993,
       "tag": "0020_cooing_smiling_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1774231910324,
+      "tag": "0021_abnormal_puck",
+      "breakpoints": true
     }
   ]
 }

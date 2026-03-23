@@ -5,3 +5,4 @@ export * from "./food-item";
 export * from "./meal";
 export * from "./diet-plan";
 export * from "./audit-log";
+export * from "./onboarding-answers";

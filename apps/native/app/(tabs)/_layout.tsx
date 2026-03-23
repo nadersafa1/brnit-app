@@ -1,12 +1,15 @@
 import { Tabs } from "expo-router";
+import { useSyncOnboardingAnswers } from "@/hooks/use-sync-onboarding-answers";
 
 export default function TabLayout() {
+  useSyncOnboardingAnswers();
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          display: "none", // Hide default tab bar, we use custom floating nav
+          display: "none",
         },
       }}
     >

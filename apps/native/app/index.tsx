@@ -12,13 +12,13 @@ export default function Index() {
   const { data: session, isPending } = authClient.useSession()
 
   if (!isOnboarded) {
-    return <Redirect href="/(onboarding)" />
+    return <Redirect href='/(onboarding)' />
   }
 
   if (isPending) {
     return (
       <View style={[styles.container, { backgroundColor: colors.appBg }]}>
-        <Spinner size="lg" />
+        <Spinner size='lg' />
       </View>
     )
   }
@@ -27,16 +27,16 @@ export default function Index() {
     if (!session.user.dob) {
       return <Redirect href='/(auth)/complete-profile' />
     }
-    return <Redirect href="/(tabs)" />
+    return <Redirect href='/(tabs)' />
   }
 
-  return <Redirect href="/(auth)" />
+  return <Redirect href='/(auth)' />
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
+    justifyContent: 'center'
+  }
 })

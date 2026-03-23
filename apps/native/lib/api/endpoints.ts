@@ -1,4 +1,7 @@
 export const API_ENDPOINTS = {
+  me: {
+    onboardingAnswers: '/api/me/onboarding-answers',
+  },
   member: {
     currentDietPlan: "/api/member/me/current-diet-plan",
     consumptionStreak: "/api/member/me/consumption-streak",
