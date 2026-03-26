@@ -10,6 +10,12 @@ export const DEEP_LINKS = {
   root: `${DEEP_LINK_BASE}`,
   /** Password reset page - includes ?token=xxx when used */
   resetPassword: `${DEEP_LINK_BASE}reset-password`,
-  /** Organization invitation: use ?invitationId=xxx (same as web /accept-invitation) */
+  /** Organization invitation base path (append /{invitationId}) */
   acceptInvitation: `${DEEP_LINK_BASE}accept-invitation`,
 } as const;
+
+/** Build a full accept-invitation deep link with path-based invitationId and optional email query param */
+export function buildAcceptInvitationLink(invitationId: string, email?: string) {
+  const base = `${DEEP_LINKS.acceptInvitation}/${invitationId}`;
+  return email ? `${base}?email=${encodeURIComponent(email)}` : base;
+}

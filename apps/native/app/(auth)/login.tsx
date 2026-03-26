@@ -15,9 +15,9 @@ import { spacing } from '@/theme/spacing'
 export default function LoginScreen() {
   const insets = useSafeAreaInsets()
   const colors = useColors()
-  const { invitationId } = useLocalSearchParams<{ invitationId?: string }>()
+  const { invitationId, email: emailParam } = useLocalSearchParams<{ invitationId?: string; email?: string }>()
   const { data: session, isPending } = authClient.useSession()
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(emailParam ?? '')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -31,11 +31,11 @@ export default function LoginScreen() {
   }
 
   if (session?.user) {
+    if (invitationId) {
+      return <Redirect href={{ pathname: '/accept-invitation/[invitationId]', params: { invitationId } }} />
+    }
     if (!session.user.dob) {
       return <Redirect href='/(auth)/complete-profile' />
-    }
-    if (invitationId) {
-      return <Redirect href={{ pathname: '/accept-invitation', params: { invitationId } }} />
     }
     return <Redirect href='/(tabs)' />
   }
@@ -57,7 +57,7 @@ export default function LoginScreen() {
         },
         onFinished() {
           setIsLoading(false)
-        },
+        }
       }
     )
   }
@@ -77,40 +77,53 @@ export default function LoginScreen() {
         },
         onFinished() {
           setIsLoading(false)
-        },
+        }
       }
     )
   }
 
   function handleAppleLogin() {
+    // TODO: APPLE SSO
     console.log('Apple login pressed')
   }
 
   return (
     <ScrollView
       style={[styles.scrollView, { backgroundColor: colors.appBg }]}
-      contentContainerStyle={[
-        styles.contentContainer,
-        { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 },
-      ]}
+      contentContainerStyle={StyleSheet.compose(styles.contentContainer, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 })}
     >
       <View style={styles.mainContent}>
         <View style={styles.iconContainer}>
           <View style={[styles.iconCircle, { backgroundColor: colors.pastelPurple }]}>
-            <Ionicons name='shield-checkmark' size={48} color={colors.white} />
+            <Ionicons
+              name='shield-checkmark'
+              size={48}
+              color={colors.white}
+            />
           </View>
         </View>
 
         <View style={[styles.card, { backgroundColor: colors.card }, shadows.lg]}>
-          <Text size='2xl' weight='bold' style={styles.title}>
+          <Text
+            size='2xl'
+            weight='bold'
+            style={styles.title}
+          >
             Sign In
           </Text>
-          <Text size='sm' muted style={styles.subtitle}>
+          <Text
+            size='sm'
+            muted
+            style={styles.subtitle}
+          >
             Welcome back! Sign in to continue your fitness journey.
           </Text>
 
           <View style={styles.errorContainer}>
-            <FieldError error={error ?? undefined} isInvalid={!!error} />
+            <FieldError
+              error={error ?? undefined}
+              isInvalid={!!error}
+            />
           </View>
 
           <View style={styles.form}>
@@ -124,12 +137,24 @@ export default function LoginScreen() {
               autoComplete='email'
             />
 
-            <PasswordInput value={password} onChangeText={setPassword} placeholder='Password' autoComplete='password' />
+            <PasswordInput
+              value={password}
+              onChangeText={setPassword}
+              placeholder='Password'
+              autoComplete='password'
+            />
 
             <View style={styles.forgotContainer}>
-              <Link href='/(auth)/forgot-password' asChild>
+              <Link
+                href='/(auth)/forgot-password'
+                asChild
+              >
                 <TouchableOpacity>
-                  <Text size='sm' weight='medium' accent>
+                  <Text
+                    size='sm'
+                    weight='medium'
+                    accent
+                  >
                     Forgot password?
                   </Text>
                 </TouchableOpacity>
@@ -142,30 +167,51 @@ export default function LoginScreen() {
                 disabled={isLoading}
                 style={[styles.socialButton, { backgroundColor: colors.card }, shadows.md]}
               >
-                <Ionicons name='logo-google' size={20} color={colors.subtle} />
+                <Ionicons
+                  name='logo-google'
+                  size={20}
+                  color={colors.subtle}
+                />
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={handleAppleLogin}
                 style={[styles.socialButton, { backgroundColor: colors.card }, shadows.md]}
               >
-                <Ionicons name='logo-apple' size={20} color={colors.subtle} />
+                <Ionicons
+                  name='logo-apple'
+                  size={20}
+                  color={colors.subtle}
+                />
               </TouchableOpacity>
             </View>
 
             <View style={styles.buttonContainer}>
-              <PrimaryButton onPress={handleLogin} isLoading={isLoading}>
+              <PrimaryButton
+                onPress={handleLogin}
+                isLoading={isLoading}
+              >
                 Sign In
               </PrimaryButton>
             </View>
 
             <View style={styles.linkContainer}>
-              <Text size='sm' muted>
+              <Text
+                size='sm'
+                muted
+              >
                 Don't have an account?{' '}
               </Text>
-              <Link href='/(auth)/sign-up' asChild>
+              <Link
+                href={{ pathname: '/(auth)/sign-up', params: { ...(invitationId ? { invitationId } : {}), ...(email ? { email } : {}) } }}
+                asChild
+              >
                 <TouchableOpacity>
-                  <Text size='sm' weight='medium' accent>
+                  <Text
+                    size='sm'
+                    weight='medium'
+                    accent
+                  >
                     Sign up
                   </Text>
                 </TouchableOpacity>
@@ -182,53 +228,53 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'center'
   },
   scrollView: {
-    flex: 1,
+    flex: 1
   },
   contentContainer: {
     paddingHorizontal: spacing[6],
-    minHeight: '100%',
+    minHeight: '100%'
   },
   mainContent: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'center'
   },
   iconContainer: {
     alignItems: 'center',
-    marginBottom: spacing[8],
+    marginBottom: spacing[8]
   },
   iconCircle: {
     width: 96,
     height: 96,
     borderRadius: radii.pill,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'center'
   },
   card: {
     borderRadius: radii.sm,
-    padding: spacing[6],
+    padding: spacing[6]
   },
   title: {
-    marginBottom: spacing[2],
+    marginBottom: spacing[2]
   },
   subtitle: {
-    marginBottom: spacing[6],
+    marginBottom: spacing[6]
   },
   errorContainer: {
-    marginBottom: spacing[4],
+    marginBottom: spacing[4]
   },
   form: {
-    gap: spacing[4],
+    gap: spacing[4]
   },
   forgotContainer: {
-    alignItems: 'flex-end',
+    alignItems: 'flex-end'
   },
   socialButtons: {
     flexDirection: 'row',
     gap: spacing[3],
-    marginTop: spacing[2],
+    marginTop: spacing[2]
   },
   socialButton: {
     flex: 1,
@@ -237,15 +283,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing[4],
+    paddingHorizontal: spacing[4]
   },
   buttonContainer: {
-    marginTop: spacing[2],
+    marginTop: spacing[2]
   },
   linkContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: spacing[4],
-  },
+    marginTop: spacing[4]
+  }
 })

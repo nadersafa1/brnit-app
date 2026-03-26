@@ -12,12 +12,15 @@ import { queryClient } from '@/lib/query-client'
 function RootNavigator() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="accept-invitation" />
-      <Stack.Screen name="(onboarding)" />
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+      <Stack.Screen name='index' />
+      <Stack.Screen name='accept-invitation/[invitationId]' />
+      <Stack.Screen name='(onboarding)' />
+      <Stack.Screen name='(auth)' />
+      <Stack.Screen name='(tabs)' />
+      <Stack.Screen
+        name='modal'
+        options={{ presentation: 'modal' }}
+      />
     </Stack>
   )
 }

@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons'
-import { Link, Redirect } from 'expo-router'
+import { Link, Redirect, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { AuthSuccessScreen, DobPicker, PasswordInput, PrimaryButton, TextInput } from '@/components'
 import { FieldError, Spinner, Text } from '@/components/ui'
-import { DEEP_LINKS } from '@/constants/deep-links'
+import { DEEP_LINK_BASE, DEEP_LINKS } from '@/constants/deep-links'
 import { useColors } from '@/hooks/use-theme-color'
 import { authClient } from '@/lib/auth-client'
 import { radii } from '@/theme/radii'
@@ -21,9 +21,10 @@ interface PasswordRequirement {
 export default function SignUpScreen() {
   const insets = useSafeAreaInsets()
   const colors = useColors()
+  const { invitationId, email: emailParam } = useLocalSearchParams<{ invitationId?: string; email?: string }>()
   const { data: session, isPending } = authClient.useSession()
   const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(emailParam ?? '')
   const [dob, setDob] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -43,6 +44,9 @@ export default function SignUpScreen() {
     if (!session.user.dob) {
       return <Redirect href='/(auth)/complete-profile' />
     }
+    if (invitationId) {
+      return <Redirect href={{ pathname: '/accept-invitation/[invitationId]', params: { invitationId } }} />
+    }
     return <Redirect href='/(tabs)' />
   }
 
@@ -50,7 +54,7 @@ export default function SignUpScreen() {
     { label: 'Minimum 8 characters', met: password.length >= 8 },
     { label: 'One number required', met: /\d/.test(password) },
     { label: 'No spaces allowed', met: !/\s/.test(password) },
-    { label: 'Add a symbol (e.g., @, #, !)', met: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
+    { label: 'Add a symbol (e.g., @, #, !)', met: /[!@#$%^&*(),.?":{}|<>]/.test(password) }
   ]
 
   const allRequirementsMet = passwordRequirements.every(req => req.met)
@@ -76,7 +80,7 @@ export default function SignUpScreen() {
     setError(null)
 
     await authClient.signUp.email(
-      { name, email, dob, password, callbackURL: DEEP_LINKS.root },
+      { name, email, dob: new Date(`${dob}T00:00:00.000Z`), password, callbackURL: invitationId ? `${DEEP_LINK_BASE}accept-invitation/${invitationId}` : DEEP_LINKS.root },
       {
         onError(error) {
           setError(error.error?.message || 'Failed to sign up')
@@ -92,7 +96,7 @@ export default function SignUpScreen() {
         },
         onFinished() {
           setIsLoading(false)
-        },
+        }
       }
     )
   }
@@ -112,7 +116,7 @@ export default function SignUpScreen() {
         },
         onFinished() {
           setIsLoading(false)
-        },
+        }
       }
     )
   }
@@ -131,7 +135,7 @@ export default function SignUpScreen() {
         backLabel='Back to sign in'
         contentContainerStyle={{
           paddingTop: insets.top + 20,
-          paddingBottom: insets.bottom + 20,
+          paddingBottom: insets.bottom + 20
         }}
       />
     )
@@ -140,28 +144,40 @@ export default function SignUpScreen() {
   return (
     <ScrollView
       style={[styles.scrollView, { backgroundColor: colors.appBg }]}
-      contentContainerStyle={[
-        styles.contentContainer,
-        { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 },
-      ]}
+      contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}
     >
       <View style={styles.mainContent}>
         <View style={styles.iconContainer}>
           <View style={[styles.iconCircle, { backgroundColor: colors.pastelPurple }]}>
-            <Ionicons name='shield-checkmark' size={48} color={colors.white} />
+            <Ionicons
+              name='shield-checkmark'
+              size={48}
+              color={colors.white}
+            />
           </View>
         </View>
 
         <View style={[styles.card, { backgroundColor: colors.card }, shadows.lg]}>
-          <Text size='2xl' weight='bold' style={styles.title}>
+          <Text
+            size='2xl'
+            weight='bold'
+            style={styles.title}
+          >
             Create Account
           </Text>
-          <Text size='sm' muted style={styles.subtitle}>
+          <Text
+            size='sm'
+            muted
+            style={styles.subtitle}
+          >
             Set a strong password to keep your account safe.
           </Text>
 
           <View style={styles.errorContainer}>
-            <FieldError error={error ?? undefined} isInvalid={!!error} />
+            <FieldError
+              error={error ?? undefined}
+              isInvalid={!!error}
+            />
           </View>
 
           <View style={styles.form}>
@@ -184,7 +200,11 @@ export default function SignUpScreen() {
               autoComplete='email'
             />
 
-            <DobPicker value={dob} onChange={setDob} placeholder='Date of birth' />
+            <DobPicker
+              value={dob}
+              onChange={setDob}
+              placeholder='Date of birth'
+            />
 
             <PasswordInput
               value={password}
@@ -203,13 +223,19 @@ export default function SignUpScreen() {
             {password.length > 0 && (
               <View style={styles.requirements}>
                 {passwordRequirements.map((requirement, index) => (
-                  <View key={`${requirement.label}-${index}`} style={styles.requirementRow}>
+                  <View
+                    key={`${requirement.label}-${index}`}
+                    style={styles.requirementRow}
+                  >
                     <Ionicons
                       name={requirement.met ? 'checkmark-circle' : 'close-circle'}
                       size={16}
                       color={requirement.met ? colors.success : colors.danger}
                     />
-                    <Text size='xs' style={{ color: requirement.met ? colors.success : colors.danger }}>
+                    <Text
+                      size='xs'
+                      style={{ color: requirement.met ? colors.success : colors.danger }}
+                    >
                       {requirement.label}
                     </Text>
                   </View>
@@ -223,14 +249,22 @@ export default function SignUpScreen() {
                 disabled={isLoading}
                 style={[styles.socialButton, { backgroundColor: colors.card }, shadows.md]}
               >
-                <Ionicons name='logo-google' size={20} color={colors.subtle} />
+                <Ionicons
+                  name='logo-google'
+                  size={20}
+                  color={colors.subtle}
+                />
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={handleAppleLogin}
                 style={[styles.socialButton, { backgroundColor: colors.card }, shadows.md]}
               >
-                <Ionicons name='logo-apple' size={20} color={colors.subtle} />
+                <Ionicons
+                  name='logo-apple'
+                  size={20}
+                  color={colors.subtle}
+                />
               </TouchableOpacity>
             </View>
 
@@ -245,12 +279,22 @@ export default function SignUpScreen() {
             </View>
 
             <View style={styles.linkContainer}>
-              <Text size='sm' muted>
+              <Text
+                size='sm'
+                muted
+              >
                 Already have an account?{' '}
               </Text>
-              <Link href='/(auth)/login' asChild>
+              <Link
+                href={{ pathname: '/(auth)/login', params: { ...(invitationId ? { invitationId } : {}), ...(email ? { email } : {}) } }}
+                asChild
+              >
                 <TouchableOpacity>
-                  <Text size='sm' weight='medium' accent>
+                  <Text
+                    size='sm'
+                    weight='medium'
+                    accent
+                  >
                     Sign in
                   </Text>
                 </TouchableOpacity>
@@ -267,59 +311,59 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'center'
   },
   scrollView: {
-    flex: 1,
+    flex: 1
   },
   contentContainer: {
     paddingHorizontal: spacing[6],
-    minHeight: '100%',
+    minHeight: '100%'
   },
   mainContent: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'center'
   },
   iconContainer: {
     alignItems: 'center',
-    marginBottom: spacing[8],
+    marginBottom: spacing[8]
   },
   iconCircle: {
     width: 96,
     height: 96,
     borderRadius: radii.pill,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'center'
   },
   card: {
     borderRadius: radii.sm,
-    padding: spacing[6],
+    padding: spacing[6]
   },
   title: {
-    marginBottom: spacing[2],
+    marginBottom: spacing[2]
   },
   subtitle: {
-    marginBottom: spacing[6],
+    marginBottom: spacing[6]
   },
   errorContainer: {
-    marginBottom: spacing[4],
+    marginBottom: spacing[4]
   },
   form: {
-    gap: spacing[4],
+    gap: spacing[4]
   },
   requirements: {
     gap: spacing[2],
-    marginTop: spacing[2],
+    marginTop: spacing[2]
   },
   requirementRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[2],
+    gap: spacing[2]
   },
   socialButtons: {
     flexDirection: 'row',
     gap: spacing[3],
-    marginTop: spacing[2],
+    marginTop: spacing[2]
   },
   socialButton: {
     flex: 1,
@@ -328,15 +372,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing[4],
+    paddingHorizontal: spacing[4]
   },
   buttonContainer: {
-    marginTop: spacing[2],
+    marginTop: spacing[2]
   },
   linkContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: spacing[4],
-  },
+    marginTop: spacing[4]
+  }
 })
