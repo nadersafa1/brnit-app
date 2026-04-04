@@ -5,5 +5,6 @@ export const foodCategory = pgTable('food_category', {
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   name: text('name').notNull().unique(),
+  description: text('description'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })

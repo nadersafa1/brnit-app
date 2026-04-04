@@ -114,7 +114,6 @@ export default function FoodItemsPage() {
                 }))
               }
               isLoading={isLoading}
-              onRefetch={refetch}
               onEdit={handleEdit}
               onDelete={handleDelete}
             />

@@ -58,6 +58,9 @@ export default function NutritionistCategoryDetailPage() {
           <h2 className='text-lg font-semibold'>{category.name}</h2>
         </CardHeader>
         <CardContent className='space-y-2'>
+          {category.description?.trim() ? (
+            <p className='text-sm text-foreground whitespace-pre-wrap'>{category.description.trim()}</p>
+          ) : null}
           <p className='text-sm text-muted-foreground'>
             Created: {category.createdAt ? new Date(category.createdAt).toLocaleDateString() : '–'}
           </p>

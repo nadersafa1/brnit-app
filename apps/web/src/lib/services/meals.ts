@@ -1,17 +1,9 @@
 import { db } from '@burn-app/db'
-import {
-  meal,
-  mealItem,
-  foodItem,
-  dietPlanMeal,
-  dietPlanAssignment,
-} from '@burn-app/db/schema'
+import { meal, mealItem, foodItem, dietPlanMeal, dietPlanAssignment } from '@burn-app/db/schema'
 import { count, asc, desc, ilike, eq, and, inArray } from 'drizzle-orm'
 import { calculateOffset, combineConditions } from '@/lib/api-helpers/query-builders'
-import {
-  roundNutritionMacroNullable,
-  roundNutritionMacroRequired,
-} from '@/lib/helpers/nutrition-numbers'
+import { mapFoodCategoriesSorted } from '@/lib/helpers/food-item-categories'
+import { roundNutritionMacroNullable, roundNutritionMacroRequired } from '@/lib/helpers/nutrition-numbers'
 import type { MealsQuery, CreateMeal, UpdateMeal } from '@/types/api/meal.schemas'
 
 /** Lists meals with optional search and sort; count and items are fetched in parallel. */
@@ -57,9 +49,9 @@ export async function listMeals(query: MealsQuery) {
 
 /**
  * Fetches a single meal by id with its items (food details). Returns null if not found.
+ * Header row and meal_item lines are loaded in parallel (no cross-FK ordering requirement).
  */
 export async function getMealById(id: string) {
-  // Meal header and meal items are independent reads; run in parallel to reduce latency.
   const [mealRows, mealItems] = await Promise.all([
     db
       .select({
@@ -72,33 +64,36 @@ export async function getMealById(id: string) {
       .from(meal)
       .where(eq(meal.id, id))
       .limit(1),
-    db
-      .query.mealItem.findMany({
-        where: eq(mealItem.mealId, id),
-        columns: {
-          id: true,
-          foodItemId: true,
-          quantity: true,
-        },
-        with: {
-          foodItem: {
-            columns: {
-              name: true,
-              calories: true,
-              protein: true,
-              carbs: true,
-              fat: true,
-              unit: true,
-              gramsPerUnit: true,
-            },
-            with: {
-              category: {
-                columns: { name: true },
+    db.query.mealItem.findMany({
+      where: eq(mealItem.mealId, id),
+      columns: {
+        id: true,
+        foodItemId: true,
+        quantity: true,
+      },
+      with: {
+        foodItem: {
+          columns: {
+            name: true,
+            calories: true,
+            protein: true,
+            carbs: true,
+            fat: true,
+            unit: true,
+            gramsPerUnit: true,
+          },
+          with: {
+            foodItemCategories: {
+              with: {
+                category: {
+                  columns: { id: true, name: true },
+                },
               },
             },
           },
         },
-      }),
+      },
+    }),
   ])
   const mealRow = mealRows[0]
   if (!mealRow) return null
@@ -106,11 +101,11 @@ export async function getMealById(id: string) {
   return {
     ...mealRow,
     // Normalize DB numerics to API-safe numbers and clamp macro precision for stable UI display.
-    mealItems: mealItems.map((mi) => ({
+    mealItems: mealItems.map(mi => ({
       id: mi.id,
       foodItemId: mi.foodItemId,
       foodName: mi.foodItem.name,
-      categoryName: mi.foodItem.category?.name ?? null,
+      categories: mapFoodCategoriesSorted(mi.foodItem.foodItemCategories),
       quantity: Number(mi.quantity),
       calories: roundNutritionMacroRequired(mi.foodItem.calories),
       protein: roundNutritionMacroNullable(mi.foodItem.protein),
@@ -128,13 +123,13 @@ export async function getMealById(id: string) {
 export async function createMeal(data: CreateMeal) {
   const { name, description, mealItems } = data
 
-  const newMeal = await db.transaction(async (tx) => {
+  const newMeal = await db.transaction(async tx => {
     const [inserted] = await tx.insert(meal).values({ name, description }).returning()
     if (!inserted) return null
 
     if (mealItems.length > 0) {
       await tx.insert(mealItem).values(
-        mealItems.map((item) => ({
+        mealItems.map(item => ({
           mealId: inserted.id,
           foodItemId: item.foodItemId,
           quantity: item.quantity.toString(),
@@ -148,11 +143,11 @@ export async function createMeal(data: CreateMeal) {
 }
 
 export type UpdateMealResult =
-  | { ok: true; data: (typeof meal.$inferSelect) }
+  | { ok: true; data: typeof meal.$inferSelect }
   | { ok: false; error: string; code: 'NOT_FOUND' | 'VALIDATION' | 'CONFLICT' }
 
 export type DeleteMealResult =
-  | { ok: true; data: (typeof meal.$inferSelect) }
+  | { ok: true; data: typeof meal.$inferSelect }
   | { ok: false; error: string; code: 'NOT_FOUND' | 'CONFLICT' }
 
 /** Drizzle transaction client (same surface as `db` for queries used here). */
@@ -168,8 +163,8 @@ async function validateMealItemIdsInMeal(
     .select({ id: mealItem.id })
     .from(mealItem)
     .where(and(eq(mealItem.mealId, mealId), inArray(mealItem.id, mealItemIdsToCheck)))
-  const existingIds = new Set(existing.map((r) => r.id))
-  const missing = mealItemIdsToCheck.filter((mid) => !existingIds.has(mid))
+  const existingIds = new Set(existing.map(r => r.id))
+  const missing = mealItemIdsToCheck.filter(mid => !existingIds.has(mid))
   if (missing.length > 0) {
     return {
       ok: false,
@@ -185,8 +180,8 @@ function validateRemoveUpdateOverlap(
   update: UpdateMeal['update']
 ): UpdateMealResult | null {
   const removeSet = new Set(remove ?? [])
-  const updateIds = (update ?? []).map((u) => u.mealItemId)
-  const inBoth = updateIds.filter((mid) => removeSet.has(mid))
+  const updateIds = (update ?? []).map(u => u.mealItemId)
+  const inBoth = updateIds.filter(mid => removeSet.has(mid))
   if (inBoth.length > 0) {
     return {
       ok: false,
@@ -197,17 +192,11 @@ function validateRemoveUpdateOverlap(
   return null
 }
 
-async function validateFoodItemIdsExist(
-  tx: DbClient,
-  foodIdsToAdd: string[]
-): Promise<UpdateMealResult | null> {
+async function validateFoodItemIdsExist(tx: DbClient, foodIdsToAdd: string[]): Promise<UpdateMealResult | null> {
   if (foodIdsToAdd.length === 0) return null
-  const existingFood = await tx
-    .select({ id: foodItem.id })
-    .from(foodItem)
-    .where(inArray(foodItem.id, foodIdsToAdd))
-  const existingFoodIds = new Set(existingFood.map((r) => r.id))
-  const missingFood = foodIdsToAdd.filter((fid) => !existingFoodIds.has(fid))
+  const existingFood = await tx.select({ id: foodItem.id }).from(foodItem).where(inArray(foodItem.id, foodIdsToAdd))
+  const existingFoodIds = new Set(existingFood.map(r => r.id))
+  const missingFood = foodIdsToAdd.filter(fid => !existingFoodIds.has(fid))
   if (missingFood.length > 0) {
     return {
       ok: false,
@@ -225,7 +214,7 @@ async function validateFoodItemIdsExist(
 export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMealResult> {
   const { name, description, add, remove, update } = data
 
-  return db.transaction(async (tx) => {
+  return db.transaction(async tx => {
     const [mealRow] = await tx.select().from(meal).where(eq(meal.id, id)).limit(1)
     if (!mealRow) return { ok: false, error: 'Meal not found', code: 'NOT_FOUND' }
 
@@ -235,17 +224,13 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
     const [mealInAssignedPlan] = await tx
       .select({ id: dietPlanMeal.id })
       .from(dietPlanMeal)
-      .innerJoin(
-        dietPlanAssignment,
-        eq(dietPlanAssignment.dietPlanId, dietPlanMeal.dietPlanId)
-      )
+      .innerJoin(dietPlanAssignment, eq(dietPlanAssignment.dietPlanId, dietPlanMeal.dietPlanId))
       .where(eq(dietPlanMeal.mealId, id))
       .limit(1)
     if (mealInAssignedPlan) {
       return {
         ok: false,
-        error:
-          'Cannot edit this meal while it is part of a diet plan assigned to a member or user',
+        error: 'Cannot edit this meal while it is part of a diet plan assigned to a member or user',
         code: 'CONFLICT',
       }
     }
@@ -254,11 +239,8 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
     const overlapError = validateRemoveUpdateOverlap(remove, update)
     if (overlapError) return overlapError
 
-    const mealItemIdsToCheck = [
-      ...(remove ?? []),
-      ...(update ?? []).map((u) => u.mealItemId),
-    ]
-    const foodIdsToAdd = [...new Set((add ?? []).map((a) => a.foodItemId))]
+    const mealItemIdsToCheck = [...(remove ?? []), ...(update ?? []).map(u => u.mealItemId)]
+    const foodIdsToAdd = [...new Set((add ?? []).map(a => a.foodItemId))]
     const [mealItemValidationError, foodValidationError] = await Promise.all([
       validateMealItemIdsInMeal(tx, id, mealItemIdsToCheck),
       validateFoodItemIdsExist(tx, foodIdsToAdd),
@@ -275,13 +257,11 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
     }
 
     if (remove?.length) {
-      await tx
-        .delete(mealItem)
-        .where(and(eq(mealItem.mealId, id), inArray(mealItem.id, remove)))
+      await tx.delete(mealItem).where(and(eq(mealItem.mealId, id), inArray(mealItem.id, remove)))
     }
     if (update?.length) {
       await Promise.all(
-        update.map((u) =>
+        update.map(u =>
           tx
             .update(mealItem)
             .set({ quantity: u.quantity.toString() })
@@ -291,7 +271,7 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
     }
     if (add?.length) {
       await tx.insert(mealItem).values(
-        add.map((item) => ({
+        add.map(item => ({
           mealId: id,
           foodItemId: item.foodItemId,
           quantity: item.quantity.toString(),
@@ -300,7 +280,7 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
     }
 
     const [final] = await tx.select().from(meal).where(eq(meal.id, id)).limit(1)
-    return { ok: true, data: final! }
+    return { ok: true, data: final }
   })
 }
 
@@ -309,7 +289,7 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
  * (avoids a race where items or plan slots appear between read and delete).
  */
 export async function deleteMeal(id: string): Promise<DeleteMealResult> {
-  return db.transaction(async (tx) => {
+  return db.transaction(async tx => {
     const [mealRow] = await tx.select({ id: meal.id }).from(meal).where(eq(meal.id, id)).limit(1)
     if (!mealRow) {
       return { ok: false, error: 'Meal not found', code: 'NOT_FOUND' }
@@ -318,11 +298,7 @@ export async function deleteMeal(id: string): Promise<DeleteMealResult> {
     // Meal-item count and diet-plan membership are independent; evaluate together.
     const [[itemCountRow], [referencedByPlan]] = await Promise.all([
       tx.select({ count: count() }).from(mealItem).where(eq(mealItem.mealId, id)),
-      tx
-        .select({ id: dietPlanMeal.id })
-        .from(dietPlanMeal)
-        .where(eq(dietPlanMeal.mealId, id))
-        .limit(1),
+      tx.select({ id: dietPlanMeal.id }).from(dietPlanMeal).where(eq(dietPlanMeal.mealId, id)).limit(1),
     ])
 
     const itemCount = Number(itemCountRow?.count ?? 0)
@@ -337,8 +313,7 @@ export async function deleteMeal(id: string): Promise<DeleteMealResult> {
     if (referencedByPlan) {
       return {
         ok: false,
-        error:
-          'Cannot delete a meal that is used in a diet plan; remove it from the plan first',
+        error: 'Cannot delete a meal that is used in a diet plan; remove it from the plan first',
         code: 'CONFLICT',
       }
     }

@@ -23,6 +23,7 @@ import { useFoodCategories } from '@/hooks/use-food-categories'
 import { useUpdateFoodItem, useDeleteFoodItem } from '@/hooks/use-food-mutations'
 import { FoodItemForm } from '../components/food-item-form'
 import type { UpdateFoodItem } from '@/types/api/food.schemas'
+import { formatFoodCategoriesDisplay } from '@/lib/helpers/food-item-categories'
 import { formatFoodUnitLabel } from '@/lib/helpers/food-unit-display'
 
 export default function FoodItemDetailPage() {
@@ -54,6 +55,7 @@ export default function FoodItemDetailPage() {
     router.push('/dashboard/admin/food-items')
   }, [id, deleteItem, router])
 
+  // Skeleton until the detail query resolves (item undefined while loading or briefly after navigation).
   if (isLoading || !item) {
     return (
       <div className='space-y-6'>
@@ -63,6 +65,7 @@ export default function FoodItemDetailPage() {
     )
   }
 
+  // Hard error from useFoodItem — keep user on a recoverable screen with back + retry.
   if (error) {
     return (
       <div className='space-y-4'>
@@ -84,6 +87,7 @@ export default function FoodItemDetailPage() {
     )
   }
 
+  // Happy path: read-only card + modal edit (same form as create) + delete confirmation.
   return (
     <div className='space-y-6'>
       <div className='flex items-center justify-between gap-4'>
@@ -113,7 +117,9 @@ export default function FoodItemDetailPage() {
       <Card>
         <CardHeader>
           <h2 className='text-lg font-semibold'>{item.name}</h2>
-          <p className='text-sm text-muted-foreground'>{item.categoryName ?? 'No category'}</p>
+          <p className='text-sm text-muted-foreground'>
+            {formatFoodCategoriesDisplay(item.categories, 'No categories')}
+          </p>
         </CardHeader>
         <CardContent className='space-y-4'>
           {item.imageUrl && (

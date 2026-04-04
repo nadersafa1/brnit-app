@@ -48,6 +48,12 @@ export function createCategoriesColumns({
       ),
     },
     createTextColumn<FoodCategory>(
+      'description',
+      'Description',
+      (row) => row.description?.trim() || null,
+      { className: 'max-w-[min(280px,32vw)] truncate text-muted-foreground' }
+    ),
+    createTextColumn<FoodCategory>(
       'createdAt',
       'Created',
       (row) => (row.createdAt ? new Date(row.createdAt).toLocaleDateString() : '–'),

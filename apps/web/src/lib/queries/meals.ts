@@ -10,7 +10,7 @@ export interface MealItem {
   id: string
   foodItemId: string
   foodName: string
-  categoryName: string | null
+  categories: { id: string; name: string }[]
   quantity: number
   calories: number | null
   protein: number | null

@@ -3,6 +3,7 @@ import { drizzle } from 'drizzle-orm/node-postgres'
 import { reset } from 'drizzle-seed'
 import { readFileSync } from 'node:fs'
 import { foodCategory } from './schema/food-category'
+import { foodItemCategory } from './schema/food-item-category'
 import { foodItem } from './schema/food-item'
 import { meal, mealItem } from './schema/meal'
 import { dietPlan, dietPlanMeal } from './schema/diet-plan'
@@ -233,6 +234,7 @@ const main = async () => {
 
   const dietSchema = {
     foodCategory,
+    foodItemCategory,
     foodItem,
     meal,
     mealItem,
@@ -283,6 +285,7 @@ const main = async () => {
     for (let i = 0; i < foods.length; i += BATCH_SIZE) {
       const batch = foods.slice(i, i + BATCH_SIZE)
       const values = []
+      const rowCategoryIds: string[] = []
 
       for (const f of batch) {
         if (!f.foodCategory?.description) continue
@@ -337,22 +340,24 @@ const main = async () => {
 
         values.push({
           name: f.description,
-          fdcId: f.fdcId,
-          categoryId: categoryMap.get(f.foodCategory.description)!,
-          calories,
+          calories: calories ?? '0',
           protein,
           carbs,
           fat,
-          servingSize: f.foodPortions?.[0]?.gramWeight
-            ? String(f.foodPortions[0].gramWeight)
-            : '100',
           unit: '100g' as const,
           gramsPerUnit: '100',
         })
+        rowCategoryIds.push(categoryMap.get(f.foodCategory.description)!)
       }
 
       if (values.length > 0) {
-        await db.insert(foodItem).values(values)
+        const insertedRows = await db.insert(foodItem).values(values).returning({ id: foodItem.id })
+        await db.insert(foodItemCategory).values(
+          insertedRows.map((row, idx) => ({
+            foodItemId: row.id,
+            foodCategoryId: rowCategoryIds[idx]!,
+          })),
+        )
         inserted += values.length
       }
     }
@@ -362,7 +367,7 @@ const main = async () => {
     console.log(`   Categories: ${categoryNames.size}`)
     console.log(`   Food Items: ${inserted}`)
     console.log(`   Foods with missing macros before fallback: ${foodsWithAnyMissing}`)
-    console.log(`   Macro fields filled from USDA API (fdcId): ${fieldsFilledViaApi}`)
+    console.log(`   Macro fields filled from USDA API (by food ID): ${fieldsFilledViaApi}`)
     console.log(`   Macro fields filled from USDA API (name search): ${fieldsFilledViaSearch}`)
     console.log(`   Remaining null macro fields: ${remainingNullFields}`)
     console.log('\n🎉 Seed complete!')

@@ -2,20 +2,30 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { getFoodItemAlternatives } from './food-item-alternatives'
 import { resetAlternativesToleranceCache } from '@/lib/config/alternatives-tolerance'
 
-function mockChain(end: Promise<unknown>) {
+function mockSelectChain(end: Promise<unknown>) {
   return {
     from: vi.fn().mockReturnThis(),
     where: vi.fn().mockReturnThis(),
-    innerJoin: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnValue(end),
     then: (onFulfilled: (v: unknown) => unknown) => end.then(onFulfilled),
     catch: (onRejected: (e: unknown) => unknown) => end.catch(onRejected),
   }
 }
 
+const { findFirst, findMany } = vi.hoisted(() => ({
+  findFirst: vi.fn(),
+  findMany: vi.fn(),
+}))
+
 vi.mock('@burn-app/db', () => ({
   db: {
     select: vi.fn(),
+    query: {
+      foodItem: {
+        findFirst,
+        findMany,
+      },
+    },
   },
 }))
 
@@ -27,7 +37,8 @@ describe('getFoodItemAlternatives', () => {
 
   it('returns REFERENCE_NOT_FOUND when food item does not exist', async () => {
     const { db } = await import('@burn-app/db')
-    vi.mocked(db.select).mockReturnValue(mockChain(Promise.resolve([])) as never)
+    vi.mocked(db.select).mockReturnValue(mockSelectChain(Promise.resolve([])) as never)
+    findFirst.mockResolvedValue(null)
 
     const result = await getFoodItemAlternatives('non-existent-id', 150, 1, 10)
     expect(result.ok).toBe(false)
@@ -39,20 +50,18 @@ describe('getFoodItemAlternatives', () => {
   it('returns REFERENCE_INVALID when reference has null macros', async () => {
     const { db } = await import('@burn-app/db')
     vi.mocked(db.select).mockReturnValue(
-      mockChain(
-        Promise.resolve([
-          {
-            id: 'ref-1',
-            name: 'Chicken',
-            categoryId: 'cat-1',
-            calories: null,
-            protein: '20',
-            carbs: '0',
-            fat: '5',
-          },
-        ])
-      ) as never
+      mockSelectChain(Promise.resolve([{ foodCategoryId: 'cat-1' }])) as never
     )
+    findFirst.mockResolvedValue({
+      id: 'ref-1',
+      name: 'Chicken',
+      calories: null,
+      protein: '20',
+      carbs: '0',
+      fat: '5',
+      unit: '100g',
+      gramsPerUnit: null,
+    })
 
     const result = await getFoodItemAlternatives('ref-1', 150, 1, 10)
     expect(result.ok).toBe(false)
@@ -61,28 +70,43 @@ describe('getFoodItemAlternatives', () => {
     }
   })
 
-  it('returns ok with empty items when no candidates in same category', async () => {
+  it('returns REFERENCE_INVALID when reference has no categories', async () => {
     const { db } = await import('@burn-app/db')
-    let callCount = 0
-    vi.mocked(db.select).mockImplementation(() => {
-      callCount++
-      if (callCount === 1) {
-        return mockChain(
-          Promise.resolve([
-            {
-              id: 'ref-1',
-              name: 'Chicken',
-              categoryId: 'cat-1',
-              calories: '165',
-              protein: '31',
-              carbs: '0',
-              fat: '3.6',
-            },
-          ])
-        ) as never
-      }
-      return mockChain(Promise.resolve([])) as never
+    vi.mocked(db.select).mockReturnValue(mockSelectChain(Promise.resolve([])) as never)
+    findFirst.mockResolvedValue({
+      id: 'ref-1',
+      name: 'Chicken',
+      calories: '165',
+      protein: '31',
+      carbs: '0',
+      fat: '3.6',
+      unit: '100g',
+      gramsPerUnit: null,
     })
+
+    const result = await getFoodItemAlternatives('ref-1', 150, 1, 10)
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.code).toBe('REFERENCE_INVALID')
+    }
+  })
+
+  it('returns ok with empty items when no candidates share a category', async () => {
+    const { db } = await import('@burn-app/db')
+    vi.mocked(db.select).mockReturnValue(
+      mockSelectChain(Promise.resolve([{ foodCategoryId: 'cat-1' }])) as never
+    )
+    findFirst.mockResolvedValue({
+      id: 'ref-1',
+      name: 'Chicken',
+      calories: '165',
+      protein: '31',
+      carbs: '0',
+      fat: '3.6',
+      unit: '100g',
+      gramsPerUnit: null,
+    })
+    findMany.mockResolvedValue([])
 
     const result = await getFoodItemAlternatives('ref-1', 150, 1, 10)
     expect(result.ok).toBe(true)

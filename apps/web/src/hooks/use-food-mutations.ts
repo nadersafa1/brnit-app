@@ -73,17 +73,22 @@ export function useDeleteFoodCategory() {
 
 // --- Food items (multipart for create/update) ---
 
+function appendCategoryIds(formData: FormData, ids: string[]) {
+  for (const id of ids) {
+    formData.append('categoryIds', id)
+  }
+}
+
 function buildCreateFoodItemFormData(data: CreateFoodItemForm, file?: File): FormData {
   const formData = new FormData()
   formData.append('name', data.name)
-  formData.append('categoryId', data.categoryId)
+  appendCategoryIds(formData, data.categoryIds)
   if (data.calories != null) formData.append('calories', String(data.calories))
   if (data.protein != null) formData.append('protein', String(data.protein))
   if (data.carbs != null) formData.append('carbs', String(data.carbs))
   if (data.fat != null) formData.append('fat', String(data.fat))
   if (data.unit != null) formData.append('unit', String(data.unit))
   if (data.gramsPerUnit != null) formData.append('gramsPerUnit', String(data.gramsPerUnit))
-  if (data.servingSize != null) formData.append('servingSize', String(data.servingSize))
   if (file) formData.append('file', file)
   return formData
 }
@@ -114,14 +119,15 @@ function buildUpdateFoodItemFormData(
 ): FormData {
   const formData = new FormData()
   if (data.name != null) formData.append('name', data.name)
-  if (data.categoryId != null) formData.append('categoryId', data.categoryId)
+  if (data.categoryIds != null) {
+    appendCategoryIds(formData, data.categoryIds)
+  }
   if (data.calories != null) formData.append('calories', String(data.calories))
   if (data.protein != null) formData.append('protein', String(data.protein))
   if (data.carbs != null) formData.append('carbs', String(data.carbs))
   if (data.fat != null) formData.append('fat', String(data.fat))
   if (data.unit != null) formData.append('unit', String(data.unit))
   if (data.gramsPerUnit != null) formData.append('gramsPerUnit', String(data.gramsPerUnit))
-  if (data.servingSize != null) formData.append('servingSize', String(data.servingSize))
   if (options?.file) formData.append('file', options.file)
   if (options?.clearImage) formData.append('clearImage', 'true')
   return formData

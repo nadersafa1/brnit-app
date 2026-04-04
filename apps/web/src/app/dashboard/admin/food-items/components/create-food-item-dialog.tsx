@@ -1,12 +1,6 @@
 'use client'
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { FoodItemForm, type FoodItemFormSubmitOptions } from './food-item-form'
 import type { CreateFoodItem, UpdateFoodItem } from '@/types/api/food.schemas'
 import type { FoodCategory } from '@/lib/queries/food-categories'
@@ -19,18 +13,16 @@ interface CreateFoodItemDialogProps {
   categories: FoodCategory[]
 }
 
+/** Modal wrapper around FoodItemForm; closes on successful create and notifies parent to refetch lists. */
 export function CreateFoodItemDialog({
   open,
   onOpenChange,
   onSuccess,
   categories,
-}: CreateFoodItemDialogProps) {
+}: Readonly<CreateFoodItemDialogProps>) {
   const create = useCreateFoodItem()
 
-  const handleSubmit = async (
-    data: CreateFoodItem | UpdateFoodItem,
-    options?: FoodItemFormSubmitOptions
-  ) => {
+  const handleSubmit = async (data: CreateFoodItem | UpdateFoodItem, options?: FoodItemFormSubmitOptions) => {
     await create.mutateAsync({ ...data, ...options } as CreateFoodItem & { file?: File })
     onOpenChange(false)
     onSuccess?.()

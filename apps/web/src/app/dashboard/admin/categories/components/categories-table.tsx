@@ -40,7 +40,7 @@ export function CategoriesTable({
   onEdit,
   onDelete,
   readOnly = false,
-}: CategoriesTableProps) {
+}: Readonly<CategoriesTableProps>) {
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
     createdAt: false,
   })
@@ -56,7 +56,7 @@ export function CategoriesTable({
       createCategoriesColumns({
         sortBy,
         sortOrder,
-        onSort: (id) => handleSort(id as CategoriesSortBy),
+        onSort: id => handleSort(id as CategoriesSortBy),
         onEdit,
         onDelete,
         readOnly,
@@ -75,6 +75,7 @@ export function CategoriesTable({
   const getColumnLabel = React.useCallback((id: string) => {
     const labels: Record<string, string> = {
       name: 'Name',
+      description: 'Description',
       createdAt: 'Created',
       actions: 'Actions',
     }
@@ -82,11 +83,11 @@ export function CategoriesTable({
   }, [])
 
   return (
-    <div className="w-full space-y-4">
+    <div className='w-full space-y-4'>
       <TableControls<FoodCategory>
         searchValue={searchValue}
         onSearchChange={onSearchChange}
-        searchPlaceholder="Search by name..."
+        searchPlaceholder='Search by name or description...'
         searchDebounceMs={300}
         table={table}
         getColumnLabel={getColumnLabel}
@@ -100,7 +101,7 @@ export function CategoriesTable({
         columns={columns}
         pagination={pagination}
         isLoading={isLoading}
-        emptyMessage="No categories found."
+        emptyMessage='No categories found.'
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
       />

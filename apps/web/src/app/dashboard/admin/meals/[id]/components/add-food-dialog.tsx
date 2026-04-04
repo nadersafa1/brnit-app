@@ -55,7 +55,11 @@ function FoodItemPickerList({
           onClick={() => onSelect(item)}
         >
           <span className='font-medium'>{item.name}</span>
-          {item.categoryName && <span className='text-muted-foreground ml-2'>({item.categoryName})</span>}
+          {item.categories?.length ? (
+            <span className='text-muted-foreground ml-2'>
+              ({item.categories.map((c) => c.name).join(', ')})
+            </span>
+          ) : null}
         </button>
       ))}
     </div>

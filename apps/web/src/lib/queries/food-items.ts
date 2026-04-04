@@ -11,14 +11,11 @@ export type FoodUnit = '100g' | 'piece' | 'liters' | 'cup' | 'tbsp'
 export interface FoodItem {
   id: string
   name: string
-  fdcId: number | null
-  categoryId: string
-  categoryName: string | null
+  categories: { id: string; name: string }[]
   calories: string | null
   protein: string | null
   carbs: string | null
   fat: string | null
-  servingSize: string | null
   unit: FoodUnit
   gramsPerUnit: number | null
   imageUrl: string | null

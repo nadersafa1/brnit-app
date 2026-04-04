@@ -116,6 +116,9 @@ export default function CategoryDetailPage() {
           <h2 className='text-lg font-semibold'>{category.name}</h2>
         </CardHeader>
         <CardContent className='space-y-2'>
+          {category.description?.trim() ? (
+            <p className='text-sm text-foreground whitespace-pre-wrap'>{category.description.trim()}</p>
+          ) : null}
           <p className='text-sm text-muted-foreground'>
             Created: {category.createdAt ? new Date(category.createdAt).toLocaleDateString() : '–'}
           </p>
@@ -126,7 +129,7 @@ export default function CategoryDetailPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit category</DialogTitle>
-            <DialogDescription>Update the category name.</DialogDescription>
+            <DialogDescription>Update the category name and description.</DialogDescription>
           </DialogHeader>
           <FoodCategoryForm
             category={category}

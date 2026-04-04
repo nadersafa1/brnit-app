@@ -25,12 +25,12 @@ export interface FoodItemsTableProps {
   sortOrder?: 'asc' | 'desc'
   onSortingChange: (sortBy?: FoodItemsSortBy, sortOrder?: 'asc' | 'desc') => void
   isLoading: boolean
-  onRefetch: () => void
   onEdit: (item: FoodItem) => void
   onDelete: (item: FoodItem) => void
   readOnly?: boolean
 }
 
+/** Search, category filter, sort, and pagination; data loading and refetch live in parent pages. */
 export function FoodItemsTable({
   items,
   categories,
@@ -88,7 +88,7 @@ export function FoodItemsTable({
     const labels: Record<string, string> = {
       name: 'Name',
       unit: 'Unit',
-      categoryName: 'Category',
+      categories: 'Categories',
       calories: 'Calories',
       protein: 'Protein',
       carbs: 'Carbs',

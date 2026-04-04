@@ -78,7 +78,6 @@ export default function NutritionistFoodItemsPage() {
           }))
         }
         isLoading={isLoading}
-        onRefetch={refetch}
         onEdit={handleEdit}
         onDelete={handleDelete}
         readOnly

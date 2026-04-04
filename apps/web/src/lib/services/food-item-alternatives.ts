@@ -1,12 +1,12 @@
 /**
- * Food alternatives: same-category candidates whose scaled macros fall within configured
- * tolerance vs a reference food at the requested quantity. Suggested quantities are snapped
- * to unit steps via `snapMealQuantityToStep` (shared with meal UI).
+ * Food alternatives: candidates that share at least one category with the reference item and whose
+ * scaled macros fall within configured tolerance vs the reference at the requested quantity.
  */
 import { db } from '@burn-app/db'
-import { foodItem } from '@burn-app/db/schema'
-import { and, eq, ne, isNotNull } from 'drizzle-orm'
+import { foodItem, foodItemCategory } from '@burn-app/db/schema'
+import { and, eq, ne, isNotNull, inArray } from 'drizzle-orm'
 import { getAlternativesToleranceConfig } from '@/lib/config/alternatives-tolerance'
+import { mapFoodCategoriesSorted } from '@/lib/helpers/food-item-categories'
 import { snapMealQuantityToStep } from '@/lib/helpers/food-unit-display'
 import type { FoodUnit } from '@/lib/helpers/macros'
 
@@ -26,8 +26,7 @@ function toNum(val: string | null | undefined): number {
 export interface FoodItemAlternativeItem {
   foodItemId: string
   name: string
-  categoryId: string
-  categoryName: string
+  categories: { id: string; name: string }[]
   /** Suggested quantity in this food's unit (e.g. 10 for "10 eggs", 150 for "150g"). */
   suggestedQuantity: number
   unit: FoodUnit
@@ -79,10 +78,7 @@ function referenceMacros(
  * Raw quantity in the candidate's unit from calorie matching, then snapped to unit step
  * (50g, 1 piece, 0.5 L/cup/tbsp) via shared meal quantity rules.
  */
-function suggestedQuantityInUnit(
-  factor: number,
-  candidateUnit: FoodUnit
-): number {
+function suggestedQuantityInUnit(factor: number, candidateUnit: FoodUnit): number {
   const raw =
     candidateUnit === '100g'
       ? Math.round(factor * 1000) / 10
@@ -142,27 +138,31 @@ export async function getFoodItemAlternatives(
   const limit = Math.min(Math.max(1, perPage), MAX_PER_PAGE)
   const offset = Math.max(0, (page - 1) * limit)
 
-  // --- Load reference food (macros + unit drive calorie matching) ---
-  const refRow = await db.query.foodItem.findFirst({
-    where: eq(foodItem.id, foodItemId),
-    columns: {
-      id: true,
-      name: true,
-      categoryId: true,
-      calories: true,
-      protein: true,
-      carbs: true,
-      fat: true,
-      unit: true,
-      gramsPerUnit: true,
-    },
-  })
+  // Reference junction rows and food row are independent reads — run together.
+  const [refCatRows, refRow] = await Promise.all([
+    db
+      .select({ foodCategoryId: foodItemCategory.foodCategoryId })
+      .from(foodItemCategory)
+      .where(eq(foodItemCategory.foodItemId, foodItemId)),
+    db.query.foodItem.findFirst({
+      where: eq(foodItem.id, foodItemId),
+      columns: {
+        id: true,
+        name: true,
+        calories: true,
+        protein: true,
+        carbs: true,
+        fat: true,
+        unit: true,
+        gramsPerUnit: true,
+      },
+    }),
+  ])
 
   if (!refRow) {
     return { ok: false, error: 'Food item not found', code: 'REFERENCE_NOT_FOUND' }
   }
 
-  // --- Validate reference row has required fields for matching ---
   const cal = toNum(refRow.calories)
   const prot = toNum(refRow.protein)
   const carb = toNum(refRow.carbs)
@@ -174,50 +174,60 @@ export async function getFoodItemAlternatives(
     refRow.protein === null ||
     refRow.carbs === null ||
     refRow.fat === null ||
-    refRow.categoryId === null
+    refCatRows.length === 0
   ) {
     return {
       ok: false,
-      error: 'Reference food item has missing macros or category',
+      error: 'Reference food item has missing macros or categories',
       code: 'REFERENCE_INVALID',
     }
   }
 
+  const refCategoryIds = refCatRows.map((r) => r.foodCategoryId)
+
+  // Reference totals at the requested quantity; tolerance bands drive candidate filtering below.
   const reference = referenceMacros(quantity, refUnit, cal, prot, carb, fat)
   const tolerance = buildMacroTolerance(reference)
 
-  // --- Same-category candidates with full macros (filtering is in-memory below) ---
-  const candidates = await db
-    .query.foodItem.findMany({
-      where: and(
-        eq(foodItem.categoryId, refRow.categoryId),
-        ne(foodItem.id, foodItemId),
-        isNotNull(foodItem.calories),
-        isNotNull(foodItem.protein),
-        isNotNull(foodItem.carbs),
-        isNotNull(foodItem.fat)
-      ),
-      columns: {
-        id: true,
-        name: true,
-        categoryId: true,
-        calories: true,
-        protein: true,
-        carbs: true,
-        fat: true,
-        unit: true,
-        gramsPerUnit: true,
-      },
-      with: {
-        category: {
-          columns: { name: true },
+  // Subquery: food_item ids linked to any of the reference's categories (M2M overlap).
+  const sharedCategoryItemIds = db
+    .select({ id: foodItemCategory.foodItemId })
+    .from(foodItemCategory)
+    .where(inArray(foodItemCategory.foodCategoryId, refCategoryIds))
+
+  const candidates = await db.query.foodItem.findMany({
+    where: and(
+      ne(foodItem.id, foodItemId),
+      isNotNull(foodItem.calories),
+      isNotNull(foodItem.protein),
+      isNotNull(foodItem.carbs),
+      isNotNull(foodItem.fat),
+      inArray(foodItem.id, sharedCategoryItemIds)
+    ),
+    columns: {
+      id: true,
+      name: true,
+      calories: true,
+      protein: true,
+      carbs: true,
+      fat: true,
+      unit: true,
+      gramsPerUnit: true,
+    },
+    with: {
+      foodItemCategories: {
+        with: {
+          category: {
+            columns: { id: true, name: true },
+          },
         },
       },
-    })
+    },
+  })
 
   const results: FoodItemAlternativeItem[] = []
 
-  // --- Score each candidate: calorie scale factor → macro deltas vs reference; tolerance gate ---
+  // Pure CPU: each candidate is scored in memory; no per-row I/O.
   for (const row of candidates) {
     const c_cal = toNum(row.calories)
     const c_prot = toNum(row.protein)
@@ -246,8 +256,7 @@ export async function getFoodItemAlternatives(
     results.push({
       foodItemId: row.id,
       name: row.name,
-      categoryId: row.categoryId,
-      categoryName: row.category?.name ?? '',
+      categories: mapFoodCategoriesSorted(row.foodItemCategories),
       suggestedQuantity: suggestedQ,
       unit: candidateUnit,
       calories: roundMacroDisplay(totalCal),
@@ -262,7 +271,6 @@ export async function getFoodItemAlternatives(
     })
   }
 
-  // --- Sort by closeness to reference calories, then paginate (totalItems = full list length) ---
   results.sort((a, b) => Math.abs(a.calories - reference.R_cal) - Math.abs(b.calories - reference.R_cal))
 
   const totalItems = results.length
