@@ -1,4 +1,4 @@
-export { AuthSuccessScreen } from './auth'
+export { AuthSocialIconButtons, AuthSuccessScreen } from './auth'
 export { BottomNav } from './bottom-nav'
 export { CalorieRing } from './calorie-ring'
 export { CalendarStrip } from './calendar-strip'

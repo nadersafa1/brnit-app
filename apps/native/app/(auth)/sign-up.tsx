@@ -1,14 +1,18 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Link, Redirect } from 'expo-router'
 import { useState } from 'react'
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
+import { Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { AuthSuccessScreen, DobPicker, PasswordInput, PrimaryButton, TextInput } from '@/components'
+import { AuthSocialIconButtons, AuthSuccessScreen, DobPicker, PasswordInput, PrimaryButton, TextInput } from '@/components'
 import { FieldError, Spinner, Text } from '@/components/ui'
+import { BETTER_AUTH_SOCIAL_CALLBACK_PATH } from '@/constants/better-auth-social'
 import { DEEP_LINKS } from '@/constants/deep-links'
 import { useColors } from '@/hooks/use-theme-color'
 import { authClient } from '@/lib/auth-client'
+import { createSocialSignInCallbacks } from '@/lib/auth-social-callbacks'
+import { dobIsoStringToDate, isValidPastDob } from '@/lib/date-utils'
+import { signInWithAppleUsingBetterAuth } from '@/lib/sign-in-with-apple-better-auth'
 import { radii } from '@/theme/radii'
 import { shadows } from '@/theme/shadows'
 import { spacing } from '@/theme/spacing'
@@ -30,6 +34,9 @@ export default function SignUpScreen() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sent, setSent] = useState(false)
+
+  /** Sign in with Apple exists only on iOS; availability is enforced again inside the Apple auth module on tap. */
+  const showAppleSocialButton = Platform.OS === 'ios'
 
   if (isPending) {
     return (
@@ -55,8 +62,7 @@ export default function SignUpScreen() {
 
   const allRequirementsMet = passwordRequirements.every(req => req.met)
   const passwordsMatch = password === confirmPassword && confirmPassword.length > 0
-  const dobDate = new Date(`${dob}T00:00:00.000Z`)
-  const isDobValid = /^\d{4}-\d{2}-\d{2}$/.test(dob) && !Number.isNaN(dobDate.getTime()) && dobDate < new Date()
+  const isDobValid = isValidPastDob(dob)
 
   async function handleSignUp() {
     if (!isDobValid) {
@@ -76,7 +82,13 @@ export default function SignUpScreen() {
     setError(null)
 
     await authClient.signUp.email(
-      { name, email, dob, password, callbackURL: DEEP_LINKS.root },
+      {
+        name,
+        email,
+        dob: dobIsoStringToDate(dob),
+        password,
+        callbackURL: DEEP_LINKS.root,
+      },
       {
         onError(error) {
           setError(error.error?.message || 'Failed to sign up')
@@ -101,24 +113,17 @@ export default function SignUpScreen() {
     setIsLoading(true)
     setError(null)
     await authClient.signIn.social(
-      { provider: 'google', callbackURL: '/(tabs)' },
-      {
-        onError(err) {
-          setError(err.error?.message || 'Google sign-in failed')
-          setIsLoading(false)
-        },
-        onSuccess() {
-          setError(null)
-        },
-        onFinished() {
-          setIsLoading(false)
-        },
-      }
+      { provider: 'google', callbackURL: BETTER_AUTH_SOCIAL_CALLBACK_PATH },
+      createSocialSignInCallbacks(setError, setIsLoading, 'Google sign-in failed'),
     )
   }
 
-  function handleAppleLogin() {
-    console.log('Apple login pressed')
+  async function handleAppleLogin() {
+    await signInWithAppleUsingBetterAuth(authClient, {
+      setError,
+      setIsLoading,
+      callbackURL: BETTER_AUTH_SOCIAL_CALLBACK_PATH,
+    })
   }
 
   if (sent) {
@@ -217,22 +222,14 @@ export default function SignUpScreen() {
               </View>
             )}
 
-            <View style={styles.socialButtons}>
-              <TouchableOpacity
-                onPress={handleGoogleLogin}
-                disabled={isLoading}
-                style={[styles.socialButton, { backgroundColor: colors.card }, shadows.md]}
-              >
-                <Ionicons name='logo-google' size={20} color={colors.subtle} />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={handleAppleLogin}
-                style={[styles.socialButton, { backgroundColor: colors.card }, shadows.md]}
-              >
-                <Ionicons name='logo-apple' size={20} color={colors.subtle} />
-              </TouchableOpacity>
-            </View>
+            <AuthSocialIconButtons
+              isLoading={isLoading}
+              cardBackgroundColor={colors.card}
+              iconMutedColor={colors.subtle}
+              onGooglePress={handleGoogleLogin}
+              onApplePress={showAppleSocialButton ? handleAppleLogin : undefined}
+              showApple={showAppleSocialButton}
+            />
 
             <View style={styles.buttonContainer}>
               <PrimaryButton
@@ -315,20 +312,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[2],
-  },
-  socialButtons: {
-    flexDirection: 'row',
-    gap: spacing[3],
-    marginTop: spacing[2],
-  },
-  socialButton: {
-    flex: 1,
-    height: 44,
-    borderRadius: radii.pill,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing[4],
   },
   buttonContainer: {
     marginTop: spacing[2],

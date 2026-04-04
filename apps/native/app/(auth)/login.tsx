@@ -1,13 +1,16 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Link, Redirect, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
+import { Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { PasswordInput, PrimaryButton, TextInput } from '@/components'
+import { AuthSocialIconButtons, PasswordInput, PrimaryButton, TextInput } from '@/components'
 import { FieldError, Spinner, Text } from '@/components/ui'
+import { BETTER_AUTH_SOCIAL_CALLBACK_PATH } from '@/constants/better-auth-social'
 import { useColors } from '@/hooks/use-theme-color'
 import { authClient } from '@/lib/auth-client'
+import { createSocialSignInCallbacks } from '@/lib/auth-social-callbacks'
+import { signInWithAppleUsingBetterAuth } from '@/lib/sign-in-with-apple-better-auth'
 import { radii } from '@/theme/radii'
 import { shadows } from '@/theme/shadows'
 import { spacing } from '@/theme/spacing'
@@ -21,6 +24,9 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  /** Sign in with Apple exists only on iOS; capability is re-checked inside the native module when the user taps. */
+  const showAppleSocialButton = Platform.OS === 'ios'
 
   if (isPending) {
     return (
@@ -66,24 +72,17 @@ export default function LoginScreen() {
     setIsLoading(true)
     setError(null)
     await authClient.signIn.social(
-      { provider: 'google', callbackURL: '/(tabs)' },
-      {
-        onError(err) {
-          setError(err.error?.message || 'Google sign-in failed')
-          setIsLoading(false)
-        },
-        onSuccess() {
-          setError(null)
-        },
-        onFinished() {
-          setIsLoading(false)
-        },
-      }
+      { provider: 'google', callbackURL: BETTER_AUTH_SOCIAL_CALLBACK_PATH },
+      createSocialSignInCallbacks(setError, setIsLoading, 'Google sign-in failed'),
     )
   }
 
-  function handleAppleLogin() {
-    console.log('Apple login pressed')
+  async function handleAppleLogin() {
+    await signInWithAppleUsingBetterAuth(authClient, {
+      setError,
+      setIsLoading,
+      callbackURL: BETTER_AUTH_SOCIAL_CALLBACK_PATH,
+    })
   }
 
   return (
@@ -136,22 +135,14 @@ export default function LoginScreen() {
               </Link>
             </View>
 
-            <View style={styles.socialButtons}>
-              <TouchableOpacity
-                onPress={handleGoogleLogin}
-                disabled={isLoading}
-                style={[styles.socialButton, { backgroundColor: colors.card }, shadows.md]}
-              >
-                <Ionicons name='logo-google' size={20} color={colors.subtle} />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={handleAppleLogin}
-                style={[styles.socialButton, { backgroundColor: colors.card }, shadows.md]}
-              >
-                <Ionicons name='logo-apple' size={20} color={colors.subtle} />
-              </TouchableOpacity>
-            </View>
+            <AuthSocialIconButtons
+              isLoading={isLoading}
+              cardBackgroundColor={colors.card}
+              iconMutedColor={colors.subtle}
+              onGooglePress={handleGoogleLogin}
+              onApplePress={showAppleSocialButton ? handleAppleLogin : undefined}
+              showApple={showAppleSocialButton}
+            />
 
             <View style={styles.buttonContainer}>
               <PrimaryButton onPress={handleLogin} isLoading={isLoading}>
@@ -224,20 +215,6 @@ const styles = StyleSheet.create({
   },
   forgotContainer: {
     alignItems: 'flex-end',
-  },
-  socialButtons: {
-    flexDirection: 'row',
-    gap: spacing[3],
-    marginTop: spacing[2],
-  },
-  socialButton: {
-    flex: 1,
-    height: 44,
-    borderRadius: radii.pill,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing[4],
   },
   buttonContainer: {
     marginTop: spacing[2],

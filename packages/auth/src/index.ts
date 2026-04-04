@@ -73,7 +73,9 @@ const appleSocial = appleEnvReady
           applePrivateKeyPem,
         ),
         ...(env.APPLE_APP_BUNDLE_IDENTIFIER
-          ? { appBundleIdentifier: env.APPLE_APP_BUNDLE_IDENTIFIER }
+          ? {
+              audience: [env.APPLE_CLIENT_ID, env.APPLE_APP_BUNDLE_IDENTIFIER],
+            }
           : {}),
       },
     }

@@ -58,3 +58,11 @@ export function parseIsoToDate(iso: string): Date {
   const d = dayjs(iso, ISO_DATE_ONLY)
   return d.isValid() ? d.toDate() : dayjs().toDate()
 }
+
+/**
+ * Converts a validated YYYY-MM-DD string to a Date for API payloads (local calendar date as JS Date).
+ * Call only after format validation (e.g. isValidPastDob).
+ */
+export function dobIsoStringToDate(iso: string): Date {
+  return dayjs(iso.trim(), ISO_DATE_ONLY).toDate()
+}
