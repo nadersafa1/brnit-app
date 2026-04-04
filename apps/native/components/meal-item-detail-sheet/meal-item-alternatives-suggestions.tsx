@@ -1,18 +1,20 @@
-import { StyleSheet, View } from "react-native";
-import { Spinner, Text } from "@/components/ui";
-import type { FoodItemAlternative } from "@/lib/api/member-food-types";
-import { spacing } from "@/theme/spacing";
-import { MealItemAlternativeRow } from "./meal-item-alternative-row";
+import { StyleSheet, View } from 'react-native'
+
+import { Spinner, Text } from '@/components/ui'
+import type { FoodItemAlternative } from '@/lib/api/member-food-types'
+import { spacing } from '@/theme/spacing'
+
+import { MealItemAlternativeRow } from './meal-item-alternative-row'
 
 type MealItemAlternativesSuggestionsProps = {
-  isLoading: boolean;
-  isError: boolean;
-  alternatives: FoodItemAlternative[];
-  selectedAlternative: FoodItemAlternative | null;
-  onSelectAlternative: (alternative: FoodItemAlternative) => void;
-};
+  isLoading: boolean
+  isError: boolean
+  alternatives: FoodItemAlternative[]
+  selectedAlternative: FoodItemAlternative | null
+  onSelectAlternative: (alternative: FoodItemAlternative) => void
+}
 
-/** Loading / error / empty / list states for the “replace with” suggestion list. */
+/** Loading, error, empty, and list states for the "replace with" suggestion list. */
 export function MealItemAlternativesSuggestions({
   isLoading,
   isError,
@@ -28,7 +30,7 @@ export function MealItemAlternativesSuggestions({
           Loading suggestions...
         </Text>
       </View>
-    );
+    )
   }
 
   if (isError) {
@@ -36,7 +38,7 @@ export function MealItemAlternativesSuggestions({
       <Text muted style={styles.statusText}>
         Could not load suggestions.
       </Text>
-    );
+    )
   }
 
   if (alternatives.length === 0) {
@@ -44,7 +46,7 @@ export function MealItemAlternativesSuggestions({
       <Text muted style={styles.statusText}>
         No suggestions found.
       </Text>
-    );
+    )
   }
 
   return (
@@ -58,10 +60,10 @@ export function MealItemAlternativesSuggestions({
         />
       ))}
     </>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
-  centered: { alignItems: "center", paddingVertical: spacing[4] },
+  centered: { alignItems: 'center', paddingVertical: spacing[4] },
   statusText: { marginBottom: spacing[2] },
-});
+})

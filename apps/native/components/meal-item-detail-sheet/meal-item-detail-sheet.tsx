@@ -1,85 +1,68 @@
-import { useCallback, useRef, useState } from "react";
-import type { BottomSheetFooterProps } from "@gorhom/bottom-sheet";
+import type { BottomSheetFooterProps } from '@gorhom/bottom-sheet'
+import { useCallback, useRef, useState } from 'react'
+
 import {
   AppBottomSheet,
   SheetFooter,
   type AppBottomSheetRef,
-} from "@/components/bottom-sheet";
-import { useMealItemAlternatives } from "@/hooks/use-meal-item-alternatives";
-import { useMealItemDetailSheetVisibility } from "@/hooks/use-meal-item-detail-sheet-visibility";
-import { useSetMealItemOverride } from "@/hooks/use-set-meal-item-override";
-import type { SetMealItemOverrideParams } from "@/lib/api/set-meal-item-override";
-import type { FoodItemAlternative } from "@/lib/api/member-food-types";
-import { MealItemDetailActions } from "./meal-item-detail-actions";
-import { MealItemDetailContent } from "./meal-item-detail-content";
-import type { MealItemDetailPayload, MealItemDetailSheetProps, OverrideScope } from "./types";
+} from '@/components/bottom-sheet'
+import { useMealItemAlternatives } from '@/hooks/use-meal-item-alternatives'
+import { useMealItemDetailSheetVisibility } from '@/hooks/use-meal-item-detail-sheet-visibility'
+import { useSetMealItemOverride } from '@/hooks/use-set-meal-item-override'
+import type { FoodItemAlternative } from '@/lib/api/member-food-types'
 
-function buildSetMealItemOverrideParams(
-  payload: MealItemDetailPayload,
-  alternative: FoodItemAlternative,
-  scope: OverrideScope
-): SetMealItemOverrideParams {
-  const base = {
-    assignmentId: payload.dietPlanAssignmentId,
-    dietPlanMealId: payload.dietPlanMealId,
-    mealItemId: payload.item.mealItemId,
-    foodItemId: alternative.foodItemId,
-    quantity: alternative.suggestedQuantity,
-    startDate: payload.consumedDate,
-  };
-  if (scope === "day") {
-    return { ...base, scope: "single_day" as const };
-  }
-  return { ...base, scope: "rest_of_plan" as const };
-}
+import { buildSetMealItemOverrideParams } from './build-override-params'
+import { MealItemDetailActions } from './meal-item-detail-actions'
+import { MealItemDetailContent } from './meal-item-detail-content'
+import type { MealItemDetailSheetProps, OverrideScope } from './types'
 
 export function MealItemDetailSheet({ payload, onClose }: Readonly<MealItemDetailSheetProps>) {
-  const ref = useRef<AppBottomSheetRef>(null);
-  const [selectedAlternative, setSelectedAlternative] = useState<FoodItemAlternative | null>(null);
-  const [submittingScope, setSubmittingScope] = useState<OverrideScope | null>(null);
-  const setMealItemOverrideMutation = useSetMealItemOverride();
+  const ref = useRef<AppBottomSheetRef>(null)
+  const [selectedAlternative, setSelectedAlternative] = useState<FoodItemAlternative | null>(null)
+  const [submittingScope, setSubmittingScope] = useState<OverrideScope | null>(null)
+  const setMealItemOverrideMutation = useSetMealItemOverride()
 
   const resetSelection = useCallback(() => {
-    setSelectedAlternative(null);
-  }, []);
+    setSelectedAlternative(null)
+  }, [])
 
-  useMealItemDetailSheetVisibility(payload, ref, resetSelection);
+  useMealItemDetailSheetVisibility(payload, ref, resetSelection)
 
   const alternativesQuery = useMealItemAlternatives({
-    assignmentId: payload?.dietPlanAssignmentId ?? "",
-    dietPlanMealId: payload?.dietPlanMealId ?? "",
-    mealItemId: payload?.item.mealItemId ?? "",
+    assignmentId: payload?.dietPlanAssignmentId ?? '',
+    dietPlanMealId: payload?.dietPlanMealId ?? '',
+    mealItemId: payload?.item.mealItemId ?? '',
     date: payload?.consumedDate,
     enabled: payload != null,
-  });
+  })
 
   const handleClose = useCallback(() => {
-    setSelectedAlternative(null);
-    setSubmittingScope(null);
-    onClose();
-  }, [onClose]);
+    setSelectedAlternative(null)
+    setSubmittingScope(null)
+    onClose()
+  }, [onClose])
 
   const submitOverride = useCallback(
     (scope: OverrideScope) => {
-      if (!payload || !selectedAlternative) return;
-      setSubmittingScope(scope);
+      if (!payload || !selectedAlternative) return
+      setSubmittingScope(scope)
       setMealItemOverrideMutation.mutate(buildSetMealItemOverrideParams(payload, selectedAlternative, scope), {
         onSuccess: handleClose,
         onSettled: () => setSubmittingScope(null),
-      });
+      })
     },
     [handleClose, payload, selectedAlternative, setMealItemOverrideMutation]
-  );
+  )
 
   const renderFooter = useCallback(
     (props: BottomSheetFooterProps) => (
       <SheetFooter {...props}>
         <MealItemDetailActions
           selectedAlternative={selectedAlternative}
-          isSubmittingDay={setMealItemOverrideMutation.isPending && submittingScope === "day"}
-          isSubmittingPlan={setMealItemOverrideMutation.isPending && submittingScope === "plan"}
-          onReplaceDay={() => submitOverride("day")}
-          onReplacePlan={() => submitOverride("plan")}
+          isSubmittingDay={setMealItemOverrideMutation.isPending && submittingScope === 'day'}
+          isSubmittingPlan={setMealItemOverrideMutation.isPending && submittingScope === 'plan'}
+          onReplaceDay={() => submitOverride('day')}
+          onReplacePlan={() => submitOverride('plan')}
         />
       </SheetFooter>
     ),
@@ -89,7 +72,7 @@ export function MealItemDetailSheet({ payload, onClose }: Readonly<MealItemDetai
       submittingScope,
       submitOverride,
     ]
-  );
+  )
 
   return (
     <AppBottomSheet ref={ref} onClose={handleClose} headerTitle="Meal item" footerComponent={renderFooter}>
@@ -97,12 +80,12 @@ export function MealItemDetailSheet({ payload, onClose }: Readonly<MealItemDetai
         <MealItemDetailContent
           item={payload.item}
           alternatives={alternativesQuery.data?.data ?? []}
-          isLoading={alternativesQuery.isLoading}
+          isLoading={alternativesQuery.isPending}
           isError={alternativesQuery.isError}
           selectedAlternative={selectedAlternative}
           onSelectAlternative={setSelectedAlternative}
         />
       ) : null}
     </AppBottomSheet>
-  );
+  )
 }

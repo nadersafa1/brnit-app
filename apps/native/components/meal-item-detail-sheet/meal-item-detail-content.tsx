@@ -1,11 +1,13 @@
-import { StyleSheet, View } from "react-native";
-import { Text } from "@/components/ui";
-import { formatQuantityWithUnit } from "@/lib/utils/numbers";
-import { spacing } from "@/theme/spacing";
-import { MealItemAlternativesSuggestions } from "./meal-item-alternatives-suggestions";
-import type { MealItemDetailContentProps } from "./types";
+import { StyleSheet, View } from 'react-native'
 
-/** Current meal item summary + alternative foods the member can swap in. */
+import { Text } from '@/components/ui'
+import { formatQuantityWithUnit } from '@/lib/utils/numbers'
+import { spacing } from '@/theme/spacing'
+
+import { MealItemAlternativesSuggestions } from './meal-item-alternatives-suggestions'
+import type { MealItemDetailContentProps } from './types'
+
+/** Current meal item summary plus alternative foods the member can swap in. */
 export function MealItemDetailContent({
   item,
   alternatives,
@@ -42,10 +44,10 @@ export function MealItemDetailContent({
         onSelectAlternative={onSelectAlternative}
       />
     </View>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
   container: { gap: spacing[1] },
   sectionTitle: { marginTop: spacing[3], marginBottom: spacing[1] },
-});
+})

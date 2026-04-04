@@ -1,16 +1,10 @@
 import { useRef } from 'react'
-import {
-  Pressable,
-  StyleSheet,
-  Animated,
-  ActivityIndicator,
-  ViewStyle,
-  TextStyle,
-} from 'react-native'
+import { Pressable, StyleSheet, Animated, ViewStyle, TextStyle } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { useColors } from '@/hooks/use-theme-color'
 import { radii } from '@/theme/radii'
 import { fontSize, fontWeight } from '@/theme/typography'
+import { Spinner } from './spinner'
 import { Text } from './text'
 
 type ButtonVariant = 'solid' | 'outline' | 'soft' | 'ghost'
@@ -40,7 +34,7 @@ export function Button(props: Readonly<ButtonProps>) {
     fullWidth = true,
     haptic = true,
     style,
-    textStyle,
+    textStyle
   } = props
 
   const colors = useColors()
@@ -51,7 +45,7 @@ export function Button(props: Readonly<ButtonProps>) {
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
       toValue: 0.97,
-      useNativeDriver: true,
+      useNativeDriver: true
     }).start()
   }
 
@@ -60,17 +54,14 @@ export function Button(props: Readonly<ButtonProps>) {
       toValue: 1,
       friction: 3,
       tension: 100,
-      useNativeDriver: true,
+      useNativeDriver: true
     }).start()
   }
 
   const handlePress = () => {
     if (isDisabled) return
     if (haptic) {
-      const impactStyle =
-        variant === 'solid'
-          ? Haptics.ImpactFeedbackStyle.Medium
-          : Haptics.ImpactFeedbackStyle.Light
+      const impactStyle = variant === 'solid' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light
       Haptics.impactAsync(impactStyle)
     }
     onPress()
@@ -82,22 +73,16 @@ export function Button(props: Readonly<ButtonProps>) {
 
   const renderContent = () => {
     if (loading) {
-      return <ActivityIndicator size="small" color={variantStyles.textColor} />
+      return (
+        <Spinner
+          size='sm'
+          color={variantStyles.textColor}
+        />
+      )
     }
 
     if (typeof children === 'string') {
-      return (
-        <Text
-          style={[
-            styles.text,
-            textSizeStyle,
-            { color: variantStyles.textColor },
-            textStyle,
-          ]}
-        >
-          {children}
-        </Text>
-      )
+      return <Text style={[styles.text, textSizeStyle, { color: variantStyles.textColor }, textStyle]}>{children}</Text>
     }
 
     return children
@@ -110,14 +95,7 @@ export function Button(props: Readonly<ButtonProps>) {
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         disabled={isDisabled}
-        style={[
-          styles.button,
-          sizeStyle,
-          variantStyles.container,
-          fullWidth && styles.fullWidth,
-          isDisabled && styles.disabled,
-          style,
-        ]}
+        style={[styles.button, sizeStyle, variantStyles.container, fullWidth && styles.fullWidth, isDisabled && styles.disabled, style]}
       >
         {renderContent()}
       </Pressable>
@@ -125,11 +103,7 @@ export function Button(props: Readonly<ButtonProps>) {
   )
 }
 
-function getVariantStyles(
-  variant: ButtonVariant,
-  colors: ReturnType<typeof useColors>,
-  disabled: boolean
-) {
+function getVariantStyles(variant: ButtonVariant, colors: ReturnType<typeof useColors>, disabled: boolean) {
   const baseColor = disabled ? colors.muted : colors.accent
 
   switch (variant) {
@@ -137,34 +111,34 @@ function getVariantStyles(
       return {
         container: {
           backgroundColor: baseColor,
-          borderWidth: 0,
+          borderWidth: 0
         } as ViewStyle,
-        textColor: colors.white,
+        textColor: colors.white
       }
     case 'outline':
       return {
         container: {
           backgroundColor: 'transparent',
           borderWidth: 1,
-          borderColor: baseColor,
+          borderColor: baseColor
         } as ViewStyle,
-        textColor: baseColor,
+        textColor: baseColor
       }
     case 'soft':
       return {
         container: {
           backgroundColor: `${baseColor}15`,
-          borderWidth: 0,
+          borderWidth: 0
         } as ViewStyle,
-        textColor: baseColor,
+        textColor: baseColor
       }
     case 'ghost':
       return {
         container: {
           backgroundColor: 'transparent',
-          borderWidth: 0,
+          borderWidth: 0
         } as ViewStyle,
-        textColor: baseColor,
+        textColor: baseColor
       }
   }
 }
@@ -175,27 +149,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.pill,
-    gap: 8,
+    gap: 8
   },
   fullWidth: {
-    width: '100%',
+    width: '100%'
   },
   disabled: {
-    opacity: 0.6,
+    opacity: 0.6
   },
   text: {
-    fontWeight: fontWeight.medium,
-  },
+    fontWeight: fontWeight.medium
+  }
 })
 
 const SIZE_STYLES = StyleSheet.create({
   sm: { height: 36, paddingHorizontal: 16 },
   md: { height: 44, paddingHorizontal: 20 },
-  lg: { height: 52, paddingHorizontal: 24 },
+  lg: { height: 52, paddingHorizontal: 24 }
 })
 
 const TEXT_SIZE_STYLES = StyleSheet.create({
   sm: { fontSize: fontSize.sm },
   md: { fontSize: fontSize.base },
-  lg: { fontSize: fontSize.lg },
+  lg: { fontSize: fontSize.lg }
 })

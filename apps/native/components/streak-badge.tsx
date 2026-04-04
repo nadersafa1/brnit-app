@@ -4,12 +4,12 @@
  * Shows loading spinner in place of flame and "—" for count when loading or error.
  */
 
-import { Ionicons } from '@expo/vector-icons'
-import { View, StyleSheet, ActivityIndicator } from 'react-native'
-import { Text } from '@/components/ui'
+import { View, StyleSheet } from 'react-native'
+import { FlameIcon, Spinner, Text } from '@/components/ui'
 import { useColors } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
 
+/** Active streak uses a larger flame; zero streak stays muted and smaller (previous Ionicons behavior). */
 const FLAME_SIZE_ACTIVE = 28
 const FLAME_SIZE_ZERO = 18
 
@@ -39,9 +39,9 @@ export function StreakBadge({
   return (
     <View style={styles.container}>
       {isLoading ? (
-        <ActivityIndicator size='small' color={colors.muted} />
+        <Spinner size='sm' color={colors.muted} />
       ) : (
-        <Ionicons name='flame' size={flameSize} color={accentColor} />
+        <FlameIcon size={flameSize} color={accentColor} />
       )}
       <Text size={numberSize} weight='bold' style={[styles.number, { color: accentColor }]}>
         {displayValue}

@@ -9,7 +9,7 @@ import { View, StyleSheet } from 'react-native'
 import { CalorieRing } from '@/components/calorie-ring'
 import { MacroBar } from '@/components/macro-bar'
 import { StreakBadge } from '@/components/streak-badge'
-import { Text } from '@/components/ui'
+import { Spinner, Text } from '@/components/ui'
 import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
@@ -17,6 +17,8 @@ import { formatCalorieDisplay } from '@/lib/utils/numbers'
 
 interface HomeProgressCardProps {
   hasPlan: boolean
+  /** True while the diet plan for the selected day is still loading (avoids flashing the no-plan UI). */
+  dietPlanLoading?: boolean
   isToday: boolean
   selectedDate: Date
   caloriesConsumed: number
@@ -36,6 +38,7 @@ interface HomeProgressCardProps {
 
 export function HomeProgressCard({
   hasPlan,
+  dietPlanLoading = false,
   isToday,
   selectedDate,
   caloriesConsumed,
@@ -71,7 +74,11 @@ export function HomeProgressCard({
         />
       </View>
 
-      {hasPlan ? (
+      {dietPlanLoading ? (
+        <View style={styles.loadingState}>
+          <Spinner size='lg' />
+        </View>
+      ) : hasPlan ? (
         <>
           <View style={styles.ringContainer}>
             <CalorieRing
@@ -180,5 +187,9 @@ const styles = StyleSheet.create({
   noPlanSubtext: {
     marginTop: spacing[1],
     textAlign: 'center'
+  },
+  loadingState: {
+    paddingVertical: spacing[8],
+    alignItems: 'center'
   }
 })

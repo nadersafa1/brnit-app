@@ -1,10 +1,9 @@
-import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { PrimaryButton } from '@/components'
-import { Text } from '@/components/ui'
+import { FlameIcon, Text } from '@/components/ui'
 import { useColors } from '@/hooks/use-theme-color'
 import { useAppSettingsStore } from '@/store/app-settings-store'
 import { radii } from '@/theme/radii'
@@ -34,7 +33,7 @@ export default function OnboardingScreen() {
       <View style={styles.content}>
         <View style={styles.iconContainer}>
           <View style={[styles.iconCircle, { backgroundColor: colors.accent }]}>
-            <Ionicons name="flame" size={64} color={colors.white} />
+            <FlameIcon size={56} color={colors.white} />
           </View>
         </View>
 

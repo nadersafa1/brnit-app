@@ -31,7 +31,7 @@ export default function Home() {
   const dateStr = dayjs(selectedDate).format('YYYY-MM-DD')
   const {
     data: dietPlanData,
-    isLoading,
+    isPending: isDietPlanPending,
     error
   } = useCurrentDietPlan({
     from: dateStr,
@@ -85,6 +85,7 @@ export default function Home() {
           />
           <HomeProgressCard
             hasPlan={progress.hasPlan}
+            dietPlanLoading={isDietPlanPending}
             isToday={isToday}
             selectedDate={selectedDate}
             caloriesConsumed={progress.caloriesConsumed}
@@ -101,7 +102,7 @@ export default function Home() {
             streakError={streakError}
           />
           <HomeMealsSection
-            isLoading={isLoading}
+            isLoading={isDietPlanPending}
             error={error ?? null}
             meals={meals}
             selectedDate={selectedDate}

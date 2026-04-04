@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import dayjs from 'dayjs'
-import { View, StyleSheet, ActivityIndicator, Pressable } from 'react-native'
-import { Text } from '@/components/ui'
+import { View, StyleSheet, Pressable } from 'react-native'
+import { Spinner, Text } from '@/components/ui'
 import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
@@ -79,7 +79,7 @@ export function RecentAssessmentsSection({
   if (isLoading) {
     body = (
       <View style={styles.sectionLoading}>
-        <ActivityIndicator size="small" color={colors.muted} />
+        <Spinner size="sm" color={colors.muted} />
       </View>
     )
   } else if (assessments.length === 0) {

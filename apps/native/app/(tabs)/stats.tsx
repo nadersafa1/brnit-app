@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons'
-import { useCallback, useEffect, useState } from 'react'
-import { View, StyleSheet, ActivityIndicator, ScrollView, Pressable } from 'react-native'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { View, StyleSheet, ScrollView, Pressable } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BottomNav } from '@/components/bottom-nav'
-import { Text } from '@/components/ui'
+import { Spinner, Text } from '@/components/ui'
 import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { authClient } from '@/lib/auth-client'
 import { useConsumptionStreak } from '@/hooks/use-consumption-streak'
@@ -35,19 +35,31 @@ export default function Stats() {
 
   const { data: activeOrg } = authClient.useActiveOrganization()
   const { data: orgsList, isPending: orgsLoading } = authClient.useListOrganizations()
-  const organizations = (orgsList ?? []).map(o => ({ id: o.id, name: o.name }))
+
+  // Stable list for picker + effects (avoid new array identity every render).
+  const organizations = useMemo(
+    () => (orgsList ?? []).map(o => ({ id: o.id, name: o.name })),
+    [orgsList]
+  )
   const selectedOrgId = activeOrg?.id ?? null
+  const singleOrgId = organizations.length === 1 ? organizations[0].id : null
+  /** Org used for stats API calls: session active org, or the sole org before setActive finishes. Avoids an unscoped fetch then a second scoped fetch. */
+  const statsOrgId = selectedOrgId ?? singleOrgId
 
-  // When user has only one org, set it as active so leaderboard and assessments load.
+  // Side effect: single-org members need an active org id for leaderboard / assessments queries.
   useEffect(() => {
-    if (organizations.length === 1 && selectedOrgId === null) {
-      authClient.organization.setActive({ organizationId: organizations[0].id })
+    if (singleOrgId && selectedOrgId === null) {
+      authClient.organization.setActive({ organizationId: singleOrgId })
     }
-  }, [organizations, selectedOrgId])
+  }, [selectedOrgId, singleOrgId])
 
-  const { data: assessmentsData, isLoading: assessmentsLoading } = useRecentAssessments({
+  const {
+    data: assessmentsData,
+    isLoading: assessmentsQueryLoading,
+  } = useRecentAssessments({
     limit: RECENT_ASSESSMENTS_LIMIT,
-    orgId: selectedOrgId
+    orgId: statsOrgId,
+    enabled: statsOrgId != null,
   })
 
   const {
@@ -56,14 +68,17 @@ export default function Stats() {
     error: leaderboardError,
     isError: leaderboardIsError
   } = useOrganizationLeaderboard({
-    orgId: selectedOrgId,
-    enabled: !!selectedOrgId
+    orgId: statsOrgId,
+    enabled: statsOrgId != null,
   })
   // 400 from leaderboard API means user is not a member of the selected org.
   const isNoOrgError = leaderboardIsError && leaderboardError instanceof ApiError && leaderboardError.status === 400
 
   const { data: streakData, isLoading: streakLoading, error: streakError } = useConsumptionStreak()
-  const selectedOrgName = activeOrg?.name ?? organizations.find(o => o.id === selectedOrgId)?.name ?? null
+  const selectedOrgName =
+    activeOrg?.name ?? organizations.find(o => o.id === statsOrgId)?.name ?? null
+
+  const assessmentsLoading = orgsLoading || (statsOrgId != null && assessmentsQueryLoading)
 
   const handleSelectOrg = useCallback((id: string) => {
     authClient.organization.setActive({ organizationId: id })
@@ -106,10 +121,7 @@ export default function Stats() {
           </Text>
           <View style={styles.orgPickerValue}>
             {orgsLoading ? (
-              <ActivityIndicator
-                size='small'
-                color={colors.muted}
-              />
+              <Spinner size='sm' color={colors.muted} />
             ) : (
               <Text
                 size='base'
@@ -132,7 +144,7 @@ export default function Stats() {
           visible={orgPickerVisible}
           onClose={() => setOrgPickerVisible(false)}
           organizations={organizations}
-          selectedOrgId={selectedOrgId}
+          selectedOrgId={statsOrgId}
           onSelect={handleSelectOrg}
           isLoading={orgsLoading}
         />
@@ -144,7 +156,7 @@ export default function Stats() {
         />
 
         <LeaderboardSection
-          selectedOrgId={selectedOrgId}
+          selectedOrgId={statsOrgId}
           data={leaderboardData}
           isLoading={leaderboardLoading}
           isError={leaderboardIsError}

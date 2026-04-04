@@ -8,8 +8,10 @@ const DEFAULT_LIMIT = 5;
 export function useRecentAssessments(options?: {
   limit?: number;
   orgId?: string | null;
+  /** When false, the query does not run (e.g. Stats until an org context exists). */
+  enabled?: boolean;
 }) {
-  const { limit = DEFAULT_LIMIT, orgId } = options ?? {};
+  const { limit = DEFAULT_LIMIT, orgId, enabled = true } = options ?? {};
   return useQuery({
     queryKey: memberKeys.recentAssessments({ limit, orgId: orgId ?? undefined }),
     queryFn: () =>
@@ -17,5 +19,6 @@ export function useRecentAssessments(options?: {
         limit,
         orgId: orgId ?? undefined,
       }),
+    enabled,
   });
 }

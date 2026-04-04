@@ -1,4 +1,4 @@
-import { Text } from '@/components/ui'
+import { Spinner, Text } from '@/components/ui'
 import { useMarkMealConsumed } from '@/hooks/use-mark-meal-consumed'
 import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { useUnmarkMealConsumed } from '@/hooks/use-unmark-meal-consumed'
@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useMemo, useState } from 'react'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
-import { ActivityIndicator, LayoutAnimation, Pressable, StyleSheet, View } from 'react-native'
+import { LayoutAnimation, Pressable, StyleSheet, View } from 'react-native'
 import { MealItemRow } from './meal-item-row'
 
 interface MealCardProps {
@@ -58,7 +58,7 @@ export function MealCard({
     return getConsumptionMarkEligibility(String(consumedDate), {
       maxPastDays,
       assignmentStartDate,
-      assignmentEndDate,
+      assignmentEndDate
     })
   }, [assignmentEndDate, assignmentStartDate, consumedDate, maxPastDays, showConsumedControl])
   const isConsumedActionPending = markConsumed.isPending || unmarkConsumed.isPending
@@ -138,10 +138,7 @@ export function MealCard({
                 hitSlop={8}
               >
                 {isConsumedActionPending ? (
-                  <ActivityIndicator
-                    size='small'
-                    color={colors.accent}
-                  />
+                  <Spinner size='sm' />
                 ) : (
                   <Ionicons
                     name={consumed ? 'checkmark-circle' : 'checkmark-circle-outline'}
@@ -273,12 +270,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minWidth: 36,
     minHeight: 36
-  },
-  consumedDisabledText: {
-    minWidth: 36,
-    maxWidth: 90,
-    textAlign: 'center',
-    paddingHorizontal: spacing[1]
   },
   macrosRow: {
     flexDirection: 'row',
