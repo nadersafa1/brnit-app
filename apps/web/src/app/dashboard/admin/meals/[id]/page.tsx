@@ -1,7 +1,8 @@
 'use client'
 
+import type { Route } from 'next'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -19,7 +20,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowLeft, Pencil, Trash2, Plus } from 'lucide-react'
 import { useMeal } from '@/hooks/use-meal'
-import { useUpdateMeal, useDeleteMeal } from '@/hooks/use-meal-mutations'
+import { useMealDetailMutations } from '@/hooks/use-meal-detail-mutations'
+import { useSyncBooleanFromUrlFlag } from '@/hooks/use-sync-boolean-from-url-flag'
 import { MealMetadataCard } from './components/meal-metadata-card'
 import { MealSummaryCard } from './components/meal-summary-card'
 import { MealItemsTable } from './components/meal-items-table'
@@ -35,8 +37,17 @@ export default function MealDetailPage() {
   const showDelete = searchParams.get('delete') === '1'
 
   const { data: meal, isLoading, error, refetch } = useMeal(id)
-  const updateMeal = useUpdateMeal()
-  const deleteMeal = useDeleteMeal()
+  const {
+    updateMeal,
+    deleteMeal,
+    listPath,
+    saveMetadata,
+    addFoodItem,
+    setMealItemQuantity,
+    removeMealItem,
+    removeMealItems,
+    setMealItemsQuantityBulk,
+  } = useMealDetailMutations(id, 'admin')
 
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(showDelete)
@@ -44,86 +55,41 @@ export default function MealDetailPage() {
   const [bulkQuantityOpen, setBulkQuantityOpen] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
 
-  useEffect(() => {
-    setDeleteOpen(showDelete)
-  }, [showDelete])
+  useSyncBooleanFromUrlFlag(showDelete, setDeleteOpen)
 
   const handleUpdateMetadata = useCallback(
     async (data: { name: string; description?: string }) => {
-      await updateMeal.mutateAsync({
-        id,
-        name: data.name,
-        description: data.description?.trim() ? data.description.trim() : null,
-      })
+      await saveMetadata(data)
       setEditOpen(false)
-      refetch()
     },
-    [id, updateMeal, refetch]
+    [saveMetadata]
   )
 
   const handleDeleteMeal = useCallback(async () => {
     await deleteMeal.mutateAsync(id)
     setDeleteOpen(false)
-    router.push('/dashboard/admin/meals')
-  }, [id, deleteMeal, router])
-
-  const handleAddFood = useCallback(
-    async (foodItemId: string, quantity: number) => {
-      await updateMeal.mutateAsync({ id, add: [{ foodItemId, quantity }] })
-      refetch()
-    },
-    [id, updateMeal, refetch]
-  )
-
-  const handleQuantityChange = useCallback(
-    async (mealItemId: string, quantity: number) => {
-      await updateMeal.mutateAsync({ id, update: [{ mealItemId, quantity }] })
-      refetch()
-    },
-    [id, updateMeal, refetch]
-  )
-
-  const handleRemove = useCallback(
-    async (mealItemId: string) => {
-      await updateMeal.mutateAsync({ id, remove: [mealItemId] })
-      refetch()
-    },
-    [id, updateMeal, refetch]
-  )
+    router.push(listPath as Route)
+  }, [id, deleteMeal, router, listPath])
 
   const handleBulkRemove = useCallback(async () => {
-    if (selectedIds.length === 0) return
-    await updateMeal.mutateAsync({ id, remove: selectedIds })
+    await removeMealItems(selectedIds)
     setSelectedIds([])
-    refetch()
-  }, [id, selectedIds, updateMeal, refetch])
+  }, [selectedIds, removeMealItems])
 
   const handleBulkSetQuantity = useCallback(
     async (quantity: number) => {
-      if (selectedIds.length === 0) return
-      await updateMeal.mutateAsync({
-        id,
-        update: selectedIds.map(mealItemId => ({ mealItemId, quantity })),
-      })
+      await setMealItemsQuantityBulk(selectedIds, quantity)
       setSelectedIds([])
-      refetch()
     },
-    [id, selectedIds, updateMeal, refetch]
+    [selectedIds, setMealItemsQuantityBulk]
   )
 
-  if (isLoading || !meal) {
-    return (
-      <div className='space-y-6'>
-        <Skeleton className='h-8 w-32' />
-        <Skeleton className='h-32' />
-      </div>
-    )
-  }
+  const mealListHref = listPath as Route
 
   if (error) {
     return (
       <div className='space-y-4'>
-        <Link href='/dashboard/admin/meals'>
+        <Link href={mealListHref}>
           <Button variant='ghost' size='sm' className='gap-2'>
             <ArrowLeft className='h-4 w-4' />
             Back to meals
@@ -141,12 +107,21 @@ export default function MealDetailPage() {
     )
   }
 
+  if (isLoading || !meal) {
+    return (
+      <div className='space-y-6'>
+        <Skeleton className='h-8 w-32' />
+        <Skeleton className='h-32' />
+      </div>
+    )
+  }
+
   const mealItems = meal.mealItems ?? []
 
   return (
     <div className='space-y-6'>
       <div className='flex items-center justify-between gap-4'>
-        <Link href='/dashboard/admin/meals'>
+        <Link href={mealListHref}>
           <Button variant='ghost' size='sm' className='gap-2'>
             <ArrowLeft className='h-4 w-4' />
             Back to meals
@@ -171,7 +146,15 @@ export default function MealDetailPage() {
 
       <MealMetadataCard meal={meal} />
 
-      <MealSummaryCard mealItems={mealItems} />
+      <MealSummaryCard
+        mealItems={mealItems}
+        storedTotals={{
+          totalCalories: meal.totalCalories,
+          totalProtein: meal.totalProtein,
+          totalCarbs: meal.totalCarbs,
+          totalFat: meal.totalFat,
+        }}
+      />
 
       <Card>
         <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-4'>
@@ -202,8 +185,8 @@ export default function MealDetailPage() {
         <CardContent>
           <MealItemsTable
             mealItems={mealItems}
-            onQuantityChange={handleQuantityChange}
-            onRemove={handleRemove}
+            onQuantityChange={setMealItemQuantity}
+            onRemove={removeMealItem}
             selectedIds={selectedIds}
             onSelectionChange={setSelectedIds}
           />
@@ -221,6 +204,7 @@ export default function MealDetailPage() {
             onSubmit={handleUpdateMetadata}
             onCancel={() => setEditOpen(false)}
             isLoading={updateMeal.isPending}
+            submitLabel='Save'
           />
         </DialogContent>
       </Dialog>
@@ -228,7 +212,7 @@ export default function MealDetailPage() {
       <AddFoodDialog
         open={addFoodOpen}
         onOpenChange={setAddFoodOpen}
-        onAdd={handleAddFood}
+        onAdd={addFoodItem}
         excludeFoodIds={mealItems.map(mi => mi.foodItemId)}
       />
 

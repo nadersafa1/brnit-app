@@ -1,12 +1,6 @@
 'use client'
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { FoodItemForm, type FoodItemFormSubmitOptions } from './food-item-form'
 import type { CreateFoodItem, UpdateFoodItem } from '@/types/api/food.schemas'
 import type { FoodCategory } from '@/lib/queries/food-categories'
@@ -17,35 +11,43 @@ interface CreateFoodItemDialogProps {
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
   categories: FoodCategory[]
+  /** Always linked to the new item; user can add more via checkboxes. */
+  lockedCategoryIds?: string[]
+  title?: string
+  description?: string
 }
 
+/** Modal wrapper around FoodItemForm; closes on successful create. List queries refresh via mutation invalidation. */
 export function CreateFoodItemDialog({
   open,
   onOpenChange,
   onSuccess,
   categories,
-}: CreateFoodItemDialogProps) {
+  lockedCategoryIds,
+  title = 'Create food item',
+  description = 'Add a new food item with nutritional information.',
+}: Readonly<CreateFoodItemDialogProps>) {
   const create = useCreateFoodItem()
 
-  const handleSubmit = async (
-    data: CreateFoodItem | UpdateFoodItem,
-    options?: FoodItemFormSubmitOptions
-  ) => {
+  const handleSubmit = async (data: CreateFoodItem | UpdateFoodItem, options?: FoodItemFormSubmitOptions) => {
     await create.mutateAsync({ ...data, ...options } as CreateFoodItem & { file?: File })
     onOpenChange(false)
     onSuccess?.()
   }
 
+  const formResetKey = foodItemFormResetKey(open, lockedCategoryIds)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create food item</DialogTitle>
-          <DialogDescription>Add a new food item with nutritional information.</DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <FoodItemForm
-          key={open ? 'open' : 'closed'}
+          key={formResetKey}
           categories={categories}
+          lockedCategoryIds={lockedCategoryIds}
           onSubmit={handleSubmit}
           onCancel={() => onOpenChange(false)}
           isLoading={create.isPending}
@@ -53,4 +55,10 @@ export function CreateFoodItemDialog({
       </DialogContent>
     </Dialog>
   )
+}
+
+/** Remount `FoodItemForm` when the dialog opens or locked IDs change so defaults stay correct. */
+function foodItemFormResetKey(open: boolean, lockedCategoryIds?: string[]): string {
+  if (!open) return 'closed'
+  return `open-${(lockedCategoryIds ?? []).join(',')}`
 }

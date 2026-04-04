@@ -3,13 +3,11 @@ export type FoodUnit = '100g' | 'piece' | 'liters' | 'cup' | 'tbsp'
 export type FoodItem = {
   id: string
   name: string
-  categoryId: string
-  categoryName: string | null
+  categories: { id: string; name: string }[]
   calories: number
   protein: number
   carbs: number
   fat: number
-  servingSize: number | null
   unit: FoodUnit
   gramsPerUnit: number | null
   imageUrl: string | null
@@ -20,6 +18,7 @@ export type FoodItem = {
 export type FoodCategory = {
   id: string
   name: string
+  description: string | null
 }
 
 export type Pagination = {
@@ -53,8 +52,7 @@ export type FoodItemsQuery = {
 export type FoodItemAlternative = {
   foodItemId: string
   name: string
-  categoryId: string
-  categoryName: string
+  categories: { id: string; name: string }[]
   /** Suggested quantity in this alternative food's unit (e.g. 10 for "10 eggs", 150 for "150g"). */
   suggestedQuantity: number
   unit: FoodUnit

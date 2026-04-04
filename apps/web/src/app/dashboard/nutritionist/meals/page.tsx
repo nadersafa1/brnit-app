@@ -6,44 +6,34 @@ import { EntityListPageLayout } from '../../shared/entity-list-page-layout'
 import { MealsTable } from '../../admin/meals/components/meals-table'
 import { CreateMealDialog } from '../../admin/meals/components/create-meal-dialog'
 import { useMeals } from '@/hooks/use-meals'
+import { useListFilters } from '@/hooks/use-list-filters'
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants/pagination'
 import type { Meal } from '@/lib/queries/meals'
+import type { SortOrder } from '@/lib/table-core'
+import type { MealsSortBy } from '../../admin/meals/components/meals-columns'
 import { UtensilsCrossed, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default function NutritionistMealsPage() {
   const router = useRouter()
 
-  const [filters, setFilters] = useState<{
-    page: number
-    perPage: number
-    q: string
-    sortBy: 'name' | 'createdAt'
-    sortOrder: 'asc' | 'desc'
-  }>({
+  const {
+    filters,
+    paginationFallback,
+    onPageChange,
+    onPageSizeChange,
+    onSearchChange,
+    updateFilters,
+  } = useListFilters({
     page: 1,
     perPage: DEFAULT_PAGE_SIZE,
     q: '',
-    sortBy: 'name',
-    sortOrder: 'asc',
+    sortBy: 'name' as MealsSortBy,
+    sortOrder: 'asc' as SortOrder,
   })
   const [createOpen, setCreateOpen] = useState(false)
 
   const { data: meals, pagination, isLoading, error, refetch } = useMeals(filters, 'nutritionist')
-
-  const paginationConfig = pagination
-    ? {
-        page: pagination.page,
-        limit: pagination.perPage,
-        totalItems: pagination.totalItems,
-        totalPages: pagination.totalPages,
-      }
-    : {
-        page: filters.page,
-        limit: filters.perPage,
-        totalItems: 0,
-        totalPages: 1,
-      }
 
   const handleEdit = useCallback(
     (meal: Meal) => {
@@ -75,34 +65,24 @@ export default function NutritionistMealsPage() {
       >
         <MealsTable
           meals={meals}
-          pagination={paginationConfig}
-          onPageChange={page => setFilters(f => ({ ...f, page }))}
-          onPageSizeChange={perPage => setFilters(f => ({ ...f, perPage, page: 1 }))}
-          onSearchChange={q => setFilters(f => ({ ...f, q, page: 1 }))}
+          paginationMeta={pagination}
+          paginationFallback={paginationFallback}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+          onSearchChange={onSearchChange}
           searchValue={filters.q}
           sortBy={filters.sortBy}
           sortOrder={filters.sortOrder}
           onSortingChange={(sortBy, sortOrder) =>
-            setFilters(f => ({
-              ...f,
-              sortBy: sortBy ?? 'name',
-              sortOrder: sortOrder ?? 'asc',
-              page: 1,
-            }))
+            updateFilters({ sortBy: sortBy ?? 'name', sortOrder: sortOrder ?? 'asc' })
           }
           isLoading={isLoading}
-          onRefetch={refetch}
           onEdit={handleEdit}
           onDelete={handleDelete}
         />
       </EntityListPageLayout>
 
-      <CreateMealDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onSuccess={() => refetch()}
-        source='nutritionist'
-      />
+      <CreateMealDialog open={createOpen} onOpenChange={setCreateOpen} source='nutritionist' />
     </>
   )
 }

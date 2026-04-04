@@ -25,12 +25,7 @@ interface MealItemsTableProps {
 }
 
 /** Nutrition values are per 1 unit (per 100g or per the food’s chosen measure). */
-function scaleNutrient(
-  perUnit: number | null,
-  quantity: number,
-  unit: MealItem['unit']
-): string {
-  if (perUnit == null) return '–'
+function scaleNutrient(perUnit: number, quantity: number, unit: MealItem['unit']): string {
   const factor = getMacroFactor(quantity, unit)
   const v = Math.round(factor * perUnit * 10) / 10
   return String(v)
@@ -102,7 +97,7 @@ export function MealItemsTable({
               />
             </TableHead>
             <TableHead>Food name</TableHead>
-            <TableHead>Category</TableHead>
+            <TableHead>Categories</TableHead>
             <TableHead>Quantity</TableHead>
             <TableHead>Cal</TableHead>
             <TableHead>P</TableHead>
@@ -118,7 +113,9 @@ export function MealItemsTable({
                 <Checkbox checked={selectedIds.includes(item.id)} onCheckedChange={() => toggleSelect(item.id)} />
               </TableCell>
               <TableCell className='font-medium'>{item.foodName}</TableCell>
-              <TableCell className='text-muted-foreground'>{item.categoryName ?? '–'}</TableCell>
+              <TableCell className='text-muted-foreground'>
+                {item.categories?.length ? item.categories.map((c) => c.name).join(', ') : '–'}
+              </TableCell>
               <TableCell>
                 {editingId === item.id ? (
                   <div className='flex items-center gap-1'>

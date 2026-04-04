@@ -68,8 +68,7 @@ describe('GET alternatives with auth', () => {
         {
           foodItemId: 'alt-1',
           name: 'Turkey',
-          categoryId: 'cat-1',
-          categoryName: 'Proteins',
+          categories: [{ id: 'cat-1', name: 'Proteins' }],
           suggestedQuantity: 160,
           unit: '100g' as const,
           suggestedQuantityGrams: 160,

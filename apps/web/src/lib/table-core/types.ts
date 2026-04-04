@@ -12,7 +12,7 @@ export interface BaseTableEntity {
 
 export interface PaginationConfig {
   page: number
-  limit: number
+  perPage: number
   totalItems: number
   totalPages: number
 }

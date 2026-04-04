@@ -2,31 +2,34 @@ import { db } from '@burn-app/db'
 import {
   foodCategory,
   foodItem,
+  foodItemCategory,
   mealItem,
   dietPlanMealItemOverride,
   dietPlanMealConsumptionItem,
 } from '@burn-app/db/schema'
-import { count, asc, desc, ilike, eq } from 'drizzle-orm'
+import { count, asc, desc, ilike, eq, inArray, or } from 'drizzle-orm'
 import { calculateOffset, combineConditions } from '@/lib/api-helpers/query-builders'
 import {
   buildCloudinaryUrl,
   deleteCloudinaryImage,
   uploadFileToCloudinary,
 } from '@/lib/cloudinary-utils'
-import {
-  roundNutritionMacroNullable,
-  roundNutritionMacroRequired,
-} from '@/lib/helpers/nutrition-numbers'
+import { mapFoodCategoriesSorted } from '@/lib/helpers/food-item-categories'
+import { roundNutritionMacroRequired } from '@/lib/helpers/nutrition-numbers'
 import type { FoodCategoriesQuery, FoodItemsQuery, FoodUnit } from '@/types/api/food.schemas'
 
 const FOOD_ITEM_IMAGE_FOLDER = 'food-items'
 
 type DbClient = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
+// ---------------------------------------------------------------------------
+// Blocking references (used before mutating items that appear on plans / logs)
+// ---------------------------------------------------------------------------
+
 /**
- * True if the food item is referenced anywhere that would block delete/update (meal lines,
- * per-assignment overrides, or logged consumption rows). Uses the same client as the
- * surrounding transaction when provided so checks participate in the same snapshot.
+ * Whether the food item is referenced anywhere that blocks in-place edit/delete:
+ * meal lines, per-assignment overrides, or consumption log rows.
+ * Uses the same DB client as the surrounding transaction when provided (consistent snapshot).
  */
 export async function foodItemHasBlockingReferences(
   foodItemId: string,
@@ -52,22 +55,37 @@ export async function foodItemHasBlockingReferences(
   return mealRef[0] != null || overrideRef[0] != null || consumptionRef[0] != null
 }
 
-export type FoodItemUpdateSuccess = Omit<(typeof foodItem.$inferSelect), 'gramsPerUnit'> & {
+/** Public JSON shape for a food item (list + detail + create/update responses). */
+export type FoodItemApi = {
+  id: string
+  name: string
+  categories: { id: string; name: string }[]
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
+  unit: FoodUnit
   gramsPerUnit: number | null
   imageUrl: string | null
+  createdAt: Date
+  updatedAt: Date
 }
 
 export type FoodItemUpdateResult =
-  | { ok: true; data: FoodItemUpdateSuccess }
+  | { ok: true; data: FoodItemApi }
   | { ok: false; error: string; code: 'NOT_FOUND' | 'CONFLICT' | 'VALIDATION' }
 
 export type FoodItemDeleteResult =
-  | { ok: true; data: (typeof foodItem.$inferSelect) }
+  | { ok: true; data: typeof foodItem.$inferSelect }
   | { ok: false; error: string; code: 'NOT_FOUND' | 'CONFLICT' }
 
+// ---------------------------------------------------------------------------
+// Cloudinary image resolution (external I/O — never inside DB transactions)
+// ---------------------------------------------------------------------------
+
 /**
- * Resolves new image public ID for a food item update: clear image, replace with file, or leave unchanged.
- * Delete (when applicable) must run before upload so we don't orphan the previous asset.
+ * Resolves the next `imagePublicId` for an update: clear, replace file, or leave unchanged.
+ * Deletes the previous Cloudinary asset before uploading a replacement to avoid orphans.
  */
 async function resolveFoodItemImageUpdate(
   existingPublicId: string | null,
@@ -85,15 +103,88 @@ async function resolveFoodItemImageUpdate(
   return undefined
 }
 
-// --- Food categories (list, get by id, crud) ---
+// ---------------------------------------------------------------------------
+// Category ID validation (junction targets must exist before insert/replace)
+// ---------------------------------------------------------------------------
 
-/** List categories with optional search and sort. Count and rows run in parallel. */
+async function foodCategoryIdsExist(
+  client: DbClient | typeof db,
+  ids: string[]
+): Promise<boolean> {
+  if (ids.length === 0) return false
+  const rows = await client
+    .select({ id: foodCategory.id })
+    .from(foodCategory)
+    .where(inArray(foodCategory.id, ids))
+  return rows.length === ids.length
+}
+
+// ---------------------------------------------------------------------------
+// API row shaping (numeric normalization + categories + image URL)
+// ---------------------------------------------------------------------------
+
+type FoodNumericFields = {
+  calories: string | number | null | undefined
+  protein: string | number | null | undefined
+  carbs: string | number | null | undefined
+  fat: string | number | null | undefined
+  gramsPerUnit: string | number | null | undefined
+}
+
+/** DB numerics → API numbers; macro fields clamped for stable JSON/UI. */
+function normalizeFoodNumericFields(row: FoodNumericFields) {
+  return {
+    calories: roundNutritionMacroRequired(row.calories),
+    protein: roundNutritionMacroRequired(row.protein),
+    carbs: roundNutritionMacroRequired(row.carbs),
+    fat: roundNutritionMacroRequired(row.fat),
+    gramsPerUnit: row.gramsPerUnit == null ? null : Number(row.gramsPerUnit),
+  }
+}
+
+/** Single mapper for list/detail query rows that include `foodItemCategories`. Omits `imagePublicId` from the API surface (use `imageUrl` only). */
+function toFoodItemApi(row: {
+  id: string
+  name: string
+  calories: string | null
+  protein: string | null
+  carbs: string | null
+  fat: string | null
+  unit: string
+  gramsPerUnit: string | null
+  imagePublicId: string | null
+  createdAt: Date
+  updatedAt: Date
+  foodItemCategories: Array<{ category: { id: string; name: string } }>
+}): FoodItemApi {
+  return {
+    id: row.id,
+    name: row.name,
+    categories: mapFoodCategoriesSorted(row.foodItemCategories),
+    ...normalizeFoodNumericFields(row),
+    unit: row.unit as FoodUnit,
+    imageUrl: row.imagePublicId ? buildCloudinaryUrl(row.imagePublicId) : null,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Food categories (CRUD + list)
+// ---------------------------------------------------------------------------
+
+/** Paginated categories with optional text search; count and page share the same filter. */
 export async function listFoodCategories(query: FoodCategoriesQuery) {
   const { page, perPage, q, sortBy, sortOrder } = query
   const offset = calculateOffset(page, perPage)
 
   const conditions = []
-  if (q) conditions.push(ilike(foodCategory.name, `%${q}%`))
+  if (q) {
+    const pattern = `%${q}%`
+    conditions.push(
+      or(ilike(foodCategory.name, pattern), ilike(foodCategory.description, pattern))!
+    )
+  }
   const where = combineConditions(conditions)
 
   const sortFieldMap = {
@@ -120,7 +211,6 @@ export async function listFoodCategories(query: FoodCategoriesQuery) {
   }
 }
 
-/** Fetch a single category by id. Returns null if not found. */
 export async function getFoodCategoryById(id: string) {
   const [category] = await db
     .select()
@@ -130,37 +220,27 @@ export async function getFoodCategoryById(id: string) {
   return category ?? null
 }
 
-type FoodNumericFields = {
-  calories: string | number | null | undefined
-  protein: string | number | null | undefined
-  carbs: string | number | null | undefined
-  fat: string | number | null | undefined
-  servingSize: string | number | null | undefined
-  gramsPerUnit: string | number | null | undefined
-}
+// ---------------------------------------------------------------------------
+// Food items — read paths
+// ---------------------------------------------------------------------------
 
-/** Converts DB numeric columns into API-safe numbers; macros are rounded to 2 decimals. */
-function normalizeFoodNumericFields(row: FoodNumericFields) {
-  return {
-    calories: roundNutritionMacroRequired(row.calories),
-    protein: roundNutritionMacroNullable(row.protein),
-    carbs: roundNutritionMacroNullable(row.carbs),
-    fat: roundNutritionMacroNullable(row.fat),
-    servingSize: row.servingSize == null ? null : Number(row.servingSize),
-    gramsPerUnit: row.gramsPerUnit == null ? null : Number(row.gramsPerUnit),
-  }
-}
-
-// --- Food items (list, get by id, crud) ---
-
-/** List food items with optional search, category filter, and sort. Count and rows run in parallel. */
+/**
+ * Paginated food items with optional name search and category filter (M2M: junction subquery).
+ * Count query uses the same predicate as the page query.
+ */
 export async function listFoodItems(query: FoodItemsQuery) {
   const { page, perPage, q, sortBy, sortOrder, categoryId } = query
   const offset = calculateOffset(page, perPage)
 
   const conditions = []
   if (q) conditions.push(ilike(foodItem.name, `%${q}%`))
-  if (categoryId) conditions.push(eq(foodItem.categoryId, categoryId))
+  if (categoryId) {
+    const foodIdsInCategory = db
+      .select({ id: foodItemCategory.foodItemId })
+      .from(foodItemCategory)
+      .where(eq(foodItemCategory.foodCategoryId, categoryId))
+    conditions.push(inArray(foodItem.id, foodIdsInCategory))
+  }
   const where = combineConditions(conditions)
 
   const sortFieldMap = {
@@ -184,13 +264,10 @@ export async function listFoodItems(query: FoodItemsQuery) {
       columns: {
         id: true,
         name: true,
-        fdcId: true,
-        categoryId: true,
         calories: true,
         protein: true,
         carbs: true,
         fat: true,
-        servingSize: true,
         unit: true,
         gramsPerUnit: true,
         imagePublicId: true,
@@ -198,47 +275,37 @@ export async function listFoodItems(query: FoodItemsQuery) {
         updatedAt: true,
       },
       with: {
-        category: {
-          columns: { name: true },
+        foodItemCategories: {
+          with: {
+            category: {
+              columns: { id: true, name: true },
+            },
+          },
         },
       },
     }),
   ])
 
-  // Normalize DB numerics to API-safe numbers; only macro fields are precision-clamped.
-  const items = rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    fdcId: row.fdcId,
-    categoryId: row.categoryId,
-    categoryName: row.category?.name ?? null,
-    ...normalizeFoodNumericFields(row),
-    unit: row.unit,
-    imageUrl: row.imagePublicId ? buildCloudinaryUrl(row.imagePublicId) : null,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-  }))
-
   return {
-    items,
+    items: rows.map((row) => toFoodItemApi(row)),
     totalItems: countResult[0]?.count ?? 0,
   }
 }
 
-/** Fetch a single food item by id with category name and image URL. Returns null if not found. */
-export async function getFoodItemById(id: string) {
-  const row = await db.query.foodItem.findFirst({
+/** One food item for API consumers; `client` allows reading inside an open transaction. */
+export async function getFoodItemById(
+  id: string,
+  client: DbClient | typeof db = db
+): Promise<FoodItemApi | null> {
+  const row = await client.query.foodItem.findFirst({
     where: eq(foodItem.id, id),
     columns: {
       id: true,
       name: true,
-      fdcId: true,
-      categoryId: true,
       calories: true,
       protein: true,
       carbs: true,
       fat: true,
-      servingSize: true,
       unit: true,
       gramsPerUnit: true,
       imagePublicId: true,
@@ -246,35 +313,41 @@ export async function getFoodItemById(id: string) {
       updatedAt: true,
     },
     with: {
-      category: {
-        columns: { name: true },
+      foodItemCategories: {
+        with: {
+          category: {
+            columns: { id: true, name: true },
+          },
+        },
       },
     },
   })
   if (!row) return null
-  const { category, ...food } = row
-  return {
-    ...food,
-    categoryName: category?.name ?? null,
-    ...normalizeFoodNumericFields(food),
-    imageUrl: food.imagePublicId ? buildCloudinaryUrl(food.imagePublicId) : null,
-  }
+  return toFoodItemApi(row)
 }
 
-// --- Category crud (single-statement; no transaction) ---
+// ---------------------------------------------------------------------------
+// Food categories — mutations (single statements; no transaction needed)
+// ---------------------------------------------------------------------------
 
-export async function createFoodCategory(data: { name: string }) {
+export async function createFoodCategory(data: { name: string; description?: string }) {
   const [newCategory] = await db
     .insert(foodCategory)
-    .values({ name: data.name })
+    .values({
+      name: data.name,
+      description: data.description?.trim() ? data.description.trim() : null,
+    })
     .returning()
   return newCategory ?? null
 }
 
-export async function updateFoodCategory(id: string, data: { name: string }) {
+export async function updateFoodCategory(id: string, data: { name: string; description?: string }) {
   const [updated] = await db
     .update(foodCategory)
-    .set({ name: data.name })
+    .set({
+      name: data.name,
+      description: data.description?.trim() ? data.description.trim() : null,
+    })
     .where(eq(foodCategory.id, id))
     .returning()
   return updated ?? null
@@ -288,67 +361,74 @@ export async function deleteFoodCategory(id: string) {
   return deleted ?? null
 }
 
-// --- Food item crud ---
+// ---------------------------------------------------------------------------
+// Food items — create / update / delete
+// ---------------------------------------------------------------------------
 
 /**
- * Create a food item. Uploads image first if provided; then single insert (no DB transaction:
- * Cloudinary runs first so we never insert a row without a successful upload when a file is given).
- * API layer enforces required macros (calories, protein, carbs, fat) via schema.
+ * Creates a food row plus junction rows in one transaction.
+ *
+ * Category IDs are validated before Cloudinary so a bad request never uploads an orphan image.
+ * Image upload stays outside the DB transaction (external I/O); DB work is all-or-nothing.
  */
 export async function createFoodItem(
   data: {
     name: string
-    categoryId: string
-    fdcId?: number
+    categoryIds: string[]
     calories?: number
     protein?: number
     carbs?: number
     fat?: number
-    servingSize?: number
     unit?: FoodUnit
     gramsPerUnit?: number | null
   },
   options?: { file?: File }
 ) {
+  if (!(await foodCategoryIdsExist(db, data.categoryIds))) {
+    return null
+  }
+
   let imagePublicId: string | null = null
   if (options?.file) {
     const { publicId } = await uploadFileToCloudinary(options.file, FOOD_ITEM_IMAGE_FOLDER)
     imagePublicId = publicId
   }
-  const [created] = await db
-    .insert(foodItem)
-    .values({
-      name: data.name,
-      categoryId: data.categoryId,
-      fdcId: data.fdcId,
-      calories: data.calories?.toString(),
-      protein: data.protein?.toString(),
-      carbs: data.carbs?.toString(),
-      fat: data.fat?.toString(),
-      servingSize: data.servingSize?.toString(),
-      unit: data.unit ?? '100g',
-      gramsPerUnit: data.gramsPerUnit?.toString() ?? null,
-      imagePublicId,
-    })
-    .returning()
-  if (!created) return null
-  return {
-    ...created,
-    gramsPerUnit: created.gramsPerUnit == null ? null : Number(created.gramsPerUnit),
-    imageUrl: created.imagePublicId ? buildCloudinaryUrl(created.imagePublicId) : null,
-  }
+
+  return db.transaction(async (tx) => {
+    // Insert master row first so junction rows can reference a stable food id.
+    const [created] = await tx
+      .insert(foodItem)
+      .values({
+        name: data.name,
+        calories: String(data.calories ?? 0),
+        protein: String(data.protein ?? 0),
+        carbs: String(data.carbs ?? 0),
+        fat: String(data.fat ?? 0),
+        unit: data.unit ?? '100g',
+        gramsPerUnit: data.gramsPerUnit?.toString() ?? null,
+        imagePublicId,
+      })
+      .returning()
+    if (!created) return null
+
+    await tx.insert(foodItemCategory).values(
+      data.categoryIds.map((foodCategoryId) => ({
+        foodItemId: created.id,
+        foodCategoryId,
+      }))
+    )
+
+    return getFoodItemById(created.id, tx)
+  })
 }
 
 function buildFoodItemUpdatePayload(
   data: {
     name?: string
-    categoryId?: string
-    fdcId?: number | null
     calories?: number | null
     protein?: number | null
     carbs?: number | null
     fat?: number | null
-    servingSize?: number | null
     unit?: FoodUnit | null
     gramsPerUnit?: number | null
   },
@@ -356,14 +436,10 @@ function buildFoodItemUpdatePayload(
 ): Record<string, string | number | null | undefined> {
   const updateData: Record<string, string | number | null | undefined> = {}
   if (data.name !== undefined) updateData.name = data.name
-  if (data.categoryId !== undefined) updateData.categoryId = data.categoryId
-  if (data.fdcId !== undefined) updateData.fdcId = data.fdcId
-  if (data.calories !== undefined) updateData.calories = data.calories?.toString() ?? null
-  if (data.protein !== undefined) updateData.protein = data.protein?.toString() ?? null
-  if (data.carbs !== undefined) updateData.carbs = data.carbs?.toString() ?? null
-  if (data.fat !== undefined) updateData.fat = data.fat?.toString() ?? null
-  if (data.servingSize !== undefined)
-    updateData.servingSize = data.servingSize?.toString() ?? null
+  if (data.calories !== undefined) updateData.calories = String(data.calories ?? 0)
+  if (data.protein !== undefined) updateData.protein = String(data.protein ?? 0)
+  if (data.carbs !== undefined) updateData.carbs = String(data.carbs ?? 0)
+  if (data.fat !== undefined) updateData.fat = String(data.fat ?? 0)
   if (data.unit !== undefined) updateData.unit = data.unit
   if (data.gramsPerUnit !== undefined)
     updateData.gramsPerUnit = data.gramsPerUnit?.toString() ?? null
@@ -372,27 +448,26 @@ function buildFoodItemUpdatePayload(
 }
 
 /**
- * Update a food item. Order: load row → block if referenced → Cloudinary (external) → single DB update.
- * Not wrapped in a DB transaction because Cloudinary is outside the database; blocking checks run
- * before any side effects outside the DB.
+ * Updates scalar columns and/or replaces category links.
+ *
+ * Flow: (1) load row + blocking refs in parallel, (2) optional category validation, (3) optional
+ * Cloudinary, (4) one transaction for column patch + junction replace, (5) reload API shape.
+ * Blocking references prevent edits to foods used on meals / plans / logs (product rule).
  */
 export async function updateFoodItem(
   id: string,
   data: {
     name?: string
-    categoryId?: string
-    fdcId?: number | null
+    categoryIds?: string[]
     calories?: number | null
     protein?: number | null
     carbs?: number | null
     fat?: number | null
-    servingSize?: number | null
     unit?: FoodUnit | null
     gramsPerUnit?: number | null
   },
   options?: { file?: File; clearImage?: boolean }
 ): Promise<FoodItemUpdateResult> {
-  // Existence + blocking-reference checks are independent, so run them together.
   const [existingRows, hasBlockingRefs] = await Promise.all([
     db
       .select({ imagePublicId: foodItem.imagePublicId })
@@ -416,41 +491,56 @@ export async function updateFoodItem(
     }
   }
 
+  const wantsCategoryUpdate = data.categoryIds !== undefined
+  if (wantsCategoryUpdate && data.categoryIds!.length > 0) {
+    if (!(await foodCategoryIdsExist(db, data.categoryIds!))) {
+      return { ok: false, error: 'One or more category IDs are invalid', code: 'VALIDATION' }
+    }
+  }
+
   const newImagePublicId = await resolveFoodItemImageUpdate(
     existing.imagePublicId,
     options
   )
 
   const updateData = buildFoodItemUpdatePayload(data, newImagePublicId)
-  if (Object.keys(updateData).length === 0) {
+
+  if (
+    Object.keys(updateData).length === 0 &&
+    !wantsCategoryUpdate &&
+    newImagePublicId === undefined
+  ) {
     return { ok: false, error: 'No changes to apply', code: 'VALIDATION' }
   }
 
-  const [updated] = await db
-    .update(foodItem)
-    .set(updateData)
-    .where(eq(foodItem.id, id))
-    .returning()
-  if (!updated) {
+  await db.transaction(async (tx) => {
+    if (Object.keys(updateData).length > 0) {
+      await tx.update(foodItem).set(updateData).where(eq(foodItem.id, id))
+    }
+    if (wantsCategoryUpdate) {
+      // Replace-all pattern: clear links then insert validated set (empty array = no categories).
+      await tx.delete(foodItemCategory).where(eq(foodItemCategory.foodItemId, id))
+      await tx.insert(foodItemCategory).values(
+        data.categoryIds!.map((foodCategoryId) => ({
+          foodItemId: id,
+          foodCategoryId,
+        }))
+      )
+    }
+  })
+
+  const full = await getFoodItemById(id)
+  if (!full) {
     return { ok: false, error: 'Food item not found', code: 'NOT_FOUND' }
   }
-  return {
-    ok: true,
-    data: {
-      ...updated,
-      gramsPerUnit: updated.gramsPerUnit == null ? null : Number(updated.gramsPerUnit),
-      imageUrl: updated.imagePublicId ? buildCloudinaryUrl(updated.imagePublicId) : null,
-    },
-  }
+  return { ok: true, data: full }
 }
 
 /**
- * Delete a food item. Transaction ties existence + blocking checks + delete so the row cannot
- * gain a new reference between validation and delete.
+ * Deletes the food item if it exists, is not blocked, and no new references appear in the same txn.
  */
 export async function deleteFoodItem(id: string): Promise<FoodItemDeleteResult> {
   return db.transaction(async (tx) => {
-    // Keep read validations in one transaction snapshot and parallelize independent lookups.
     const [rows, hasBlockingRefs] = await Promise.all([
       tx.select({ id: foodItem.id }).from(foodItem).where(eq(foodItem.id, id)).limit(1),
       foodItemHasBlockingReferences(id, tx),

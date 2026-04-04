@@ -16,4 +16,12 @@ export const env = {
     : 465,
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || '',
+  /** Sign in with Apple (Service ID); use with JWT client secret from .p8 key */
+  APPLE_CLIENT_ID: process.env.APPLE_CLIENT_ID || '',
+  APPLE_TEAM_ID: process.env.APPLE_TEAM_ID || '',
+  APPLE_KEY_ID: process.env.APPLE_KEY_ID || '',
+  /** PEM contents; use \\n in .env for newlines */
+  APPLE_PRIVATE_KEY: process.env.APPLE_PRIVATE_KEY || '',
+  /** Native iOS idToken flows; optional for web OAuth */
+  APPLE_APP_BUNDLE_IDENTIFIER: process.env.APPLE_APP_BUNDLE_IDENTIFIER || '',
 }

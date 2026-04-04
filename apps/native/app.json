@@ -15,13 +15,7 @@
     },
     "name": "brnit",
     "slug": "brnit",
-    "plugins": [
-      "expo-font",
-      "expo-router",
-      "expo-secure-store",
-      "expo-web-browser",
-      "@react-native-community/datetimepicker"
-    ],
+    "plugins": ["expo-font", "expo-router", "expo-secure-store", "expo-web-browser", "@react-native-community/datetimepicker"],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true,
@@ -48,7 +42,7 @@
       }
     },
     "ios": {
-      "bundleIdentifier": "com.nader-safa.brnit"
+      "bundleIdentifier": "com.nadersafa.brnit"
     }
   }
 }

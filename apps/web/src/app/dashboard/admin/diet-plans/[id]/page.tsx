@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -20,6 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowLeft, Pencil, Trash2, Plus } from 'lucide-react'
 import { useDietPlan } from '@/hooks/use-diet-plan'
 import { useUpdateDietPlan, useDeleteDietPlan } from '@/hooks/use-diet-plan-mutations'
+import { useSyncBooleanFromUrlFlag } from '@/hooks/use-sync-boolean-from-url-flag'
 import { AddDietPlanMealDialog, type DietPlanMealInput } from '../components/add-diet-plan-meal-dialog'
 import { EditDietPlanMealDialog } from './components/edit-diet-plan-meal-dialog'
 import { DietPlanForm } from '../components/diet-plan-form'
@@ -45,9 +46,7 @@ export default function DietPlanDetailPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [deleteOpen, setDeleteOpen] = useState(showDelete)
 
-  useEffect(() => {
-    setDeleteOpen(showDelete)
-  }, [showDelete])
+  useSyncBooleanFromUrlFlag(showDelete, setDeleteOpen)
 
   const handleUpdateMetadata = useCallback(
     async (data: { name: string; description?: string }) => {
@@ -57,9 +56,8 @@ export default function DietPlanDetailPage() {
         description: data.description?.trim() ? data.description.trim() : null,
       })
       setEditOpen(false)
-      refetch()
     },
-    [id, updatePlan, refetch]
+    [id, updatePlan]
   )
 
   const handleAddMeal = useCallback(
@@ -77,9 +75,8 @@ export default function DietPlanDetailPage() {
         ],
       })
       setAddMealOpen(false)
-      refetch()
     },
-    [id, updatePlan, refetch]
+    [id, updatePlan]
   )
 
   const handleEditMeal = useCallback((meal: DietPlanMeal) => {
@@ -102,40 +99,28 @@ export default function DietPlanDetailPage() {
       })
       setEditSlotOpen(false)
       setSlotToEdit(null)
-      refetch()
     },
-    [id, updatePlan, refetch]
+    [id, updatePlan]
   )
 
   const handleRemoveMeal = useCallback(
     async (dietPlanMealId: string) => {
       await updatePlan.mutateAsync({ id, remove: [dietPlanMealId] })
-      refetch()
     },
-    [id, updatePlan, refetch]
+    [id, updatePlan]
   )
 
   const handleBulkRemoveMeals = useCallback(async () => {
     if (selectedIds.length === 0) return
     await updatePlan.mutateAsync({ id, remove: selectedIds })
     setSelectedIds([])
-    refetch()
-  }, [id, selectedIds, updatePlan, refetch])
+  }, [id, selectedIds, updatePlan])
 
   const handleDeletePlan = useCallback(async () => {
     await deletePlan.mutateAsync(id)
     setDeleteOpen(false)
     router.push('/dashboard/admin/diet-plans')
   }, [id, deletePlan, router])
-
-  if (isLoading || !plan) {
-    return (
-      <div className='space-y-6'>
-        <Skeleton className='h-8 w-32' />
-        <Skeleton className='h-32' />
-      </div>
-    )
-  }
 
   if (error) {
     return (
@@ -154,6 +139,15 @@ export default function DietPlanDetailPage() {
             </Button>
           </CardContent>
         </Card>
+      </div>
+    )
+  }
+
+  if (isLoading || !plan) {
+    return (
+      <div className='space-y-6'>
+        <Skeleton className='h-8 w-32' />
+        <Skeleton className='h-32' />
       </div>
     )
   }

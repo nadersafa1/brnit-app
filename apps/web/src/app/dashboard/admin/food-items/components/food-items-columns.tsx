@@ -12,6 +12,7 @@ import {
 import { createSortableHeader, createTextColumn } from '@/lib/table-core'
 import type { SortOrder } from '@/lib/table-core'
 import type { FoodItem } from '@/lib/queries/food-items'
+import { formatFoodCategoriesDisplay } from '@/lib/helpers/food-item-categories'
 import { formatFoodUnitLabel } from '@/lib/helpers/food-unit-display'
 import { Edit, ImageIcon, MoreHorizontal, Trash2 } from 'lucide-react'
 
@@ -69,7 +70,7 @@ export function createFoodItemsColumns({
             href={item.imageUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="block rounded-md overflow-hidden ring-1 ring-border"
+            className="inline-block rounded-md overflow-hidden ring-1 ring-border"
           >
             <Avatar className="size-8 rounded-md">
               <AvatarImage src={item.imageUrl} alt="" className="rounded-md object-cover" />
@@ -80,26 +81,31 @@ export function createFoodItemsColumns({
       },
     },
     createTextColumn<FoodItem>('unit', 'Unit', (row) => formatFoodUnitLabel(row.unit ?? '100g'), {}),
-    createTextColumn<FoodItem>('categoryName', 'Category', (row) => row.categoryName ?? '–', {}),
-    createTextColumn<FoodItem>('calories', 'Calories', (row) => row.calories ?? '–', {
+    createTextColumn<FoodItem>(
+      'categories',
+      'Categories',
+      (row) => formatFoodCategoriesDisplay(row.categories),
+      {}
+    ),
+    createTextColumn<FoodItem>('calories', 'Calories', (row) => String(row.calories), {
       sortable: true,
       sortBy,
       sortOrder,
       onSort,
     }),
-    createTextColumn<FoodItem>('protein', 'Protein', (row) => row.protein ?? '–', {
+    createTextColumn<FoodItem>('protein', 'Protein', (row) => String(row.protein), {
       sortable: true,
       sortBy,
       sortOrder,
       onSort,
     }),
-    createTextColumn<FoodItem>('carbs', 'Carbs', (row) => row.carbs ?? '–', {
+    createTextColumn<FoodItem>('carbs', 'Carbs', (row) => String(row.carbs), {
       sortable: true,
       sortBy,
       sortOrder,
       onSort,
     }),
-    createTextColumn<FoodItem>('fat', 'Fat', (row) => row.fat ?? '–', {
+    createTextColumn<FoodItem>('fat', 'Fat', (row) => String(row.fat), {
       sortable: true,
       sortBy,
       sortOrder,

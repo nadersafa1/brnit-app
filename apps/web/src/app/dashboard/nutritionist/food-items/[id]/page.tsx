@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowLeft } from 'lucide-react'
+import { FoodCategoryLinks } from '@/components/food-category-links'
 import { useFoodItem } from '@/hooks/use-food-item'
 
 export default function NutritionistFoodItemDetailPage() {
@@ -56,7 +57,13 @@ export default function NutritionistFoodItemDetailPage() {
       <Card>
         <CardHeader>
           <h2 className='text-lg font-semibold'>{item.name}</h2>
-          <p className='text-sm text-muted-foreground'>{item.categoryName ?? 'No category'}</p>
+          <p className='text-sm'>
+            <FoodCategoryLinks
+              categories={item.categories}
+              basePath='/dashboard/nutritionist/categories'
+              emptyLabel='No categories'
+            />
+          </p>
         </CardHeader>
         <CardContent className='space-y-2'>
           <div className='grid grid-cols-2 gap-4 text-sm'>
@@ -64,8 +71,6 @@ export default function NutritionistFoodItemDetailPage() {
             <div>Protein: {item.protein ?? '–'} g</div>
             <div>Carbs: {item.carbs ?? '–'} g</div>
             <div>Fat: {item.fat ?? '–'} g</div>
-            {item.servingSize && <div>Serving size: {item.servingSize}</div>}
-            {item.fdcId != null && <div>FDC ID: {item.fdcId}</div>}
           </div>
           <p className='text-sm text-muted-foreground pt-2'>
             Created: {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '–'}

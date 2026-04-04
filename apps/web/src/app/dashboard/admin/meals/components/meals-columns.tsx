@@ -2,14 +2,11 @@
 
 import type { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { createSortableHeader, createTextColumn } from '@/lib/table-core'
 import type { SortOrder } from '@/lib/table-core'
+import { roundNutritionMacro } from '@/lib/helpers/nutrition-numbers'
+import { tableCellTextPreview } from '@/lib/helpers/text-table-cells'
 import type { Meal } from '@/lib/queries/meals'
 import { Edit, MoreHorizontal, Trash2 } from 'lucide-react'
 
@@ -31,32 +28,27 @@ export function createMealsColumns({
   onEdit,
   onDelete,
   readOnly = false,
-}: CreateMealsColumnsOptions): ColumnDef<Meal>[] {
+}: Readonly<CreateMealsColumnsOptions>): ColumnDef<Meal>[] {
   const columns: ColumnDef<Meal>[] = [
     {
       id: 'name',
       accessorKey: 'name',
       header: () => createSortableHeader('Name', 'name', sortBy, sortOrder, onSort),
       cell: ({ row }) => (
-        <button
-          type="button"
-          className="font-medium text-left hover:underline"
-          onClick={() => onEdit(row.original)}
-        >
+        <button type='button' className='font-medium text-left hover:underline' onClick={() => onEdit(row.original)}>
           {row.original.name}
         </button>
       ),
     },
-    createTextColumn<Meal>(
-      'description',
-      'Description',
-      (row) => (row.description ? (row.description.length > 50 ? row.description.slice(0, 50) + '…' : row.description) : '–'),
-      {}
-    ),
+    createTextColumn<Meal>('description', 'Description', row => tableCellTextPreview(row.description), {}),
+    createTextColumn<Meal>('totalCalories', 'kcal', row => String(row.totalCalories), {}),
+    createTextColumn<Meal>('totalProtein', 'Protein (g)', row => String(roundNutritionMacro(row.totalProtein)), {}),
+    createTextColumn<Meal>('totalCarbs', 'Carbs (g)', row => String(roundNutritionMacro(row.totalCarbs)), {}),
+    createTextColumn<Meal>('totalFat', 'Fat (g)', row => String(roundNutritionMacro(row.totalFat)), {}),
     createTextColumn<Meal>(
       'createdAt',
       'Created',
-      (row) => (row.createdAt ? new Date(row.createdAt).toLocaleDateString() : '–'),
+      row => (row.createdAt ? new Date(row.createdAt).toLocaleDateString() : '–'),
       { sortable: true, sortBy, sortOrder, onSort }
     ),
   ]
@@ -70,21 +62,18 @@ export function createMealsColumns({
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Actions</span>
+              <Button variant='ghost' size='icon' className='h-8 w-8'>
+                <MoreHorizontal className='h-4 w-4' />
+                <span className='sr-only'>Actions</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align='end'>
               <DropdownMenuItem onClick={() => onEdit(item)}>
-                <Edit className="mr-2 h-4 w-4" />
+                <Edit className='mr-2 h-4 w-4' />
                 Edit
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onDelete(item)}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
+              <DropdownMenuItem onClick={() => onDelete(item)} className='text-destructive focus:text-destructive'>
+                <Trash2 className='mr-2 h-4 w-4' />
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>

@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Field, FieldLabel, FieldError } from '@/components/ui/field'
 import { createMealSchema } from '@/types/api/meal.schemas'
 
@@ -16,6 +17,7 @@ interface MealFormProps {
   onSubmit: (data: FormData) => Promise<void>
   onCancel?: () => void
   isLoading?: boolean
+  submitLabel?: string
 }
 
 export function MealForm({
@@ -23,7 +25,8 @@ export function MealForm({
   onSubmit,
   onCancel,
   isLoading = false,
-}: MealFormProps) {
+  submitLabel = 'Create',
+}: Readonly<MealFormProps>) {
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -32,41 +35,37 @@ export function MealForm({
     },
   })
 
-  const handleSubmit = form.handleSubmit(async (data) => {
+  const handleSubmit = form.handleSubmit(async data => {
     await onSubmit({ ...data, description: data.description || undefined })
     form.reset()
   })
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className='space-y-4'>
       <Field>
-        <FieldLabel htmlFor="meal-name">Name</FieldLabel>
-        <Input
-          id="meal-name"
-          {...form.register('name')}
-          placeholder="e.g. Breakfast Bowl"
-          disabled={isLoading}
-        />
+        <FieldLabel htmlFor='meal-name'>Name</FieldLabel>
+        <Input id='meal-name' {...form.register('name')} placeholder='e.g. Breakfast Bowl' disabled={isLoading} />
         <FieldError errors={form.formState.errors.name ? [form.formState.errors.name] : undefined} />
       </Field>
       <Field>
-        <FieldLabel htmlFor="meal-description">Description (optional)</FieldLabel>
-        <Input
-          id="meal-description"
+        <FieldLabel htmlFor='meal-description'>Description (optional)</FieldLabel>
+        <Textarea
+          id='meal-description'
           {...form.register('description')}
-          placeholder="Brief description"
+          placeholder='Brief description'
           disabled={isLoading}
+          rows={4}
         />
         <FieldError errors={form.formState.errors.description ? [form.formState.errors.description] : undefined} />
       </Field>
-      <div className="flex gap-2 justify-end">
+      <div className='flex gap-2 justify-end'>
         {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
+          <Button type='button' variant='outline' onClick={onCancel} disabled={isLoading}>
             Cancel
           </Button>
         )}
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? 'Saving…' : 'Create'}
+        <Button type='submit' disabled={isLoading}>
+          {isLoading ? 'Saving…' : submitLabel}
         </Button>
       </div>
     </form>

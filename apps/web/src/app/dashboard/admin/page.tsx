@@ -23,7 +23,7 @@ import type { AdminUser } from './types'
 const AdminPage = () => {
   const {
     users,
-    pagination,
+    paginationMeta,
     filters,
     setFilters,
     isLoading,
@@ -151,20 +151,20 @@ const AdminPage = () => {
         <CardContent className="pt-6">
           <AdminUsersTable
             users={users}
-            pagination={pagination}
-            onPageChange={(page) => setFilters({ ...filters, page })}
-            onPageSizeChange={(perPage) => setFilters({ ...filters, perPage, page: 1 })}
-            onSearchChange={(q) => setFilters({ ...filters, q, page: 1 })}
+            paginationMeta={paginationMeta}
+            paginationFallback={{ page: filters.page, perPage: filters.perPage }}
+            onPageChange={(page) => setFilters({ page })}
+            onPageSizeChange={(perPage) => setFilters({ perPage, page: 1 })}
+            onSearchChange={(q) => setFilters({ q, page: 1 })}
             searchValue={filters.q}
             role={filters.role}
-            onRoleChange={(role) => setFilters({ ...filters, role, page: 1 })}
+            onRoleChange={(role) => setFilters({ role, page: 1 })}
             sortBy={filters.sortBy}
             sortOrder={filters.sortOrder}
             onSortingChange={(sortBy, sortOrder) =>
-              setFilters({ ...filters, sortBy: sortBy ?? 'createdAt', sortOrder: sortOrder ?? 'desc', page: 1 })
+              setFilters({ sortBy: sortBy ?? 'createdAt', sortOrder: sortOrder ?? 'desc', page: 1 })
             }
             isLoading={isLoading}
-            onRefetch={refetch}
             onImpersonate={handleImpersonate}
             onChangeRole={handleChangeRole}
             onBan={handleBan}

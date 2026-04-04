@@ -8,42 +8,32 @@ import { ClipboardList, Plus } from 'lucide-react'
 import { DietPlansTable } from './components/diet-plans-table'
 import { CreateDietPlanDialog } from './components/create-diet-plan-dialog'
 import { useDietPlans } from '@/hooks/use-diet-plans'
+import { useListFilters } from '@/hooks/use-list-filters'
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants/pagination'
 import type { DietPlan } from '@/lib/queries/diet-plans'
+import type { SortOrder } from '@/lib/table-core'
+import type { DietPlansSortBy } from './components/diet-plans-columns'
 
 export default function DietPlansPage() {
   const router = useRouter()
 
-  const [filters, setFilters] = useState<{
-    page: number
-    perPage: number
-    q: string
-    sortBy: 'name' | 'createdAt'
-    sortOrder: 'asc' | 'desc'
-  }>({
+  const {
+    filters,
+    paginationFallback,
+    onPageChange,
+    onPageSizeChange,
+    onSearchChange,
+    updateFilters,
+  } = useListFilters({
     page: 1,
     perPage: DEFAULT_PAGE_SIZE,
     q: '',
-    sortBy: 'name',
-    sortOrder: 'asc',
+    sortBy: 'name' as DietPlansSortBy,
+    sortOrder: 'asc' as SortOrder,
   })
   const [createOpen, setCreateOpen] = useState(false)
 
   const { data: plans, pagination, isLoading, error, refetch } = useDietPlans(filters)
-
-  const paginationConfig = pagination
-    ? {
-        page: pagination.page,
-        limit: pagination.perPage,
-        totalItems: pagination.totalItems,
-        totalPages: pagination.totalPages,
-      }
-    : {
-        page: filters.page,
-        limit: filters.perPage,
-        totalItems: 0,
-        totalPages: 1,
-      }
 
   const handleEdit = useCallback(
     (plan: DietPlan) => {
@@ -88,23 +78,18 @@ export default function DietPlansPage() {
           <CardContent className='pt-6'>
             <DietPlansTable
               plans={plans}
-              pagination={paginationConfig}
-              onPageChange={page => setFilters(f => ({ ...f, page }))}
-              onPageSizeChange={perPage => setFilters(f => ({ ...f, perPage, page: 1 }))}
-              onSearchChange={q => setFilters(f => ({ ...f, q, page: 1 }))}
+              paginationMeta={pagination}
+              paginationFallback={paginationFallback}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+              onSearchChange={onSearchChange}
               searchValue={filters.q}
               sortBy={filters.sortBy}
               sortOrder={filters.sortOrder}
               onSortingChange={(sortBy, sortOrder) =>
-                setFilters(f => ({
-                  ...f,
-                  sortBy: sortBy ?? 'name',
-                  sortOrder: sortOrder ?? 'asc',
-                  page: 1,
-                }))
+                updateFilters({ sortBy: sortBy ?? 'name', sortOrder: sortOrder ?? 'asc' })
               }
               isLoading={isLoading}
-              onRefetch={refetch}
               onEdit={handleEdit}
               onDelete={handleDelete}
             />
@@ -112,7 +97,7 @@ export default function DietPlansPage() {
         </Card>
       )}
 
-      <CreateDietPlanDialog open={createOpen} onOpenChange={setCreateOpen} onSuccess={() => refetch()} />
+      <CreateDietPlanDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   )
 }

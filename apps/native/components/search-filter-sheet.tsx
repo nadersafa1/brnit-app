@@ -93,6 +93,7 @@ export const SearchFilterSheet = forwardRef<AppBottomSheetRef>((_, ref) => {
             <Chip
               key={cat.id}
               label={cat.name}
+              subtitle={cat.description?.trim() || undefined}
               selected={categoryId === cat.id}
               onPress={() => setCategoryId(cat.id)}
             />
@@ -151,10 +152,12 @@ SearchFilterSheet.displayName = 'SearchFilterSheet'
 
 function Chip({
   label,
+  subtitle,
   selected,
   onPress
 }: Readonly<{
   label: string
+  subtitle?: string
   selected: boolean
   onPress: () => void
 }>) {
@@ -173,13 +176,24 @@ function Chip({
         }
       ]}
     >
-      <Text
-        size='sm'
-        weight={selected ? 'semibold' : 'medium'}
-        style={{ color: selected ? colors.white : colors.ink }}
-      >
-        {label}
-      </Text>
+      <View style={styles.chipInner}>
+        <Text
+          size='sm'
+          weight={selected ? 'semibold' : 'medium'}
+          style={{ color: selected ? colors.white : colors.ink }}
+        >
+          {label}
+        </Text>
+        {subtitle ? (
+          <Text
+            size='xs'
+            numberOfLines={2}
+            style={{ opacity: selected ? 0.92 : 1, color: selected ? colors.white : colors.muted }}
+          >
+            {subtitle}
+          </Text>
+        ) : null}
+      </View>
     </Pressable>
   )
 }
@@ -197,7 +211,11 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
-    borderRadius: radii.pill
+    borderRadius: radii.pill,
+    maxWidth: 280
+  },
+  chipInner: {
+    gap: spacing[1]
   },
   footer: {
     flexDirection: 'column',

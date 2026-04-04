@@ -13,7 +13,11 @@ const getHandler = async (request: NextRequest) => {
   if (authResult.error) return authResult.error
 
   const categories = await db
-    .select({ id: foodCategory.id, name: foodCategory.name })
+    .select({
+      id: foodCategory.id,
+      name: foodCategory.name,
+      description: foodCategory.description,
+    })
     .from(foodCategory)
     .orderBy(asc(foodCategory.name))
 

@@ -10,12 +10,12 @@ export interface MealItem {
   id: string
   foodItemId: string
   foodName: string
-  categoryName: string | null
+  categories: { id: string; name: string }[]
   quantity: number
-  calories: number | null
-  protein: number | null
-  carbs: number | null
-  fat: number | null
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
   unit: '100g' | 'piece' | 'liters' | 'cup' | 'tbsp'
   gramsPerUnit: number | null
 }
@@ -24,6 +24,10 @@ export interface Meal {
   id: string
   name: string
   description: string | null
+  totalCalories: number
+  totalProtein: number
+  totalCarbs: number
+  totalFat: number
   createdAt: string
   updatedAt: string
   mealItems?: MealItem[]
@@ -83,5 +87,7 @@ export function mealQueryOptions(id: string, source: DataSource = 'admin') {
     queryKey: keys.meal(id),
     queryFn: () => fetchMeal(id, source).then((r) => r.data),
     enabled: !!id,
+    // Avoid an extra GET when a modal closes and the window regains focus right after invalidate.
+    refetchOnWindowFocus: false,
   })
 }

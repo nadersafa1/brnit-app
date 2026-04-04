@@ -8,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { tableCellTextPreview } from '@/lib/helpers/text-table-cells'
 import { createSortableHeader, createTextColumn } from '@/lib/table-core'
 import type { SortOrder } from '@/lib/table-core'
 import type { DietPlan } from '@/lib/queries/diet-plans'
@@ -47,17 +48,7 @@ export function createDietPlansColumns({
         </button>
       ),
     },
-    createTextColumn<DietPlan>(
-      'description',
-      'Description',
-      (row) =>
-        row.description
-          ? row.description.length > 50
-            ? row.description.slice(0, 50) + '…'
-            : row.description
-          : '–',
-      {}
-    ),
+    createTextColumn<DietPlan>('description', 'Description', row => tableCellTextPreview(row.description), {}),
     createTextColumn<DietPlan>(
       'slotCount',
       'Slots',

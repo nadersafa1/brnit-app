@@ -9,6 +9,7 @@ import type { PaginationMeta } from '@/lib/api-helpers/pagination'
 export interface FoodCategory {
   id: string
   name: string
+  description: string | null
   createdAt: string
 }
 

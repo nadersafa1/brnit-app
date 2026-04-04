@@ -7,6 +7,7 @@ import { spacing } from "@/theme/spacing";
 import { radii } from "@/theme/radii";
 import { shadows } from "@/theme/shadows";
 import type { FoodItem } from "@/lib/api/member-food-types";
+import { formatFoodCategoriesDisplay } from "@/lib/helpers/food-item-display";
 
 interface FoodItemCardProps {
   item: FoodItem;
@@ -57,11 +58,11 @@ export function FoodItemCard({
           <Text size="base" weight="semibold" numberOfLines={1}>
             {item.name}
           </Text>
-          {item.categoryName && (
+          {item.categories?.length ? (
             <Text size="xs" muted numberOfLines={1}>
-              {item.categoryName}
+              {formatFoodCategoriesDisplay(item.categories)}
             </Text>
-          )}
+          ) : null}
           <View style={styles.macros}>
             <Text size="xs" muted>
               P: {item.protein}g
