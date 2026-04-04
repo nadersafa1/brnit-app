@@ -14,7 +14,7 @@ import {
   member,
 } from '@burn-app/auth/permissions'
 
-export const authClient = createAuthClient({
+const authClient = createAuthClient({
   baseURL: env.EXPO_PUBLIC_SERVER_URL,
   plugins: [
     adminClient(),
@@ -44,3 +44,7 @@ export const authClient = createAuthClient({
     }),
   ],
 })
+
+export type NativeAuthClient = typeof authClient
+
+export { authClient }

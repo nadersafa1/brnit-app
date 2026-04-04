@@ -9,6 +9,7 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 
 import { authClient } from '@/lib/auth-client'
+import { toastSocialOAuthError } from '@/lib/social-oauth-toast'
 import { Button } from '@/components/ui/button'
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldSeparator } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -91,22 +92,14 @@ export const LoginForm = ({
   const handleGoogleSignIn = () => {
     authClient.signIn.social(
       { provider: 'google', callbackURL: redirectTo },
-      {
-        onError: ctx => {
-          toast.error(ctx.error?.message ?? 'Google sign-in failed')
-        },
-      }
+      { onError: ctx => toastSocialOAuthError(ctx, 'Google') },
     )
   }
 
   const handleAppleSignIn = () => {
     authClient.signIn.social(
       { provider: 'apple', callbackURL: redirectTo },
-      {
-        onError: ctx => {
-          toast.error(ctx.error?.message ?? 'Apple sign-in failed')
-        },
-      }
+      { onError: ctx => toastSocialOAuthError(ctx, 'Apple') },
     )
   }
 
