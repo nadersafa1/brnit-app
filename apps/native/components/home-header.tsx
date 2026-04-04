@@ -4,11 +4,11 @@
 
 import { Ionicons } from '@expo/vector-icons'
 import { Pressable, View, StyleSheet, Image } from 'react-native'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { Text } from '@/components/ui'
-import { useColors } from '@/hooks/use-theme-color'
+import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
-import { shadows } from '@/theme/shadows'
 
 interface HomeHeaderProps {
   userName: string
@@ -17,6 +17,7 @@ interface HomeHeaderProps {
 
 export function HomeHeader({ userName, userImageUrl }: Readonly<HomeHeaderProps>) {
   const colors = useColors()
+  const elevation = useShadows()
 
   return (
     <View style={styles.header}>
@@ -50,13 +51,16 @@ export function HomeHeader({ userName, userImageUrl }: Readonly<HomeHeaderProps>
           </Text>
         </View>
       </View>
-      <Pressable style={[styles.notificationButton, { backgroundColor: colors.card }, shadows.sm]}>
-        <Ionicons
-          name='notifications-outline'
-          size={20}
-          color={colors.ink}
-        />
-      </Pressable>
+      <View style={styles.headerActions}>
+        <ThemeToggle variant='iconButton' />
+        <Pressable style={[styles.notificationButton, { backgroundColor: colors.card }, elevation.sm]}>
+          <Ionicons
+            name='notifications-outline'
+            size={20}
+            color={colors.ink}
+          />
+        </Pressable>
+      </View>
     </View>
   )
 }
@@ -85,11 +89,16 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%'
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
   notificationButton: {
     width: 44,
     height: 44,
     borderRadius: radii.pill,
     alignItems: 'center',
-    justifyContent: 'center'
-  }
+    justifyContent: 'center',
+  },
 })

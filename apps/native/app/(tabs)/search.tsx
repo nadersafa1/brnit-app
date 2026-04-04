@@ -13,16 +13,15 @@ import type { FoodItem } from '@/lib/api/member-food-types'
 import { Input, Spinner, Text } from '@/components/ui'
 import { useFoodCategories } from '@/hooks/use-food-categories'
 import { useFoodItems } from '@/hooks/use-food-items'
-import { useColors } from '@/hooks/use-theme-color'
+import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { showError } from '@/lib/feedback'
 import { useSearchFilterStore, useHasActiveFilters } from '@/store/search-filter-store'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
-import { shadows } from '@/theme/shadows'
-
 export default function Search() {
   const insets = useSafeAreaInsets()
   const colors = useColors()
+  const elevation = useShadows()
   const bottomSheetRef = useRef<AppBottomSheetRef>(null)
 
   const [inputValue, setInputValue] = useState('')
@@ -149,7 +148,7 @@ export default function Search() {
             placeholder='Search for a food...'
             value={inputValue}
             onChangeText={handleInputChange}
-            containerStyle={{ ...styles.searchInput, ...shadows.sm }}
+            containerStyle={{ ...styles.searchInput, ...elevation.sm }}
           />
           <Pressable
             onPress={openFilterSheet}
@@ -159,7 +158,7 @@ export default function Search() {
                 backgroundColor: hasActiveFilters ? colors.accent : colors.card,
                 opacity: pressed ? 0.8 : 1
               },
-              shadows.sm
+              elevation.sm
             ]}
           >
             <Ionicons

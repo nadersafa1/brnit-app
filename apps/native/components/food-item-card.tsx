@@ -2,10 +2,9 @@ import { Image } from "expo-image";
 import { Pressable, View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Text } from "@/components/ui";
-import { useColors } from "@/hooks/use-theme-color";
+import { useColors, useShadows } from "@/hooks/use-theme-color";
 import { spacing } from "@/theme/spacing";
 import { radii } from "@/theme/radii";
-import { shadows } from "@/theme/shadows";
 import type { FoodItem } from "@/lib/api/member-food-types";
 import { formatFoodCategoriesDisplay } from "@/lib/helpers/food-item-display";
 
@@ -21,6 +20,7 @@ export function FoodItemCard({
   onAlternativesPress,
 }: Readonly<FoodItemCardProps>) {
   const colors = useColors();
+  const elevation = useShadows();
 
   const handleAlternativesPress = () => {
     onAlternativesPress?.();
@@ -36,7 +36,7 @@ export function FoodItemCard({
           transform: [{ scale: pressed ? 0.98 : 1 }],
           opacity: pressed ? 0.95 : 1,
         },
-        shadows.sm,
+        elevation.sm,
       ]}
     >
       <View style={styles.content}>

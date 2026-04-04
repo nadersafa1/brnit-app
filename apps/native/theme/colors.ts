@@ -30,29 +30,29 @@ export const Colors = {
     transparent: 'transparent',
   },
   dark: {
-    // Brand Colors
-    accent: '#FD6E20',
-    accentLight: '#FF8F50',
-    pastelPurple: '#C9BEFA',
+    // Brand (slightly tuned for contrast on charcoal)
+    accent: '#FF7A2E',
+    accentLight: '#FF9A5C',
+    pastelPurple: '#B8A9F0',
 
-    // Neutral Colors (inverted for dark mode)
-    ink: '#F7F7F7',
-    muted: '#A0A0A0',
-    subtle: '#CCCCCC',
-    border: '#3A3A3A',
-    surfaceAlt: '#1A1A1A',
-    offWhite: '#111111',
+    // Neutrals — warm charcoal stack (matches light peach/coral family)
+    ink: '#F4F2EF',
+    muted: '#9A958F',
+    subtle: '#6E6963',
+    border: '#35312E',
+    surfaceAlt: '#1B1A18',
+    offWhite: '#0E0D0C',
 
-    // Surface Colors
-    appBg: '#0A0A0A',
-    card: '#1A1A1A',
-    navPill: '#1A1A1A',
+    // Surfaces — clear steps: canvas → inset → raised card → floating nav
+    appBg: '#121110',
+    card: '#1E1D1B',
+    navPill: '#2C2926',
 
-    // Semantic Colors
-    success: '#35C48B',
-    warning: '#FFB020',
-    danger: '#FF4D4F',
-    info: '#2F80ED',
+    // Semantic — a bit brighter on dark for legibility
+    success: '#3DD69A',
+    warning: '#FFC14D',
+    danger: '#FF6B6E',
+    info: '#5B9EF5',
 
     // Base Colors
     white: '#FFFFFF',
@@ -63,3 +63,5 @@ export const Colors = {
 
 export type ColorScheme = keyof typeof Colors
 export type ColorName = keyof typeof Colors.light
+/** Token map for one scheme; use with `useColors()` at runtime. */
+export type ThemeColors = (typeof Colors)[ColorScheme]

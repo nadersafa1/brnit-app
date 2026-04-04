@@ -2,10 +2,9 @@ import type { ReactNode } from 'react'
 import dayjs from 'dayjs'
 import { View, StyleSheet, ActivityIndicator, Pressable } from 'react-native'
 import { Text } from '@/components/ui'
-import { useColors } from '@/hooks/use-theme-color'
+import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
-import { shadows } from '@/theme/shadows'
 import type { RecentAssessmentItem } from '@/lib/api/recent-assessments'
 
 type RecentAssessmentsSectionProps = Readonly<{
@@ -74,6 +73,7 @@ export function RecentAssessmentsSection({
   onSelectAssessment,
 }: RecentAssessmentsSectionProps) {
   const colors = useColors()
+  const elevation = useShadows()
 
   let body: ReactNode
   if (isLoading) {
@@ -99,7 +99,7 @@ export function RecentAssessmentsSection({
   }
 
   return (
-    <View style={[styles.sectionCard, { backgroundColor: colors.card }, shadows.md]}>
+    <View style={[styles.sectionCard, { backgroundColor: colors.card }, elevation.md]}>
       <Text size="lg" weight="bold" style={styles.sectionTitle}>
         Recent Assessments
       </Text>

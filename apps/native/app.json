@@ -15,6 +15,7 @@
     },
     "name": "brnit",
     "slug": "brnit",
+    "version": "1.0.0",
     "plugins": [
       "expo-font",
       "expo-router",
@@ -43,12 +44,14 @@
     },
     "android": {
       "package": "com.nader_safa.brnit",
+      "versionCode": 3,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       }
     },
     "ios": {
+      "buildNumber": "3",
       "bundleIdentifier": "com.nadersafa.brnit",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false

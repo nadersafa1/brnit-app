@@ -1,13 +1,12 @@
 import { Text } from '@/components/ui'
 import { useMarkMealConsumed } from '@/hooks/use-mark-meal-consumed'
-import { useColors } from '@/hooks/use-theme-color'
+import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { useUnmarkMealConsumed } from '@/hooks/use-unmark-meal-consumed'
 import { getConsumptionMarkEligibility } from '@/lib/consumption-date-window'
 import type { CurrentDietPlanMealItem, Macros } from '@/lib/api/member-types'
 import { formatCalorieDisplay, roundUpToTenth } from '@/lib/utils/numbers'
 import { Ionicons } from '@expo/vector-icons'
 import { useMemo, useState } from 'react'
-import { shadows } from '@/theme/shadows'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
 import { ActivityIndicator, LayoutAnimation, Pressable, StyleSheet, View } from 'react-native'
@@ -48,6 +47,7 @@ export function MealCard({
   onMealItemPress
 }: Readonly<MealCardProps>) {
   const colors = useColors()
+  const elevation = useShadows()
   const [expanded, setExpanded] = useState(false)
   const markConsumed = useMarkMealConsumed()
   const unmarkConsumed = useUnmarkMealConsumed()
@@ -84,7 +84,7 @@ export function MealCard({
   const itemsLabel = items.length === 0 ? 'View items' : `View ${items.length} item${itemSuffix}`
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.card }, shadows.sm]}>
+    <View style={[styles.container, { backgroundColor: colors.card }, elevation.sm]}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={[styles.iconContainer, { backgroundColor: colors.surfaceAlt }]}>

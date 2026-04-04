@@ -1,10 +1,9 @@
 import { View, StyleSheet } from 'react-native'
 import { StreakBadge } from '@/components/streak-badge'
 import { Text } from '@/components/ui'
-import { useColors } from '@/hooks/use-theme-color'
+import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
-import { shadows } from '@/theme/shadows'
 
 type CurrentStreakCardProps = Readonly<{
   streak: number
@@ -18,9 +17,10 @@ type CurrentStreakCardProps = Readonly<{
  */
 export function CurrentStreakCard({ streak, isLoading, error }: CurrentStreakCardProps) {
   const colors = useColors()
+  const elevation = useShadows()
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card }, shadows.md]}>
+    <View style={[styles.card, { backgroundColor: colors.card }, elevation.md]}>
       <View style={styles.streakRow}>
         <View>
           <Text size='lg' weight='bold'>

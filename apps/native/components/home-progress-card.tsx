@@ -10,10 +10,9 @@ import { CalorieRing } from '@/components/calorie-ring'
 import { MacroBar } from '@/components/macro-bar'
 import { StreakBadge } from '@/components/streak-badge'
 import { Text } from '@/components/ui'
-import { useColors } from '@/hooks/use-theme-color'
+import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
-import { shadows } from '@/theme/shadows'
 import { formatCalorieDisplay } from '@/lib/utils/numbers'
 
 interface HomeProgressCardProps {
@@ -53,9 +52,10 @@ export function HomeProgressCard({
   streakError
 }: Readonly<HomeProgressCardProps>) {
   const colors = useColors()
+  const elevation = useShadows()
 
   return (
-    <View style={[styles.calorieCard, { backgroundColor: colors.card }, shadows.md]}>
+    <View style={[styles.calorieCard, { backgroundColor: colors.card }, elevation.md]}>
       <View style={styles.cardHeader}>
         <Text
           size='xl'

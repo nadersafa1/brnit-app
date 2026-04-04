@@ -1,4 +1,5 @@
 import '@/polyfills'
+import '@/store/theme-preference-store'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { Stack } from 'expo-router'
@@ -6,7 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
 import Toast from 'react-native-toast-message'
 
-import { AppThemeProvider } from '@/contexts/app-theme-context'
+import { ThemedStatusBar } from '@/components/themed-status-bar'
 import { queryClient } from '@/lib/query-client'
 
 function RootNavigator() {
@@ -28,10 +29,9 @@ export default function Layout() {
       <BottomSheetModalProvider>
         <KeyboardProvider>
           <QueryClientProvider client={queryClient}>
-            <AppThemeProvider>
-              <RootNavigator />
-              <Toast />
-            </AppThemeProvider>
+            <ThemedStatusBar />
+            <RootNavigator />
+            <Toast />
           </QueryClientProvider>
         </KeyboardProvider>
       </BottomSheetModalProvider>

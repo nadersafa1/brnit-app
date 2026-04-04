@@ -1,11 +1,13 @@
 import { useColorScheme } from 'react-native'
-import { Colors, ColorName, ColorScheme } from '@/theme/colors'
+import { resolvePaletteScheme } from '@/lib/theme/resolve-palette-scheme'
+import { Colors, ColorName } from '@/theme/colors'
+import { shadowsDark, shadowsLight } from '@/theme/shadows'
 
 export function useThemeColor(
   colorName: ColorName,
   props?: { light?: string; dark?: string }
 ): string {
-  const scheme = (useColorScheme() ?? 'light') as ColorScheme
+  const scheme = resolvePaletteScheme(useColorScheme())
   const colorFromProps = props?.[scheme]
 
   if (colorFromProps) {
@@ -16,10 +18,17 @@ export function useThemeColor(
 }
 
 export function useColors() {
-  const scheme = (useColorScheme() ?? 'light') as ColorScheme
+  const scheme = resolvePaletteScheme(useColorScheme())
   return Colors[scheme]
 }
 
 export function useColorSchemeValue() {
-  return (useColorScheme() ?? 'light') as ColorScheme
+  return resolvePaletteScheme(useColorScheme())
 }
+
+export function useShadows() {
+  const scheme = useColorSchemeValue()
+  return scheme === 'dark' ? shadowsDark : shadowsLight
+}
+
+export type { ShadowKey } from '@/theme/shadows'

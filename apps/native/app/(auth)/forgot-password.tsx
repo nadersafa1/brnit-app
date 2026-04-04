@@ -9,14 +9,14 @@ import { FieldError, Text } from '@/components/ui'
 import { showError, showSuccess } from '@/lib/feedback'
 import { DEEP_LINKS } from '@/constants/deep-links'
 import { authClient } from '@/lib/auth-client'
-import { useColors } from '@/hooks/use-theme-color'
+import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
-import { shadows } from '@/theme/shadows'
 
 export default function ForgotPasswordScreen() {
   const insets = useSafeAreaInsets()
   const colors = useColors()
+  const elevation = useShadows()
   const { data: session, isPending } = authClient.useSession()
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -88,7 +88,7 @@ export default function ForgotPasswordScreen() {
         </View>
       </View>
 
-      <View style={[styles.card, { backgroundColor: colors.card }, shadows.lg]}>
+      <View style={[styles.card, { backgroundColor: colors.card }, elevation.lg]}>
         <Text size="2xl" weight="bold" style={styles.title}>
           Forgot password
         </Text>

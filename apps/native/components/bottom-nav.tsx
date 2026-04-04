@@ -3,10 +3,9 @@ import { useRouter, useSegments } from 'expo-router'
 import { Pressable, View, StyleSheet } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Text } from '@/components/ui'
-import { Colors } from '@/theme/colors'
+import { useColorSchemeValue, useColors, useShadows } from '@/hooks/use-theme-color'
 import { radii } from '@/theme/radii'
 import { spacing } from '@/theme/spacing'
-import { shadows } from '@/theme/shadows'
 
 type TabName = 'home' | 'search' | 'stats' | 'profile'
 
@@ -18,11 +17,15 @@ interface NavItemProps {
 }
 
 function NavItem({ icon, label, isActive, onPress }: Readonly<NavItemProps>) {
+  const colors = useColors()
+  const scheme = useColorSchemeValue()
+  const inactiveIconColor = scheme === 'dark' ? colors.muted : colors.white
+
   if (isActive) {
     return (
-      <View style={styles.activeItem}>
-        <Ionicons name={icon} size={20} color={Colors.light.white} />
-        <Text size='xs' weight='bold' style={styles.activeLabel}>
+      <View style={[styles.activeItem, { backgroundColor: colors.accent }]}>
+        <Ionicons name={icon} size={20} color={colors.white} />
+        <Text size='xs' weight='bold' style={[styles.activeLabel, { color: colors.white }]}>
           {label}
         </Text>
       </View>
@@ -31,7 +34,7 @@ function NavItem({ icon, label, isActive, onPress }: Readonly<NavItemProps>) {
 
   return (
     <Pressable style={styles.inactiveItem} onPress={onPress}>
-      <Ionicons name={icon} size={22} color={Colors.light.white} />
+      <Ionicons name={icon} size={22} color={inactiveIconColor} />
     </Pressable>
   )
 }
@@ -44,6 +47,8 @@ export function BottomNav({ activeTab }: Readonly<BottomNavProps>) {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const segments = useSegments()
+  const colors = useColors()
+  const elevation = useShadows()
 
   const currentTab = activeTab || (segments[1] as TabName) || 'home'
 
@@ -55,7 +60,13 @@ export function BottomNav({ activeTab }: Readonly<BottomNavProps>) {
   }
 
   return (
-    <View style={[styles.container, { bottom: insets.bottom + 16 }]}>
+    <View
+      style={[
+        styles.container,
+        { bottom: insets.bottom + 16, backgroundColor: colors.navPill },
+        elevation.md,
+      ]}
+    >
       <NavItem icon='home' label='Home' isActive={currentTab === 'home'} onPress={() => navigate('home')} />
       <NavItem
         icon='search-outline'
@@ -89,8 +100,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: spacing[2],
     borderRadius: radii.pill,
-    backgroundColor: Colors.light.navPill,
-    ...shadows.md,
   },
   activeItem: {
     flexDirection: 'row',
@@ -98,10 +107,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     height: 40,
     borderRadius: radii.pill,
-    backgroundColor: Colors.light.accent,
   },
   activeLabel: {
-    color: Colors.light.white,
     marginLeft: spacing[2],
   },
   inactiveItem: {

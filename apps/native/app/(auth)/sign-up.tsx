@@ -8,13 +8,12 @@ import { AuthSocialIconButtons, AuthSuccessScreen, DobPicker, PasswordInput, Pri
 import { FieldError, Spinner, Text } from '@/components/ui'
 import { BETTER_AUTH_SOCIAL_CALLBACK_PATH } from '@/constants/better-auth-social'
 import { DEEP_LINKS } from '@/constants/deep-links'
-import { useColors } from '@/hooks/use-theme-color'
+import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { authClient } from '@/lib/auth-client'
 import { createSocialSignInCallbacks } from '@/lib/auth-social-callbacks'
 import { dobIsoStringToDate, isValidPastDob } from '@/lib/date-utils'
 import { signInWithAppleUsingBetterAuth } from '@/lib/sign-in-with-apple-better-auth'
 import { radii } from '@/theme/radii'
-import { shadows } from '@/theme/shadows'
 import { spacing } from '@/theme/spacing'
 
 interface PasswordRequirement {
@@ -25,6 +24,7 @@ interface PasswordRequirement {
 export default function SignUpScreen() {
   const insets = useSafeAreaInsets()
   const colors = useColors()
+  const elevation = useShadows()
   const { data: session, isPending } = authClient.useSession()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -157,7 +157,7 @@ export default function SignUpScreen() {
           </View>
         </View>
 
-        <View style={[styles.card, { backgroundColor: colors.card }, shadows.lg]}>
+        <View style={[styles.card, { backgroundColor: colors.card }, elevation.lg]}>
           <Text size='2xl' weight='bold' style={styles.title}>
             Create Account
           </Text>

@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BottomNav } from '@/components/bottom-nav'
 import { Text } from '@/components/ui'
-import { useColors } from '@/hooks/use-theme-color'
+import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { authClient } from '@/lib/auth-client'
 import { useConsumptionStreak } from '@/hooks/use-consumption-streak'
 import { useRecentAssessments } from '@/hooks/use-recent-assessments'
@@ -18,7 +18,6 @@ import { CurrentStreakCard } from '@/components/stats/current-streak-card'
 import type { RecentAssessmentItem } from '@/lib/api/recent-assessments'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
-import { shadows } from '@/theme/shadows'
 import { ApiError } from '@/lib/api/types'
 
 const RECENT_ASSESSMENTS_LIMIT = 5
@@ -30,6 +29,7 @@ const RECENT_ASSESSMENTS_LIMIT = 5
 export default function Stats() {
   const insets = useSafeAreaInsets()
   const colors = useColors()
+  const elevation = useShadows()
   const [orgPickerVisible, setOrgPickerVisible] = useState(false)
   const [selectedAssessment, setSelectedAssessment] = useState<RecentAssessmentItem | null>(null)
 
@@ -94,7 +94,7 @@ export default function Stats() {
         </Text>
 
         <Pressable
-          style={[styles.orgPicker, { backgroundColor: colors.card }, shadows.sm]}
+          style={[styles.orgPicker, { backgroundColor: colors.card }, elevation.sm]}
           onPress={() => setOrgPickerVisible(true)}
         >
           <Text

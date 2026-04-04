@@ -15,10 +15,9 @@ import {
   useCalendarStrip,
   type WeekData,
 } from '@/hooks/use-calendar-strip'
-import { useColors } from '@/hooks/use-theme-color'
+import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
-import { shadows } from '@/theme/shadows'
 
 interface CalendarStripProps {
   selectedDate: Date
@@ -28,6 +27,7 @@ interface CalendarStripProps {
 /** Horizontal week calendar with infinite scroll (past/future) and a month header. */
 export function CalendarStrip({ selectedDate, onDateSelect }: Readonly<CalendarStripProps>) {
   const colors = useColors()
+  const elevation = useShadows()
   const {
     flatListRef,
     weeks,
@@ -66,7 +66,7 @@ export function CalendarStrip({ selectedDate, onDateSelect }: Readonly<CalendarS
             style={({ pressed }) => [
               styles.todayButton,
               { backgroundColor: colors.accent, transform: [{ scale: pressed ? 0.95 : 1 }] },
-              shadows.sm,
+              elevation.sm,
             ]}
             onPress={jumpToToday}
           >

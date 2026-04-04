@@ -8,10 +8,9 @@ import { PasswordInput, PrimaryButton } from '@/components'
 import { FieldError, Text } from '@/components/ui'
 import { authClient } from '@/lib/auth-client'
 import { showError, showSuccess } from '@/lib/feedback'
-import { useColors } from '@/hooks/use-theme-color'
+import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
-import { shadows } from '@/theme/shadows'
 
 function getTokenFromParams(params: { token?: string | string[] }): string | undefined {
   const raw = params.token
@@ -23,6 +22,7 @@ function getTokenFromParams(params: { token?: string | string[] }): string | und
 export default function ResetPasswordScreen() {
   const insets = useSafeAreaInsets()
   const colors = useColors()
+  const elevation = useShadows()
   const token = getTokenFromParams(useLocalSearchParams<{ token?: string | string[] }>())
   const { data: session, isPending } = authClient.useSession()
   const [newPassword, setNewPassword] = useState('')
@@ -47,7 +47,7 @@ export default function ResetPasswordScreen() {
           { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 },
         ]}
       >
-        <View style={[styles.card, { backgroundColor: colors.card }, shadows.lg]}>
+        <View style={[styles.card, { backgroundColor: colors.card }, elevation.lg]}>
           <Text size="2xl" weight="bold" style={styles.title}>
             Invalid reset link
           </Text>
@@ -118,7 +118,7 @@ export default function ResetPasswordScreen() {
         </View>
       </View>
 
-      <View style={[styles.card, { backgroundColor: colors.card }, shadows.lg]}>
+      <View style={[styles.card, { backgroundColor: colors.card }, elevation.lg]}>
         <Text size="2xl" weight="bold" style={styles.title}>
           Set new password
         </Text>

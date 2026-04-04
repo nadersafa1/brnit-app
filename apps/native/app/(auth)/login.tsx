@@ -7,17 +7,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AuthSocialIconButtons, PasswordInput, PrimaryButton, TextInput } from '@/components'
 import { FieldError, Spinner, Text } from '@/components/ui'
 import { BETTER_AUTH_SOCIAL_CALLBACK_PATH } from '@/constants/better-auth-social'
-import { useColors } from '@/hooks/use-theme-color'
+import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { authClient } from '@/lib/auth-client'
 import { createSocialSignInCallbacks } from '@/lib/auth-social-callbacks'
 import { signInWithAppleUsingBetterAuth } from '@/lib/sign-in-with-apple-better-auth'
 import { radii } from '@/theme/radii'
-import { shadows } from '@/theme/shadows'
 import { spacing } from '@/theme/spacing'
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets()
   const colors = useColors()
+  const elevation = useShadows()
   const { invitationId } = useLocalSearchParams<{ invitationId?: string }>()
   const { data: session, isPending } = authClient.useSession()
   const [email, setEmail] = useState('')
@@ -100,7 +100,7 @@ export default function LoginScreen() {
           </View>
         </View>
 
-        <View style={[styles.card, { backgroundColor: colors.card }, shadows.lg]}>
+        <View style={[styles.card, { backgroundColor: colors.card }, elevation.lg]}>
           <Text size='2xl' weight='bold' style={styles.title}>
             Sign In
           </Text>

@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons'
 import { StyleSheet, TouchableOpacity, View } from 'react-native'
 
+import { useShadows } from '@/hooks/use-theme-color'
 import { radii } from '@/theme/radii'
-import { shadows } from '@/theme/shadows'
 import { spacing } from '@/theme/spacing'
 
 type AuthSocialIconButtonsProps = {
@@ -26,12 +26,14 @@ export function AuthSocialIconButtons({
   onApplePress,
   showApple,
 }: Readonly<AuthSocialIconButtonsProps>) {
+  const elevation = useShadows()
+
   return (
     <View style={styles.socialButtons}>
       <TouchableOpacity
         onPress={onGooglePress}
         disabled={isLoading}
-        style={[styles.socialButton, { backgroundColor: cardBackgroundColor }, shadows.md]}
+        style={[styles.socialButton, { backgroundColor: cardBackgroundColor }, elevation.md]}
       >
         <Ionicons name='logo-google' size={20} color={iconMutedColor} />
       </TouchableOpacity>
@@ -40,7 +42,7 @@ export function AuthSocialIconButtons({
         <TouchableOpacity
           onPress={onApplePress}
           disabled={isLoading}
-          style={[styles.socialButton, { backgroundColor: cardBackgroundColor }, shadows.md]}
+          style={[styles.socialButton, { backgroundColor: cardBackgroundColor }, elevation.md]}
         >
           <Ionicons name='logo-apple' size={20} color={iconMutedColor} />
         </TouchableOpacity>

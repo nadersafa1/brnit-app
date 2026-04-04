@@ -1,10 +1,9 @@
 import type { ReactNode } from 'react'
 import { View, StyleSheet, ActivityIndicator } from 'react-native'
 import { Text } from '@/components/ui'
-import { useColors } from '@/hooks/use-theme-color'
+import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
-import { shadows } from '@/theme/shadows'
 import type { OrganizationLeaderboardResponse } from '@/lib/api/organization-leaderboard'
 
 type LeaderboardSectionProps = Readonly<{
@@ -70,6 +69,7 @@ export function LeaderboardSection({
   isNoOrgError,
 }: LeaderboardSectionProps) {
   const colors = useColors()
+  const elevation = useShadows()
   const isGenericError = selectedOrgId !== null && isError && !isNoOrgError
   const emptyMessage = getEmptyMessage(selectedOrgId, isNoOrgError, isGenericError)
   const showContent = selectedOrgId != null && leaderboardData != null && !isError
@@ -130,7 +130,7 @@ export function LeaderboardSection({
   }
 
   return (
-    <View style={[styles.sectionCard, { backgroundColor: colors.card }, shadows.md]}>
+    <View style={[styles.sectionCard, { backgroundColor: colors.card }, elevation.md]}>
       <Text size="lg" weight="bold" style={styles.sectionTitle}>
         Leaderboard
       </Text>
