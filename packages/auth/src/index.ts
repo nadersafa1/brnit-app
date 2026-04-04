@@ -53,13 +53,12 @@ const googleSocial =
       }
     : {}
 
-const appleEnvReady =
-  Boolean(
-    env.APPLE_CLIENT_ID &&
-      env.APPLE_TEAM_ID &&
-      env.APPLE_KEY_ID &&
-      env.APPLE_PRIVATE_KEY,
-  )
+const appleEnvReady = Boolean(
+  env.APPLE_CLIENT_ID &&
+  env.APPLE_TEAM_ID &&
+  env.APPLE_KEY_ID &&
+  env.APPLE_PRIVATE_KEY,
+)
 
 const applePrivateKeyPem = env.APPLE_PRIVATE_KEY.replaceAll('\\n', '\n')
 
