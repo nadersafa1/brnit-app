@@ -12,6 +12,7 @@ import { HomeProgressCard } from '@/components/home-progress-card'
 import { MealItemDetailSheet, type MealItemDetailPayload } from '@/components/meal-item-detail-sheet'
 import { useConsumptionStreak } from '@/hooks/use-consumption-streak'
 import { useCurrentDietPlan } from '@/hooks/use-current-diet-plan'
+import { useSurfaceQueryErrorToast } from '@/hooks/use-surface-query-error-toast'
 import { useDayProgress } from '@/hooks/use-day-progress'
 import { useColors } from '@/hooks/use-theme-color'
 import { authClient } from '@/lib/auth-client'
@@ -37,6 +38,8 @@ export default function Home() {
     from: dateStr,
     to: dateStr
   })
+
+  useSurfaceQueryErrorToast(error)
 
   const day = useMemo(() => getDayForDate(dietPlanData, dateStr), [dietPlanData, dateStr])
   const meals = day?.meals ?? []

@@ -25,9 +25,12 @@ export type MealItemDetailSheetProps = {
 };
 
 export type MealItemDetailActionsProps = {
+  itemIsOverridden: boolean;
   selectedAlternative: FoodItemAlternative | null;
   isSubmittingDay: boolean;
   isSubmittingPlan: boolean;
+  isRestoringForDay: boolean;
   onReplaceDay: () => void;
   onReplacePlan: () => void;
+  onRestoreOriginalForDay: () => void;
 };

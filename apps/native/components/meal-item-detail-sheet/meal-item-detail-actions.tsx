@@ -1,21 +1,40 @@
-import { StyleSheet, View } from "react-native";
-import { Button } from "@/components/ui";
-import { spacing } from "@/theme/spacing";
-import type { MealItemDetailActionsProps } from "./types";
+import { StyleSheet, View } from 'react-native'
+
+import { Button } from '@/components/ui'
+import { spacing } from '@/theme/spacing'
+
+import type { MealItemDetailActionsProps } from './types'
 
 export function MealItemDetailActions({
+  itemIsOverridden,
   selectedAlternative,
   isSubmittingDay,
   isSubmittingPlan,
+  isRestoringForDay,
   onReplaceDay,
   onReplacePlan,
+  onRestoreOriginalForDay,
 }: Readonly<MealItemDetailActionsProps>) {
-  const disabled = selectedAlternative == null || isSubmittingDay || isSubmittingPlan;
+  const mutationInFlight =
+    isSubmittingDay || isSubmittingPlan || isRestoringForDay
+  const replaceBlocked = selectedAlternative == null || mutationInFlight
+
   return (
     <View style={styles.container}>
+      {itemIsOverridden ? (
+        <Button
+          onPress={onRestoreOriginalForDay}
+          disabled={mutationInFlight}
+          loading={isRestoringForDay}
+          variant="outline"
+          style={styles.button}
+        >
+          Restore original for this day
+        </Button>
+      ) : null}
       <Button
         onPress={onReplaceDay}
-        disabled={disabled}
+        disabled={replaceBlocked}
         loading={isSubmittingDay}
         style={styles.button}
       >
@@ -23,7 +42,7 @@ export function MealItemDetailActions({
       </Button>
       <Button
         onPress={onReplacePlan}
-        disabled={disabled}
+        disabled={replaceBlocked}
         loading={isSubmittingPlan}
         variant="outline"
         style={styles.button}
@@ -31,10 +50,10 @@ export function MealItemDetailActions({
         Replace for rest of plan
       </Button>
     </View>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
   container: { gap: spacing[2] },
   button: { flex: 1 },
-});
+})

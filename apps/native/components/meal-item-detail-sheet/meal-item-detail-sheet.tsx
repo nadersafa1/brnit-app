@@ -7,26 +7,42 @@ import {
   type AppBottomSheetRef,
 } from '@/components/bottom-sheet'
 import { useMealItemAlternatives } from '@/hooks/use-meal-item-alternatives'
+import { useMealItemDetailOverrideActions } from '@/hooks/use-meal-item-detail-override-actions'
 import { useMealItemDetailSheetVisibility } from '@/hooks/use-meal-item-detail-sheet-visibility'
-import { useSetMealItemOverride } from '@/hooks/use-set-meal-item-override'
 import type { FoodItemAlternative } from '@/lib/api/member-food-types'
 
-import { buildSetMealItemOverrideParams } from './build-override-params'
 import { MealItemDetailActions } from './meal-item-detail-actions'
 import { MealItemDetailContent } from './meal-item-detail-content'
-import type { MealItemDetailSheetProps, OverrideScope } from './types'
+import type { MealItemDetailSheetProps } from './types'
 
 export function MealItemDetailSheet({ payload, onClose }: Readonly<MealItemDetailSheetProps>) {
   const ref = useRef<AppBottomSheetRef>(null)
   const [selectedAlternative, setSelectedAlternative] = useState<FoodItemAlternative | null>(null)
-  const [submittingScope, setSubmittingScope] = useState<OverrideScope | null>(null)
-  const setMealItemOverrideMutation = useSetMealItemOverride()
 
   const resetSelection = useCallback(() => {
     setSelectedAlternative(null)
   }, [])
 
   useMealItemDetailSheetVisibility(payload, ref, resetSelection)
+
+  const closeSheet = useCallback(() => {
+    setSelectedAlternative(null)
+    onClose()
+  }, [onClose])
+
+  const {
+    submitOverride,
+    restoreOriginalForDay,
+    resetOverrideSubmissionState,
+    isSubmittingDay,
+    isSubmittingPlan,
+    isRestoringForDay,
+  } = useMealItemDetailOverrideActions(payload, selectedAlternative, closeSheet)
+
+  const handleClose = useCallback(() => {
+    resetOverrideSubmissionState()
+    closeSheet()
+  }, [closeSheet, resetOverrideSubmissionState])
 
   const alternativesQuery = useMealItemAlternatives({
     assignmentId: payload?.dietPlanAssignmentId ?? '',
@@ -36,40 +52,28 @@ export function MealItemDetailSheet({ payload, onClose }: Readonly<MealItemDetai
     enabled: payload != null,
   })
 
-  const handleClose = useCallback(() => {
-    setSelectedAlternative(null)
-    setSubmittingScope(null)
-    onClose()
-  }, [onClose])
-
-  const submitOverride = useCallback(
-    (scope: OverrideScope) => {
-      if (!payload || !selectedAlternative) return
-      setSubmittingScope(scope)
-      setMealItemOverrideMutation.mutate(buildSetMealItemOverrideParams(payload, selectedAlternative, scope), {
-        onSuccess: handleClose,
-        onSettled: () => setSubmittingScope(null),
-      })
-    },
-    [handleClose, payload, selectedAlternative, setMealItemOverrideMutation]
-  )
-
   const renderFooter = useCallback(
     (props: BottomSheetFooterProps) => (
       <SheetFooter {...props}>
         <MealItemDetailActions
+          itemIsOverridden={payload?.item.isOverridden ?? false}
           selectedAlternative={selectedAlternative}
-          isSubmittingDay={setMealItemOverrideMutation.isPending && submittingScope === 'day'}
-          isSubmittingPlan={setMealItemOverrideMutation.isPending && submittingScope === 'plan'}
+          isSubmittingDay={isSubmittingDay}
+          isSubmittingPlan={isSubmittingPlan}
+          isRestoringForDay={isRestoringForDay}
           onReplaceDay={() => submitOverride('day')}
           onReplacePlan={() => submitOverride('plan')}
+          onRestoreOriginalForDay={restoreOriginalForDay}
         />
       </SheetFooter>
     ),
     [
+      isRestoringForDay,
+      isSubmittingDay,
+      isSubmittingPlan,
+      payload?.item.isOverridden,
+      restoreOriginalForDay,
       selectedAlternative,
-      setMealItemOverrideMutation.isPending,
-      submittingScope,
       submitOverride,
     ]
   )

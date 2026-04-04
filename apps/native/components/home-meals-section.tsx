@@ -1,21 +1,22 @@
 /**
- * Meals section: title, then loading / error / empty state or list of meal cards.
+ * Meals section: title, optional “undo swaps” for the selected day, then loading /
+ * error / empty state or meal cards.
  */
 
 import { Ionicons } from '@expo/vector-icons'
 import dayjs from 'dayjs'
-import { useEffect } from 'react'
-import { View, StyleSheet } from 'react-native'
+import { Pressable, StyleSheet, View } from 'react-native'
+
 import { MealCard } from '@/components/meal-card'
 import { Spinner, Text } from '@/components/ui'
 import type { MealItemDetailPayload } from '@/components/meal-item-detail-sheet'
 import { useColors } from '@/hooks/use-theme-color'
-import { showError } from '@/lib/feedback'
+import { useUndoSwapsForSelectedDay } from '@/hooks/use-undo-swaps-for-selected-day'
 import type { CurrentDietPlanMeal, CurrentDietPlanMealItem } from '@/lib/api/member-types'
 import { formatMealTime, MEAL_TYPE_ICONS } from '@/lib/constants/meals'
 import { roundUpToTenth } from '@/lib/utils/numbers'
-import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
+import { spacing } from '@/theme/spacing'
 
 interface HomeMealsSectionProps {
   isLoading: boolean
@@ -45,12 +46,16 @@ export function HomeMealsSection({
   const isToday = dayjs(selectedDate).isSame(dayjs(), 'day')
   const consumedDate = dayjs(selectedDate).format('YYYY-MM-DD')
 
-  // Side effect: surface fetch errors via toast (section may be scrolled off-screen).
-  useEffect(() => {
-    if (error) showError(error.message)
-  }, [error])
+  const {
+    canUndoSwaps,
+    requestUndoWithConfirmation,
+    isUndoingSwaps,
+  } = useUndoSwapsForSelectedDay(meals, dietPlanAssignmentId, consumedDate)
 
-  const handleMealItemPress = (item: CurrentDietPlanMealItem, dietPlanMealId: string) => {
+  const handleMealItemPress = (
+    item: CurrentDietPlanMealItem,
+    dietPlanMealId: string
+  ) => {
     if (!dietPlanAssignmentId) return
     onMealItemPress?.({
       item,
@@ -66,6 +71,23 @@ export function HomeMealsSection({
         <Text size='lg' weight='bold'>
           {isToday ? "Today's Meals" : dayjs(selectedDate).format('MMMM D') + ' Meals'}
         </Text>
+        {canUndoSwaps ? (
+          <Pressable
+            onPress={requestUndoWithConfirmation}
+            disabled={isUndoingSwaps}
+            hitSlop={8}
+            accessibilityRole='button'
+            accessibilityLabel='Undo all meal swaps for this day'
+          >
+            <Text
+              size='sm'
+              weight='semibold'
+              style={{ color: isUndoingSwaps ? colors.muted : colors.accent }}
+            >
+              Undo swaps
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
 
       {isLoading && (
