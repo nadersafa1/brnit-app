@@ -84,7 +84,14 @@ export const SignupForm = (
   }
 
   const handleAppleSignIn = () => {
-    toast.info('Apple Sign In coming soon')
+    authClient.signIn.social(
+      { provider: 'apple', callbackURL: redirectTo },
+      {
+        onError: ctx => {
+          toast.error(ctx.error?.message ?? 'Apple sign-in failed')
+        },
+      }
+    )
   }
 
   if (isPending) return <Loader />

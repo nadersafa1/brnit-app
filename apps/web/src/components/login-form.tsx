@@ -100,7 +100,14 @@ export const LoginForm = ({
   }
 
   const handleAppleSignIn = () => {
-    toast.info('Apple Sign In coming soon')
+    authClient.signIn.social(
+      { provider: 'apple', callbackURL: redirectTo },
+      {
+        onError: ctx => {
+          toast.error(ctx.error?.message ?? 'Apple sign-in failed')
+        },
+      }
+    )
   }
 
   if (isPending) return <Loader />
@@ -119,7 +126,10 @@ export const LoginForm = ({
             <h1 className='text-xl font-bold'>Welcome to Brnit</h1>
             <FieldDescription>
               Don&apos;t have an account?{' '}
-              <Link href={signupHref as Parameters<typeof Link>[0]['href']} className="underline underline-offset-4 hover:text-primary">
+              <Link
+                href={signupHref as Parameters<typeof Link>[0]['href']}
+                className='underline underline-offset-4 hover:text-primary'
+              >
                 Sign up
               </Link>
             </FieldDescription>
@@ -127,9 +137,7 @@ export const LoginForm = ({
           <Field>
             <FieldLabel htmlFor='email'>Email</FieldLabel>
             <Input id='email' type='email' placeholder='m@example.com' {...form.register('email')} />
-            {form.formState.errors.email && (
-              <FieldError>{form.formState.errors.email.message}</FieldError>
-            )}
+            {form.formState.errors.email && <FieldError>{form.formState.errors.email.message}</FieldError>}
           </Field>
           <Field>
             <div className='flex items-center justify-between'>
@@ -139,9 +147,7 @@ export const LoginForm = ({
               </Link>
             </div>
             <Input id='password' type='password' {...form.register('password')} />
-            {form.formState.errors.password && (
-              <FieldError>{form.formState.errors.password.message}</FieldError>
-            )}
+            {form.formState.errors.password && <FieldError>{form.formState.errors.password.message}</FieldError>}
           </Field>
           <Field>
             <Button type='submit' className='w-full' disabled={form.formState.isSubmitting}>

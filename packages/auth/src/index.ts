@@ -22,6 +22,63 @@ import {
   nutritionist,
   owner,
 } from './permissions'
+import { importPKCS8, SignJWT } from 'jose'
+
+async function generateAppleClientSecret(
+  clientId: string,
+  teamId: string,
+  keyId: string,
+  privateKeyPem: string,
+) {
+  const key = await importPKCS8(privateKeyPem, 'ES256')
+  const now = Math.floor(Date.now() / 1000)
+  return new SignJWT({})
+    .setProtectedHeader({ alg: 'ES256', kid: keyId })
+    .setIssuer(teamId)
+    .setSubject(clientId)
+    .setAudience('https://appleid.apple.com')
+    .setIssuedAt(now)
+    .setExpirationTime(now + 180 * 24 * 60 * 60)
+    .sign(key)
+}
+
+const googleSocial =
+  env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+    ? {
+        google: {
+          enabled: true,
+          clientId: env.GOOGLE_CLIENT_ID,
+          clientSecret: env.GOOGLE_CLIENT_SECRET,
+        },
+      }
+    : {}
+
+const appleEnvReady =
+  Boolean(
+    env.APPLE_CLIENT_ID &&
+      env.APPLE_TEAM_ID &&
+      env.APPLE_KEY_ID &&
+      env.APPLE_PRIVATE_KEY,
+  )
+
+const applePrivateKeyPem = env.APPLE_PRIVATE_KEY.replaceAll('\\n', '\n')
+
+const appleSocial = appleEnvReady
+  ? {
+      apple: {
+        clientId: env.APPLE_CLIENT_ID,
+        clientSecret: await generateAppleClientSecret(
+          env.APPLE_CLIENT_ID,
+          env.APPLE_TEAM_ID,
+          env.APPLE_KEY_ID,
+          applePrivateKeyPem,
+        ),
+        ...(env.APPLE_APP_BUNDLE_IDENTIFIER
+          ? { appBundleIdentifier: env.APPLE_APP_BUNDLE_IDENTIFIER }
+          : {}),
+      },
+    }
+  : {}
 
 export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
@@ -30,17 +87,18 @@ export const auth = betterAuth({
     provider: 'pg',
     schema: schema,
   }),
-  trustedOrigins: [env.CORS_ORIGIN, 'mybettertapp://', 'exp://', 'brnit://'],
-  socialProviders:
-    env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
-      ? {
-          google: {
-            enabled: true,
-            clientId: env.GOOGLE_CLIENT_ID,
-            clientSecret: env.GOOGLE_CLIENT_SECRET,
-          },
-        }
-      : {},
+  trustedOrigins: [
+    env.CORS_ORIGIN,
+    'https://appleid.apple.com',
+    'mybettertapp://',
+    'exp://',
+    'brnit://',
+  ],
+  socialProviders: {
+    ...googleSocial,
+    ...appleSocial,
+  },
+
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
