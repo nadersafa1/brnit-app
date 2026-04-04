@@ -1,6 +1,6 @@
 'use client'
 
-import type { PaginationConfig } from '@/lib/table-core'
+import type { PaginationMeta } from '@/lib/api-helpers/pagination'
 import { BaseDataTable, TableControls, TablePagination, useTableSorting } from '@/lib/table-core'
 import type { VisibilityState } from '@tanstack/react-table'
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table'
@@ -8,10 +8,23 @@ import * as React from 'react'
 import type { FoodCategory } from '@/lib/queries/food-categories'
 import { createCategoriesColumns, type CategoriesSortBy } from './categories-columns'
 import { PAGE_SIZE_OPTIONS } from '@/lib/constants/pagination'
+import { usePaginationTableConfig, type PaginationFallback } from '@/hooks/use-pagination-table-config'
+
+const COLUMN_LABELS: Record<string, string> = {
+  name: 'Name',
+  description: 'Description',
+  createdAt: 'Created',
+  actions: 'Actions',
+}
+
+function getColumnLabel(id: string) {
+  return COLUMN_LABELS[id] ?? id
+}
 
 export interface CategoriesTableProps {
   categories: FoodCategory[]
-  pagination: PaginationConfig
+  paginationMeta: PaginationMeta | null | undefined
+  paginationFallback: PaginationFallback
   onPageChange: (page: number) => void
   onPageSizeChange: (pageSize: number) => void
   onSearchChange: (q: string) => void
@@ -20,7 +33,6 @@ export interface CategoriesTableProps {
   sortOrder?: 'asc' | 'desc'
   onSortingChange: (sortBy?: CategoriesSortBy, sortOrder?: 'asc' | 'desc') => void
   isLoading: boolean
-  onRefetch: () => void
   onEdit: (category: FoodCategory) => void
   onDelete: (category: FoodCategory) => void
   readOnly?: boolean
@@ -28,7 +40,8 @@ export interface CategoriesTableProps {
 
 export function CategoriesTable({
   categories,
-  pagination,
+  paginationMeta,
+  paginationFallback,
   onPageChange,
   onPageSizeChange,
   onSearchChange,
@@ -41,6 +54,8 @@ export function CategoriesTable({
   onDelete,
   readOnly = false,
 }: Readonly<CategoriesTableProps>) {
+  const pagination = usePaginationTableConfig(paginationMeta, paginationFallback)
+
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
     createdAt: false,
   })
@@ -71,16 +86,6 @@ export function CategoriesTable({
     state: { columnVisibility },
     onColumnVisibilityChange: setColumnVisibility,
   })
-
-  const getColumnLabel = React.useCallback((id: string) => {
-    const labels: Record<string, string> = {
-      name: 'Name',
-      description: 'Description',
-      createdAt: 'Created',
-      actions: 'Actions',
-    }
-    return labels[id] ?? id
-  }, [])
 
   return (
     <div className='w-full space-y-4'>

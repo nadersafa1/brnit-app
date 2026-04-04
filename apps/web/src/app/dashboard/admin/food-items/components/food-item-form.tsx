@@ -18,7 +18,7 @@ import {
   type FoodUnit,
 } from '@/types/api/food.schemas'
 import { gramsPerUnitPlaceholder } from '@/lib/helpers/food-unit-display'
-import { buildFoodItemSubmitPayload } from '@/lib/helpers/food-item-form-payload'
+import { buildFoodItemSubmitPayload, withMergedLockedCategoryIds } from '@/lib/helpers/food-item-form-payload'
 import { FoodItemCategoryCheckboxes } from './food-item-category-checkboxes'
 
 type CreateFormData = z.infer<typeof createFoodItemSchema>
@@ -29,6 +29,8 @@ export type FoodItemFormSubmitOptions = { file?: File; clearImage?: boolean }
 interface FoodItemFormProps {
   readonly item?: FoodItem | null
   readonly categories: FoodCategory[]
+  /** Create mode only: these IDs are always sent and cannot be unchecked (e.g. current category on detail page). */
+  readonly lockedCategoryIds?: string[]
   readonly onSubmit: (data: CreateFormData | UpdateFormData, options?: FoodItemFormSubmitOptions) => Promise<void>
   readonly onCancel?: () => void
   readonly isLoading?: boolean
@@ -48,11 +50,14 @@ type FormValues = {
 export function FoodItemForm({
   item,
   categories,
+  lockedCategoryIds: lockedCategoryIdsProp,
   onSubmit,
   onCancel,
   isLoading = false,
 }: Readonly<FoodItemFormProps>) {
-  const isEdit = !!item
+  const isEdit = Boolean(item)
+  // Locked IDs apply only when creating; edits use the item’s existing links from the API.
+  const lockedCategoryIds = isEdit ? [] : (lockedCategoryIdsProp ?? [])
   const schema = isEdit ? updateFoodItemSchema : createFoodItemSchema
   const [file, setFile] = useState<File | null>(null)
   const [clearImage, setClearImage] = useState(false)
@@ -62,7 +67,7 @@ export function FoodItemForm({
     resolver: zodResolver(schema) as any,
     defaultValues: {
       name: item?.name ?? '',
-      categoryIds: item?.categories?.map((c) => c.id) ?? [],
+      categoryIds: item?.categories?.map((c) => c.id) ?? [...lockedCategoryIds],
       calories: item?.calories ? Number.parseFloat(item.calories) : 0,
       protein: item?.protein ? Number.parseFloat(item.protein) : 0,
       carbs: item?.carbs ? Number.parseFloat(item.carbs) : 0,
@@ -79,15 +84,17 @@ export function FoodItemForm({
 
   const toggleCategory = useCallback(
     (categoryId: string, checked: boolean) => {
+      if (lockedCategoryIds.includes(categoryId)) return
       const current = form.getValues('categoryIds') ?? []
       const next = checked ? [...current, categoryId] : current.filter((id) => id !== categoryId)
       form.setValue('categoryIds', next, { shouldValidate: true })
     },
-    [form]
+    [form, lockedCategoryIds]
   )
 
+  // Merge locked categories into the payload on create (see withMergedLockedCategoryIds).
   const handleSubmit = form.handleSubmit(async (raw) => {
-    const payload = buildFoodItemSubmitPayload(raw, isEdit)
+    const payload = buildFoodItemSubmitPayload(withMergedLockedCategoryIds(raw, isEdit, lockedCategoryIds), isEdit)
     const options: FoodItemFormSubmitOptions = {}
     if (file) options.file = file
     if (isEdit && clearImage) options.clearImage = true
@@ -111,6 +118,7 @@ export function FoodItemForm({
         selectedIds={selectedCategoryIds}
         onToggle={toggleCategory}
         disabled={isLoading}
+        lockedCategoryIds={lockedCategoryIds}
         categoryFieldError={form.formState.errors.categoryIds}
       />
 

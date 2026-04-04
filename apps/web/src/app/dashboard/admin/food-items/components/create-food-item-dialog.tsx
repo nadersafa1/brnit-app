@@ -11,6 +11,10 @@ interface CreateFoodItemDialogProps {
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
   categories: FoodCategory[]
+  /** Always linked to the new item; user can add more via checkboxes. */
+  lockedCategoryIds?: string[]
+  title?: string
+  description?: string
 }
 
 /** Modal wrapper around FoodItemForm; closes on successful create and notifies parent to refetch lists. */
@@ -19,6 +23,9 @@ export function CreateFoodItemDialog({
   onOpenChange,
   onSuccess,
   categories,
+  lockedCategoryIds,
+  title = 'Create food item',
+  description = 'Add a new food item with nutritional information.',
 }: Readonly<CreateFoodItemDialogProps>) {
   const create = useCreateFoodItem()
 
@@ -28,16 +35,19 @@ export function CreateFoodItemDialog({
     onSuccess?.()
   }
 
+  const formResetKey = foodItemFormResetKey(open, lockedCategoryIds)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create food item</DialogTitle>
-          <DialogDescription>Add a new food item with nutritional information.</DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <FoodItemForm
-          key={open ? 'open' : 'closed'}
+          key={formResetKey}
           categories={categories}
+          lockedCategoryIds={lockedCategoryIds}
           onSubmit={handleSubmit}
           onCancel={() => onOpenChange(false)}
           isLoading={create.isPending}
@@ -45,4 +55,10 @@ export function CreateFoodItemDialog({
       </DialogContent>
     </Dialog>
   )
+}
+
+/** Remount `FoodItemForm` when the dialog opens or locked IDs change so defaults stay correct. */
+function foodItemFormResetKey(open: boolean, lockedCategoryIds?: string[]): string {
+  if (!open) return 'closed'
+  return `open-${(lockedCategoryIds ?? []).join(',')}`
 }

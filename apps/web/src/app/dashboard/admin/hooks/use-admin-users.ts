@@ -82,19 +82,7 @@ export function useAdminUsers() {
 
   return {
     users: data?.users ?? [],
-    pagination: data?.pagination
-      ? {
-          page: data.pagination.page,
-          limit: data.pagination.perPage,
-          totalItems: data.pagination.totalItems,
-          totalPages: data.pagination.totalPages,
-        }
-      : {
-          page: 1,
-          limit: filters.perPage,
-          totalItems: 0,
-          totalPages: 1,
-        },
+    paginationMeta: data?.pagination ?? null,
     filters,
     setFilters: setFiltersAndFetch,
     isLoading,

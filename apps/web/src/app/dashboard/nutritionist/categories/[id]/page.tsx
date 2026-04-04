@@ -1,18 +1,47 @@
 'use client'
 
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
+import { useCallback } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ArrowLeft } from 'lucide-react'
+import { CategoryDetailSummaryCard } from '@/components/category-detail-summary-card'
+import { CategoryFoodItemsTableCard } from '@/components/category-food-items-table-card'
+import { FoodItemsTable } from '@/app/dashboard/admin/food-items/components/food-items-table'
 import { useFoodCategory } from '@/hooks/use-food-category'
+import { useFoodItemsForCategory } from '@/hooks/use-food-items-for-category'
+import type { FoodItem } from '@/lib/queries/food-items'
+import { ArrowLeft } from 'lucide-react'
+
+const noop = () => {}
 
 export default function NutritionistCategoryDetailPage() {
   const params = useParams()
+  const router = useRouter()
   const id = params.id as string
 
   const { data: category, isLoading, error, refetch } = useFoodCategory(id, 'nutritionist')
+
+  const {
+    filters: itemFilters,
+    items: foodItems,
+    isLoading: itemsLoading,
+    error: itemsError,
+    paginationMeta: itemsPaginationMeta,
+    paginationFallback: itemsPaginationFallback,
+    onPageChange,
+    onPageSizeChange,
+    onSearchChange,
+    onSortingChange,
+  } = useFoodItemsForCategory(id, 'nutritionist')
+
+  const handleFoodItemEdit = useCallback(
+    (item: FoodItem) => {
+      router.push(`/dashboard/nutritionist/food-items/${item.id}`)
+    },
+    [router]
+  )
 
   if (isLoading || !category) {
     return (
@@ -53,19 +82,33 @@ export default function NutritionistCategoryDetailPage() {
         </Button>
       </Link>
 
-      <Card>
-        <CardHeader>
-          <h2 className='text-lg font-semibold'>{category.name}</h2>
-        </CardHeader>
-        <CardContent className='space-y-2'>
-          {category.description?.trim() ? (
-            <p className='text-sm text-foreground whitespace-pre-wrap'>{category.description.trim()}</p>
-          ) : null}
-          <p className='text-sm text-muted-foreground'>
-            Created: {category.createdAt ? new Date(category.createdAt).toLocaleDateString() : '–'}
-          </p>
-        </CardContent>
-      </Card>
+      <CategoryDetailSummaryCard
+        name={category.name}
+        description={category.description}
+        createdAt={category.createdAt}
+      />
+
+      <CategoryFoodItemsTableCard error={itemsError}>
+        <FoodItemsTable
+          items={foodItems}
+          categories={[]}
+          paginationMeta={itemsPaginationMeta}
+          paginationFallback={itemsPaginationFallback}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+          onSearchChange={onSearchChange}
+          searchValue={itemFilters.q ?? ''}
+          categoryId={id}
+          hideCategoryFilter
+          sortBy={itemFilters.sortBy}
+          sortOrder={itemFilters.sortOrder}
+          onSortingChange={onSortingChange}
+          isLoading={itemsLoading}
+          onEdit={handleFoodItemEdit}
+          onDelete={noop}
+          readOnly
+        />
+      </CategoryFoodItemsTableCard>
     </div>
   )
 }

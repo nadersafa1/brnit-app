@@ -7,7 +7,7 @@ import {
   dietPlanMealItemOverride,
   dietPlanMealConsumptionItem,
 } from '@burn-app/db/schema'
-import { count, asc, desc, ilike, eq, and, exists, inArray, or } from 'drizzle-orm'
+import { count, asc, desc, ilike, eq, inArray, or } from 'drizzle-orm'
 import { calculateOffset, combineConditions } from '@/lib/api-helpers/query-builders'
 import {
   buildCloudinaryUrl,
@@ -228,7 +228,7 @@ export async function getFoodCategoryById(id: string) {
 // ---------------------------------------------------------------------------
 
 /**
- * Paginated food items with optional name search and category filter (M2M: EXISTS on junction).
+ * Paginated food items with optional name search and category filter (M2M: junction subquery).
  * Count query uses the same predicate as the page query.
  */
 export async function listFoodItems(query: FoodItemsQuery) {
@@ -238,19 +238,11 @@ export async function listFoodItems(query: FoodItemsQuery) {
   const conditions = []
   if (q) conditions.push(ilike(foodItem.name, `%${q}%`))
   if (categoryId) {
-    conditions.push(
-      exists(
-        db
-          .select()
-          .from(foodItemCategory)
-          .where(
-            and(
-              eq(foodItemCategory.foodItemId, foodItem.id),
-              eq(foodItemCategory.foodCategoryId, categoryId)
-            )
-          )
-      )
-    )
+    const foodIdsInCategory = db
+      .select({ id: foodItemCategory.foodItemId })
+      .from(foodItemCategory)
+      .where(eq(foodItemCategory.foodCategoryId, categoryId))
+    conditions.push(inArray(foodItem.id, foodIdsInCategory))
   }
   const where = combineConditions(conditions)
 

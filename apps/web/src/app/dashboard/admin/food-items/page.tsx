@@ -9,48 +9,34 @@ import { FoodItemsTable } from './components/food-items-table'
 import { CreateFoodItemDialog } from './components/create-food-item-dialog'
 import { useFoodItems } from '@/hooks/use-food-items'
 import { useFoodCategories } from '@/hooks/use-food-categories'
+import { useListFilters } from '@/hooks/use-list-filters'
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants/pagination'
 import type { FoodItem } from '@/lib/queries/food-items'
+import type { SortOrder } from '@/lib/table-core'
+import type { FoodItemsSortBy } from './components/food-items-columns'
 
 export default function FoodItemsPage() {
   const router = useRouter()
 
-  const [filters, setFilters] = useState<{
-    page: number
-    perPage: number
-    q: string
-    sortBy: 'name' | 'calories' | 'protein' | 'carbs' | 'fat' | 'createdAt'
-    sortOrder: 'asc' | 'desc'
-    categoryId: string | undefined
-  }>({
+  const {
+    filters,
+    paginationFallback,
+    onPageChange,
+    onPageSizeChange,
+    onSearchChange,
+    updateFilters,
+  } = useListFilters({
     page: 1,
     perPage: DEFAULT_PAGE_SIZE,
     q: '',
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
-    categoryId: undefined,
+    sortBy: 'createdAt' as FoodItemsSortBy,
+    sortOrder: 'desc' as SortOrder,
+    categoryId: undefined as string | undefined,
   })
   const [createOpen, setCreateOpen] = useState(false)
 
   const { data: items, pagination, isLoading, error, refetch } = useFoodItems(filters)
-  const { data: categories } = useFoodCategories({
-    page: 1,
-    perPage: 100,
-  })
-
-  const paginationConfig = pagination
-    ? {
-        page: pagination.page,
-        limit: pagination.perPage,
-        totalItems: pagination.totalItems,
-        totalPages: pagination.totalPages,
-      }
-    : {
-        page: filters.page,
-        limit: filters.perPage,
-        totalItems: 0,
-        totalPages: 1,
-      }
+  const { data: categories } = useFoodCategories({ page: 1, perPage: 100 })
 
   const handleEdit = useCallback(
     (item: FoodItem) => {
@@ -96,22 +82,18 @@ export default function FoodItemsPage() {
             <FoodItemsTable
               items={items}
               categories={categories}
-              pagination={paginationConfig}
-              onPageChange={page => setFilters(f => ({ ...f, page }))}
-              onPageSizeChange={perPage => setFilters(f => ({ ...f, perPage, page: 1 }))}
-              onSearchChange={q => setFilters(f => ({ ...f, q, page: 1 }))}
+              paginationMeta={pagination}
+              paginationFallback={paginationFallback}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+              onSearchChange={onSearchChange}
               searchValue={filters.q}
               categoryId={filters.categoryId}
-              onCategoryChange={categoryId => setFilters(f => ({ ...f, categoryId, page: 1 }))}
+              onCategoryChange={categoryId => updateFilters({ categoryId })}
               sortBy={filters.sortBy}
               sortOrder={filters.sortOrder}
               onSortingChange={(sortBy, sortOrder) =>
-                setFilters(f => ({
-                  ...f,
-                  sortBy: sortBy ?? 'createdAt',
-                  sortOrder: sortOrder ?? 'desc',
-                  page: 1,
-                }))
+                updateFilters({ sortBy: sortBy ?? 'createdAt', sortOrder: sortOrder ?? 'desc' })
               }
               isLoading={isLoading}
               onEdit={handleEdit}

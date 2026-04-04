@@ -1,6 +1,6 @@
 'use client'
 
-import type { PaginationConfig } from '@/lib/table-core'
+import type { PaginationMeta } from '@/lib/api-helpers/pagination'
 import { BaseDataTable, TableControls, TablePagination, useTableSorting } from '@/lib/table-core'
 import type { VisibilityState } from '@tanstack/react-table'
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table'
@@ -8,10 +8,23 @@ import * as React from 'react'
 import type { Meal } from '@/lib/queries/meals'
 import { createMealsColumns, type MealsSortBy } from './meals-columns'
 import { PAGE_SIZE_OPTIONS } from '@/lib/constants/pagination'
+import { usePaginationTableConfig, type PaginationFallback } from '@/hooks/use-pagination-table-config'
+
+const COLUMN_LABELS: Record<string, string> = {
+  name: 'Name',
+  description: 'Description',
+  createdAt: 'Created',
+  actions: 'Actions',
+}
+
+function getColumnLabel(id: string) {
+  return COLUMN_LABELS[id] ?? id
+}
 
 export interface MealsTableProps {
   meals: Meal[]
-  pagination: PaginationConfig
+  paginationMeta: PaginationMeta | null | undefined
+  paginationFallback: PaginationFallback
   onPageChange: (page: number) => void
   onPageSizeChange: (pageSize: number) => void
   onSearchChange: (q: string) => void
@@ -20,7 +33,6 @@ export interface MealsTableProps {
   sortOrder?: 'asc' | 'desc'
   onSortingChange: (sortBy?: MealsSortBy, sortOrder?: 'asc' | 'desc') => void
   isLoading: boolean
-  onRefetch: () => void
   onEdit: (meal: Meal) => void
   onDelete: (meal: Meal) => void
   readOnly?: boolean
@@ -28,7 +40,8 @@ export interface MealsTableProps {
 
 export function MealsTable({
   meals,
-  pagination,
+  paginationMeta,
+  paginationFallback,
   onPageChange,
   onPageSizeChange,
   onSearchChange,
@@ -40,7 +53,9 @@ export function MealsTable({
   onEdit,
   onDelete,
   readOnly = false,
-}: MealsTableProps) {
+}: Readonly<MealsTableProps>) {
+  const pagination = usePaginationTableConfig(paginationMeta, paginationFallback)
+
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
     createdAt: false,
   })
@@ -71,16 +86,6 @@ export function MealsTable({
     state: { columnVisibility },
     onColumnVisibilityChange: setColumnVisibility,
   })
-
-  const getColumnLabel = React.useCallback((id: string) => {
-    const labels: Record<string, string> = {
-      name: 'Name',
-      description: 'Description',
-      createdAt: 'Created',
-      actions: 'Actions',
-    }
-    return labels[id] ?? id
-  }, [])
 
   return (
     <div className="w-full space-y-4">

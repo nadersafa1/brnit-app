@@ -1,17 +1,23 @@
 'use client'
 
+import { useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import type { FoodCategory } from '@/lib/queries/food-categories'
 import { createFoodCategorySchema } from '@/types/api/food.schemas'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
 
 const schema = createFoodCategorySchema
 type FormData = z.infer<typeof schema>
+
+function submitButtonLabel(isLoading: boolean, category: FoodCategory | null | undefined): string {
+  if (isLoading) return 'Saving…'
+  return category ? 'Update' : 'Create'
+}
 
 interface FoodCategoryFormProps {
   category?: FoodCategory | null
@@ -26,25 +32,21 @@ export function FoodCategoryForm({ category, onSubmit, onCancel, isLoading = fal
     defaultValues: { name: category?.name ?? '', description: category?.description ?? '' },
   })
 
-  // useEffect(() => {
-  //   form.reset({
-  //     name: category?.name ?? '',
-  //     description: category?.description ?? '',
-  //   })
-  // }, [category?.id, category?.name, category?.description, form])
+  // Edit mode: sync when server-backed `category` fields change (e.g. after save + refetch).
+  useEffect(() => {
+    if (category == null) return
+    form.reset({
+      name: category.name,
+      description: category.description ?? '',
+    })
+  }, [category?.id, category?.name, category?.description, form])
 
   const handleSubmit = form.handleSubmit(async data => {
     await onSubmit(data)
-    form.reset()
+    if (category == null) {
+      form.reset({ name: '', description: '' })
+    }
   })
-
-  let submitLabel = 'Create'
-  if (category) {
-    submitLabel = 'Update'
-  }
-  if (isLoading) {
-    submitLabel = 'Saving…'
-  }
 
   return (
     <form onSubmit={handleSubmit} className='space-y-4'>
@@ -72,7 +74,7 @@ export function FoodCategoryForm({ category, onSubmit, onCancel, isLoading = fal
           </Button>
         )}
         <Button type='submit' disabled={isLoading}>
-          {submitLabel}
+          {submitButtonLabel(isLoading, category)}
         </Button>
       </div>
     </form>

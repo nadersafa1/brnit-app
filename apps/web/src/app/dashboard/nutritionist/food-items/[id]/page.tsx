@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowLeft } from 'lucide-react'
+import { FoodCategoryLinks } from '@/components/food-category-links'
 import { useFoodItem } from '@/hooks/use-food-item'
 
 export default function NutritionistFoodItemDetailPage() {
@@ -56,10 +57,12 @@ export default function NutritionistFoodItemDetailPage() {
       <Card>
         <CardHeader>
           <h2 className='text-lg font-semibold'>{item.name}</h2>
-          <p className='text-sm text-muted-foreground'>
-            {item.categories?.length
-              ? item.categories.map((c) => c.name).join(', ')
-              : 'No categories'}
+          <p className='text-sm'>
+            <FoodCategoryLinks
+              categories={item.categories}
+              basePath='/dashboard/nutritionist/categories'
+              emptyLabel='No categories'
+            />
           </p>
         </CardHeader>
         <CardContent className='space-y-2'>

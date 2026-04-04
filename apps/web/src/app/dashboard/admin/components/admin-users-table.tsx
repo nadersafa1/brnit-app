@@ -1,17 +1,32 @@
 'use client'
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import type { PaginationConfig } from '@/lib/table-core'
+import type { PaginationMeta } from '@/lib/api-helpers/pagination'
 import { BaseDataTable, TableControls, TableFilter, TablePagination, useTableSorting } from '@/lib/table-core'
 import type { VisibilityState } from '@tanstack/react-table'
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table'
 import * as React from 'react'
 import type { AdminUser, AdminUsersSortBy } from '../types'
 import { createAdminUsersColumns } from './admin-users-columns'
+import { usePaginationTableConfig, type PaginationFallback } from '@/hooks/use-pagination-table-config'
+
+const COLUMN_LABELS: Record<string, string> = {
+  name: 'Name',
+  email: 'Email',
+  role: 'Role',
+  status: 'Status',
+  createdAt: 'Created',
+  actions: 'Actions',
+}
+
+function getColumnLabel(id: string) {
+  return COLUMN_LABELS[id] ?? id
+}
 
 export interface AdminUsersTableProps {
   users: AdminUser[]
-  pagination: PaginationConfig
+  paginationMeta: PaginationMeta | null | undefined
+  paginationFallback: PaginationFallback
   onPageChange: (page: number) => void
   onPageSizeChange: (pageSize: number) => void
   onSearchChange: (q: string) => void
@@ -22,7 +37,6 @@ export interface AdminUsersTableProps {
   sortOrder?: 'asc' | 'desc'
   onSortingChange: (sortBy?: AdminUsersSortBy, sortOrder?: 'asc' | 'desc') => void
   isLoading: boolean
-  onRefetch: () => void
   onImpersonate: (user: AdminUser) => void
   onChangeRole: (user: AdminUser) => void
   onBan: (user: AdminUser) => void
@@ -34,7 +48,8 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
 
 const AdminUsersTable = ({
   users,
-  pagination,
+  paginationMeta,
+  paginationFallback,
   onPageChange,
   onPageSizeChange,
   onSearchChange,
@@ -50,7 +65,9 @@ const AdminUsersTable = ({
   onBan,
   onUnban,
   onDelete,
-}: AdminUsersTableProps) => {
+}: Readonly<AdminUsersTableProps>) => {
+  const pagination = usePaginationTableConfig(paginationMeta, paginationFallback)
+
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
     createdAt: false,
   })
@@ -83,18 +100,6 @@ const AdminUsersTable = ({
     state: { columnVisibility },
     onColumnVisibilityChange: setColumnVisibility,
   })
-
-  const getColumnLabel = React.useCallback((id: string) => {
-    const labels: Record<string, string> = {
-      name: 'Name',
-      email: 'Email',
-      role: 'Role',
-      status: 'Status',
-      createdAt: 'Created',
-      actions: 'Actions',
-    }
-    return labels[id] ?? id
-  }, [])
 
   return (
     <div className='w-full space-y-4'>

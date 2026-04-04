@@ -21,9 +21,10 @@ import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
 import { useFoodItem } from '@/hooks/use-food-item'
 import { useFoodCategories } from '@/hooks/use-food-categories'
 import { useUpdateFoodItem, useDeleteFoodItem } from '@/hooks/use-food-mutations'
+import { useSyncBooleanFromUrlFlag } from '@/hooks/use-sync-boolean-from-url-flag'
 import { FoodItemForm } from '../components/food-item-form'
 import type { UpdateFoodItem } from '@/types/api/food.schemas'
-import { formatFoodCategoriesDisplay } from '@/lib/helpers/food-item-categories'
+import { FoodCategoryLinks } from '@/components/food-category-links'
 import { formatFoodUnitLabel } from '@/lib/helpers/food-unit-display'
 
 export default function FoodItemDetailPage() {
@@ -39,6 +40,8 @@ export default function FoodItemDetailPage() {
   const deleteItem = useDeleteFoodItem()
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(showDelete)
+
+  useSyncBooleanFromUrlFlag(showDelete, setDeleteOpen)
 
   const handleUpdate = useCallback(
     async (data: UpdateFoodItem, options?: { file?: File; clearImage?: boolean }) => {
@@ -117,8 +120,12 @@ export default function FoodItemDetailPage() {
       <Card>
         <CardHeader>
           <h2 className='text-lg font-semibold'>{item.name}</h2>
-          <p className='text-sm text-muted-foreground'>
-            {formatFoodCategoriesDisplay(item.categories, 'No categories')}
+          <p className='text-sm'>
+            <FoodCategoryLinks
+              categories={item.categories}
+              basePath='/dashboard/admin/categories'
+              emptyLabel='No categories'
+            />
           </p>
         </CardHeader>
         <CardContent className='space-y-4'>

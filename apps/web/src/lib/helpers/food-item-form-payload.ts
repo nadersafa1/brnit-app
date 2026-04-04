@@ -8,7 +8,7 @@ function asOptionalNumber(value: unknown): number | undefined {
   return typeof value === 'number' && !Number.isNaN(value) ? value : undefined
 }
 
-type RawFormShape = {
+export type FoodItemFormRawValues = {
   name: string
   categoryIds: string[]
   calories: unknown
@@ -20,10 +20,25 @@ type RawFormShape = {
 }
 
 /**
+ * Create mode only: merges locked category IDs into the selection (deduped). Edit mode returns `raw` unchanged.
+ */
+export function withMergedLockedCategoryIds(
+  raw: FoodItemFormRawValues,
+  isEdit: boolean,
+  lockedCategoryIds: readonly string[]
+): FoodItemFormRawValues {
+  if (isEdit || lockedCategoryIds.length === 0) return raw
+  return {
+    ...raw,
+    categoryIds: [...new Set([...lockedCategoryIds, ...raw.categoryIds])],
+  }
+}
+
+/**
  * Maps validated react-hook-form values into API body shapes.
  * Update mode normalizes optional macro fields to `null` so PATCH clears match backend expectations.
  */
-export function buildFoodItemSubmitPayload(raw: RawFormShape, isEdit: boolean): CreateFormData | UpdateFormData {
+export function buildFoodItemSubmitPayload(raw: FoodItemFormRawValues, isEdit: boolean): CreateFormData | UpdateFormData {
   const shared = {
     ...raw,
     calories: asOptionalNumber(raw.calories),
@@ -38,12 +53,11 @@ export function buildFoodItemSubmitPayload(raw: RawFormShape, isEdit: boolean): 
     return shared as CreateFormData
   }
 
-  const updatePayload = { ...shared }
   return {
-    ...updatePayload,
-    calories: updatePayload.calories ?? null,
-    protein: updatePayload.protein ?? null,
-    carbs: updatePayload.carbs ?? null,
-    fat: updatePayload.fat ?? null,
+    ...shared,
+    calories: shared.calories ?? null,
+    protein: shared.protein ?? null,
+    carbs: shared.carbs ?? null,
+    fat: shared.fat ?? null,
   } as UpdateFormData
 }

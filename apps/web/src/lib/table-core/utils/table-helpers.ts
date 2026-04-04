@@ -6,18 +6,18 @@ import type { PaginationConfig } from '../types'
 
 export function calculatePagination(
   page: number,
-  limit: number,
+  perPage: number,
   totalItems: number
 ): PaginationConfig {
-  const totalPages = Math.max(1, Math.ceil(totalItems / limit))
+  const totalPages = Math.max(1, Math.ceil(totalItems / perPage))
   const safePage = Math.max(1, Math.min(page, totalPages))
-  return { page: safePage, limit, totalItems, totalPages }
+  return { page: safePage, perPage, totalItems, totalPages }
 }
 
 export function getPaginationRange(pagination: PaginationConfig): string {
-  const { page, limit, totalItems } = pagination
-  const start = totalItems === 0 ? 0 : (page - 1) * limit + 1
-  const end = Math.min(page * limit, totalItems)
+  const { page, perPage, totalItems } = pagination
+  const start = totalItems === 0 ? 0 : (page - 1) * perPage + 1
+  const end = Math.min(page * perPage, totalItems)
   if (totalItems === 0) return '0-0 of 0'
   return `${start}-${end} of ${totalItems}`
 }
