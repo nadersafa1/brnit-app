@@ -1,23 +1,23 @@
 'use client'
 
 import type { ColumnDef } from '@tanstack/react-table'
-import { Button } from '@/components/ui/button'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { createSortableHeader, createTextColumn } from '@/lib/table-core'
 import type { SortOrder } from '@/lib/table-core'
 import { roundNutritionMacro } from '@/lib/helpers/nutrition-numbers'
 import { tableCellTextPreview } from '@/lib/helpers/text-table-cells'
 import type { Meal } from '@/lib/queries/meals'
-import { Edit, MoreHorizontal, Trash2 } from 'lucide-react'
+import { MealsRowActions } from './meals-row-actions'
 
 export type MealsSortBy = 'name' | 'createdAt'
 
+/** Options for the shared meals grid: sort UI plus row actions wired by the list page. */
 export interface CreateMealsColumnsOptions {
   sortBy?: MealsSortBy
   sortOrder?: SortOrder
   onSort?: (columnId: string) => void
   onEdit: (meal: Meal) => void
   onDelete: (meal: Meal) => void
+  onClone: (meal: Meal) => void
   readOnly?: boolean
 }
 
@@ -27,6 +27,7 @@ export function createMealsColumns({
   onSort,
   onEdit,
   onDelete,
+  onClone,
   readOnly = false,
 }: Readonly<CreateMealsColumnsOptions>): ColumnDef<Meal>[] {
   const columns: ColumnDef<Meal>[] = [
@@ -57,29 +58,9 @@ export function createMealsColumns({
       id: 'actions',
       header: '',
       enableHiding: false,
-      cell: ({ row }) => {
-        const item = row.original
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant='ghost' size='icon' className='h-8 w-8'>
-                <MoreHorizontal className='h-4 w-4' />
-                <span className='sr-only'>Actions</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align='end'>
-              <DropdownMenuItem onClick={() => onEdit(item)}>
-                <Edit className='mr-2 h-4 w-4' />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onDelete(item)} className='text-destructive focus:text-destructive'>
-                <Trash2 className='mr-2 h-4 w-4' />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )
-      },
+      cell: ({ row }) => (
+        <MealsRowActions meal={row.original} onEdit={onEdit} onClone={onClone} onDelete={onDelete} />
+      ),
     })
   }
   return columns

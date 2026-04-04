@@ -12,7 +12,7 @@ import { roundNutritionMacroRequired } from '@/lib/helpers/nutrition-numbers'
 import type { MealsQuery, CreateMeal, UpdateMeal } from '@/types/api/meal.schemas'
 
 // ---------------------------------------------------------------------------
-// Read paths
+// Read paths — list/detail only; no transactions (no multi-step writes to coordinate).
 // ---------------------------------------------------------------------------
 
 /** Lists meals with optional search and sort; count and items are fetched in parallel. */
@@ -124,7 +124,8 @@ export async function getMealById(id: string) {
   const mealRow = mealRows[0]
   if (!mealRow) return null
 
-  // Header uses stored aggregates; lines still expose per-food macros for editing and breakdown.
+  // Shape API output: header macros come from denormalized columns; each line joins food for edit UI.
+  // Side effect: none (read-only); ordering of `mealItems` follows the relational query default.
   return {
     ...mealRow,
     totalCalories: roundNutritionMacroRequired(mealRow.totalCalories),
@@ -150,35 +151,14 @@ export async function getMealById(id: string) {
 
 // ---------------------------------------------------------------------------
 // Write paths (transactions keep meal + lines + denormalized totals consistent)
+//
+// Layout: shared types → recompute + insert primitive → clone/create entrypoints → update/delete
+// with small validators colocated before `updateMeal`.
 // ---------------------------------------------------------------------------
 
-/**
- * Creates a meal and its items atomically. Rolls back if any step fails.
- */
-export async function createMeal(data: CreateMeal) {
-  const { name, description, mealItems } = data
-
-  const newMeal = await db.transaction(async tx => {
-    const [inserted] = await tx.insert(meal).values({ name, description }).returning()
-    if (!inserted) return null
-
-    if (mealItems.length > 0) {
-      await tx.insert(mealItem).values(
-        mealItems.map(item => ({
-          mealId: inserted.id,
-          foodItemId: item.foodItemId,
-          quantity: item.quantity.toString(),
-        }))
-      )
-    }
-    // Denormalized totals must match lines before returning (API consumers expect correct totals).
-    await recomputeMealTotals(tx, inserted.id)
-    const [withTotals] = await tx.select().from(meal).where(eq(meal.id, inserted.id)).limit(1)
-    return withTotals ?? inserted
-  })
-
-  return newMeal
-}
+export type CloneMealResult =
+  | { ok: true; data: typeof meal.$inferSelect }
+  | { ok: false; error: string; code: 'NOT_FOUND' | 'FAILED' }
 
 export type UpdateMealResult =
   | { ok: true; data: typeof meal.$inferSelect }
@@ -190,6 +170,14 @@ export type DeleteMealResult =
 
 /** Drizzle transaction client (same surface as `db` for queries used here). */
 type DbClient = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+type MealLineInput = { foodItemId: string; quantity: number }
+
+type InsertMealWithLinesInput = {
+  name: string
+  description?: string | null
+  lines: MealLineInput[]
+}
 
 /**
  * Recomputes `meal.total_*` from current `meal_item` rows joined to `food_item`.
@@ -212,6 +200,120 @@ async function recomputeMealTotals(tx: DbClient, mealId: string) {
   const totals = computeMealTotalsFromLineItems(mealTotalsLinesFromDbRows(rows))
   await tx.update(meal).set(mealMacroTotalsToMealColumns(totals)).where(eq(meal.id, mealId))
 }
+
+/** API name field max length (matches `createMealSchema`). */
+const MEAL_NAME_MAX_LEN = 255
+const MEAL_CLONE_NAME_SUFFIX = ' clone'
+
+/**
+ * Appends the clone suffix and truncates the base name so the result fits `MEAL_NAME_MAX_LEN`.
+ * Assumes the source name is non-empty (enforced for persisted meals).
+ */
+function buildClonedMealName(originalName: string): string {
+  let next = `${originalName}${MEAL_CLONE_NAME_SUFFIX}`
+  if (next.length <= MEAL_NAME_MAX_LEN) {
+    return next
+  }
+  const maxBase = MEAL_NAME_MAX_LEN - MEAL_CLONE_NAME_SUFFIX.length
+  return `${originalName.slice(0, Math.max(1, maxBase))}${MEAL_CLONE_NAME_SUFFIX}`
+}
+
+/**
+ * Inserts a meal row, optional `meal_item` rows, and refreshes denormalized macro totals.
+ * Single internal primitive for `createMeal` and `cloneMeal` so write behavior stays in one place.
+ */
+async function insertMealWithLines(
+  tx: DbClient,
+  input: InsertMealWithLinesInput
+): Promise<typeof meal.$inferSelect | null> {
+  const [inserted] = await tx
+    .insert(meal)
+    .values({ name: input.name, description: input.description })
+    .returning()
+  if (!inserted) {
+    return null
+  }
+
+  if (input.lines.length > 0) {
+    await tx.insert(mealItem).values(
+      input.lines.map(item => ({
+        mealId: inserted.id,
+        foodItemId: item.foodItemId,
+        quantity: item.quantity.toString(),
+      }))
+    )
+  }
+
+  await recomputeMealTotals(tx, inserted.id)
+  const [withTotals] = await tx.select().from(meal).where(eq(meal.id, inserted.id)).limit(1)
+  return withTotals ?? inserted
+}
+
+/**
+ * Copies a meal’s header (name/description) and line items into a new meal inside one transaction.
+ * Reads are minimal (no food/category joins) and run in parallel; `diet_plan_meal` is never touched,
+ * so the clone is not linked to any diet plan. FK violations on `food_item_id` surface as a rolled-back txn.
+ */
+export async function cloneMeal(sourceId: string): Promise<CloneMealResult> {
+  return db.transaction(async tx => {
+    const [headerRows, lineRows] = await Promise.all([
+      tx
+        .select({
+          id: meal.id,
+          name: meal.name,
+          description: meal.description,
+        })
+        .from(meal)
+        .where(eq(meal.id, sourceId))
+        .limit(1),
+      tx
+        .select({
+          foodItemId: mealItem.foodItemId,
+          quantity: mealItem.quantity,
+        })
+        .from(mealItem)
+        .where(eq(mealItem.mealId, sourceId))
+        .orderBy(asc(mealItem.createdAt)),
+    ])
+
+    const header = headerRows[0]
+    if (!header) {
+      return { ok: false, error: 'Meal not found', code: 'NOT_FOUND' }
+    }
+
+    const lines: MealLineInput[] = lineRows.map(row => ({
+      foodItemId: row.foodItemId,
+      quantity: Number(row.quantity),
+    }))
+
+    const inserted = await insertMealWithLines(tx, {
+      name: buildClonedMealName(header.name),
+      description: header.description,
+      lines,
+    })
+
+    if (!inserted) {
+      return { ok: false, error: 'Failed to clone meal', code: 'FAILED' }
+    }
+    return { ok: true, data: inserted }
+  })
+}
+
+/**
+ * Creates a meal and its items atomically. Rolls back if any step fails.
+ */
+export async function createMeal(data: CreateMeal) {
+  const { name, description, mealItems } = data
+  return db.transaction(async tx =>
+    insertMealWithLines(tx, {
+      name,
+      description,
+      lines: mealItems.map(item => ({ foodItemId: item.foodItemId, quantity: item.quantity })),
+    })
+  )
+}
+
+// --- `updateMeal`-only validation helpers (always use the caller’s `tx`).
 
 async function validateMealItemIdsInMeal(
   tx: DbClient,
@@ -275,7 +377,7 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
   const { name, description, add, remove, update } = data
 
   return db.transaction(async tx => {
-    // Load header and “assigned plan” conflict probe together; both keys only on `id`.
+    // --- Load meal and assignment guard (parallel): existence + “locked by assigned plan” in one round-trip pair.
     const [mealRows, assignedPlanRows] = await Promise.all([
       tx.select().from(meal).where(eq(meal.id, id)).limit(1),
       tx
@@ -301,9 +403,9 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
     const overlapError = validateRemoveUpdateOverlap(remove, update)
     if (overlapError) return overlapError
 
+    // --- Validate payload: meal_item ids belong to this meal and new food ids exist (parallel probes).
     const mealItemIdsToCheck = [...(remove ?? []), ...(update ?? []).map(u => u.mealItemId)]
     const foodIdsToAdd = [...new Set((add ?? []).map(a => a.foodItemId))]
-    // Meal-item ownership and food FK checks do not depend on each other.
     const [mealItemValidationError, foodValidationError] = await Promise.all([
       validateMealItemIdsInMeal(tx, id, mealItemIdsToCheck),
       validateFoodItemIdsExist(tx, foodIdsToAdd),
@@ -311,7 +413,7 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
     const validationError = mealItemValidationError ?? foodValidationError
     if (validationError) return validationError
 
-    // Order matters: deletes before updates/inserts avoids unique/FK surprises; quantity patches are per-row.
+    // --- Mutate: metadata first, then lines in delete → patch → add order (avoids overlapping row ops).
     const updateData: Record<string, string | null | undefined> = {}
     if (name !== undefined) updateData.name = name
     if (description !== undefined) updateData.description = description
@@ -343,6 +445,7 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
       )
     }
 
+    // --- Reconcile denormalized totals only when line set changed (name/description-only skips recompute).
     const hadItemMutation =
       (add?.length ?? 0) > 0 || (remove?.length ?? 0) > 0 || (update?.length ?? 0) > 0
     if (hadItemMutation) {
@@ -363,12 +466,13 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
  */
 export async function deleteMeal(id: string): Promise<DeleteMealResult> {
   return db.transaction(async tx => {
+    // --- Existence check first: skip extra queries when the row is already gone.
     const [mealRow] = await tx.select({ id: meal.id }).from(meal).where(eq(meal.id, id)).limit(1)
     if (!mealRow) {
       return { ok: false, error: 'Meal not found', code: 'NOT_FOUND' }
     }
 
-    // Item count and plan references are independent probes; both must pass before delete.
+    // --- Conflict probes (parallel): must be empty of lines and not referenced by any diet plan slot.
     const [[itemCountRow], [referencedByPlan]] = await Promise.all([
       tx.select({ count: count() }).from(mealItem).where(eq(mealItem.mealId, id)),
       tx.select({ id: dietPlanMeal.id }).from(dietPlanMeal).where(eq(dietPlanMeal.mealId, id)).limit(1),
@@ -391,6 +495,7 @@ export async function deleteMeal(id: string): Promise<DeleteMealResult> {
       }
     }
 
+    // --- Delete header: callers must have removed lines and plan slots first (enforced above).
     const [deleted] = await tx.delete(meal).where(eq(meal.id, id)).returning()
     if (!deleted) {
       return { ok: false, error: 'Meal not found', code: 'NOT_FOUND' }

@@ -1,22 +1,19 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { UtensilsCrossed, Plus } from 'lucide-react'
 import { MealsTable } from './components/meals-table'
 import { CreateMealDialog } from './components/create-meal-dialog'
+import { useMealsListTableActions } from '@/hooks/use-meals-list-table-actions'
 import { useMeals } from '@/hooks/use-meals'
 import { useListFilters } from '@/hooks/use-list-filters'
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants/pagination'
-import type { Meal } from '@/lib/queries/meals'
 import type { SortOrder } from '@/lib/table-core'
 import type { MealsSortBy } from './components/meals-columns'
 
 export default function MealsPage() {
-  const router = useRouter()
-
   const {
     filters,
     paginationFallback,
@@ -33,21 +30,17 @@ export default function MealsPage() {
   })
   const [createOpen, setCreateOpen] = useState(false)
 
-  const { data: meals, pagination, isLoading, error, refetch } = useMeals(filters)
+  const { data: meals, pagination, isLoading, error, invalidateList } = useMeals(filters)
+  const { handleEdit, handleDelete, handleClone } = useMealsListTableActions()
 
-  const handleEdit = useCallback(
-    (meal: Meal) => {
-      router.push(`/dashboard/admin/meals/${meal.id}`)
+  const handleSortingChange = useCallback(
+    (nextSortBy?: MealsSortBy, nextOrder?: 'asc' | 'desc') => {
+      updateFilters({ sortBy: nextSortBy ?? 'name', sortOrder: nextOrder ?? 'asc' })
     },
-    [router]
+    [updateFilters]
   )
 
-  const handleDelete = useCallback(
-    (meal: Meal) => {
-      router.push(`/dashboard/admin/meals/${meal.id}?delete=1`)
-    },
-    [router]
-  )
+  const retryList = useCallback(() => void invalidateList(), [invalidateList])
 
   return (
     <div className='space-y-6'>
@@ -66,7 +59,7 @@ export default function MealsPage() {
         <Card className='border-destructive'>
           <CardContent className='pt-6'>
             <p className='text-destructive'>{error}</p>
-            <Button variant='outline' size='sm' className='mt-2' onClick={() => refetch()}>
+            <Button variant='outline' size='sm' className='mt-2' onClick={retryList}>
               Retry
             </Button>
           </CardContent>
@@ -86,12 +79,11 @@ export default function MealsPage() {
               searchValue={filters.q}
               sortBy={filters.sortBy}
               sortOrder={filters.sortOrder}
-              onSortingChange={(sortBy, sortOrder) =>
-                updateFilters({ sortBy: sortBy ?? 'name', sortOrder: sortOrder ?? 'asc' })
-              }
+              onSortingChange={handleSortingChange}
               isLoading={isLoading}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onClone={handleClone}
             />
           </CardContent>
         </Card>

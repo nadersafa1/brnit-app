@@ -4,7 +4,7 @@ import type { PaginationMeta } from '@/lib/api-helpers/pagination'
 import { BaseDataTable, TableControls, TablePagination, useTableSorting } from '@/lib/table-core'
 import type { VisibilityState } from '@tanstack/react-table'
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table'
-import * as React from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { Meal } from '@/lib/queries/meals'
 import { createMealsColumns, type MealsSortBy } from './meals-columns'
 import { PAGE_SIZE_OPTIONS } from '@/lib/constants/pagination'
@@ -39,6 +39,7 @@ export interface MealsTableProps {
   isLoading: boolean
   onEdit: (meal: Meal) => void
   onDelete: (meal: Meal) => void
+  onClone: (meal: Meal) => void
   readOnly?: boolean
 }
 
@@ -56,11 +57,12 @@ export function MealsTable({
   isLoading,
   onEdit,
   onDelete,
+  onClone,
   readOnly = false,
 }: Readonly<MealsTableProps>) {
   const pagination = usePaginationTableConfig(paginationMeta, paginationFallback)
 
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     createdAt: false,
   })
 
@@ -70,7 +72,11 @@ export function MealsTable({
     onSortingChange,
   })
 
-  const columns = React.useMemo(
+  const clearSearch = useCallback(() => {
+    onSearchChange('')
+  }, [onSearchChange])
+
+  const columns = useMemo(
     () =>
       createMealsColumns({
         sortBy,
@@ -78,9 +84,10 @@ export function MealsTable({
         onSort: (id) => handleSort(id as MealsSortBy),
         onEdit,
         onDelete,
+        onClone,
         readOnly,
       }),
-    [sortBy, sortOrder, handleSort, onEdit, onDelete, readOnly]
+    [sortBy, sortOrder, handleSort, onEdit, onDelete, onClone, readOnly]
   )
 
   const table = useReactTable({
@@ -91,6 +98,7 @@ export function MealsTable({
     onColumnVisibilityChange: setColumnVisibility,
   })
 
+  // Table shell: filter row, grid, pagination. Column defs are memoized because parent handlers change by reference.
   return (
     <div className="w-full space-y-4">
       <TableControls<Meal>
@@ -102,7 +110,7 @@ export function MealsTable({
         getColumnLabel={getColumnLabel}
         columnVisibility={columnVisibility}
         hasActiveFilters={!!searchValue.trim()}
-        onResetFilters={() => onSearchChange('')}
+        onResetFilters={clearSearch}
         showResetButton
       />
       <BaseDataTable<Meal>
