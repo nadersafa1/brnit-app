@@ -1,6 +1,7 @@
 import dayjs from 'dayjs'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
+import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BottomNav } from '@/components/bottom-nav'
@@ -46,52 +47,72 @@ export default function Home() {
   const userImageUrl = session?.user?.image ?? undefined
   const isToday = dayjs(selectedDate).isSame(dayjs(), 'day')
 
+  const goToNextDay = useCallback(() => {
+    setSelectedDate((prev) => dayjs(prev).add(1, 'day').toDate())
+  }, [])
+
+  const goToPreviousDay = useCallback(() => {
+    setSelectedDate((prev) => dayjs(prev).subtract(1, 'day').toDate())
+  }, [])
+
+  const swipeLeft = Gesture.Fling()
+    .direction(Directions.LEFT)
+    .runOnJS(true)
+    .onEnd(goToNextDay)
+  const swipeRight = Gesture.Fling()
+    .direction(Directions.RIGHT)
+    .runOnJS(true)
+    .onEnd(goToPreviousDay)
+  const swipeGesture = Gesture.Simultaneous(swipeLeft, swipeRight)
+
   return (
     <View style={[styles.container, { backgroundColor: colors.appBg }]}>
       <View style={[styles.decorativeBlob, { backgroundColor: colors.pastelPurple }]} />
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 96 }]}
-        showsVerticalScrollIndicator={false}
-      >
-        <HomeHeader
-          userName={userName}
-          userImageUrl={userImageUrl}
-        />
-        <CalendarStrip
-          selectedDate={selectedDate}
-          onDateSelect={setSelectedDate}
-        />
-        <HomeProgressCard
-          hasPlan={progress.hasPlan}
-          isToday={isToday}
-          selectedDate={selectedDate}
-          caloriesConsumed={progress.caloriesConsumed}
-          caloriesGoal={progress.caloriesGoal}
-          remainingCalories={progress.remainingCalories}
-          proteinConsumed={progress.proteinConsumed}
-          proteinGoal={progress.proteinGoal}
-          carbsConsumed={progress.carbsConsumed}
-          carbsGoal={progress.carbsGoal}
-          fatConsumed={progress.fatConsumed}
-          fatGoal={progress.fatGoal}
-          streak={streakData?.streak ?? 0}
-          streakLoading={streakLoading}
-          streakError={streakError}
-        />
-        <HomeMealsSection
-          isLoading={isLoading}
-          error={error ?? null}
-          meals={meals}
-          selectedDate={selectedDate}
-          dietPlanAssignmentId={dietPlanData?.data?.assignment?.id}
-          assignmentStartDate={dietPlanData?.data?.assignment?.startDate}
-          assignmentEndDate={dietPlanData?.data?.assignment?.endDate}
-          maxPastDays={maxConsumptionPastDays}
-          onMealItemPress={setSelectedMealItem}
-        />
-      </ScrollView>
+      <GestureDetector gesture={swipeGesture}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 96 }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <HomeHeader
+            userName={userName}
+            userImageUrl={userImageUrl}
+          />
+          <CalendarStrip
+            selectedDate={selectedDate}
+            onDateSelect={setSelectedDate}
+          />
+          <HomeProgressCard
+            hasPlan={progress.hasPlan}
+            isToday={isToday}
+            selectedDate={selectedDate}
+            caloriesConsumed={progress.caloriesConsumed}
+            caloriesGoal={progress.caloriesGoal}
+            remainingCalories={progress.remainingCalories}
+            proteinConsumed={progress.proteinConsumed}
+            proteinGoal={progress.proteinGoal}
+            carbsConsumed={progress.carbsConsumed}
+            carbsGoal={progress.carbsGoal}
+            fatConsumed={progress.fatConsumed}
+            fatGoal={progress.fatGoal}
+            streak={streakData?.streak ?? 0}
+            streakLoading={streakLoading}
+            streakError={streakError}
+          />
+          <HomeMealsSection
+            isLoading={isLoading}
+            error={error ?? null}
+            meals={meals}
+            selectedDate={selectedDate}
+            dietPlanAssignmentId={dietPlanData?.data?.assignment?.id}
+            assignmentStartDate={dietPlanData?.data?.assignment?.startDate}
+            assignmentEndDate={dietPlanData?.data?.assignment?.endDate}
+            maxPastDays={maxConsumptionPastDays}
+            onMealItemPress={setSelectedMealItem}
+          />
+        </ScrollView>
+      </GestureDetector>
 
       <BottomNav activeTab='home' />
       {selectedMealItem ? (

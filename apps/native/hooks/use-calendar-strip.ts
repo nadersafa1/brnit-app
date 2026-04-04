@@ -1,5 +1,5 @@
 import dayjs, { Dayjs } from 'dayjs'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Dimensions,
   type FlatList as FlatListType,
@@ -26,6 +26,11 @@ export interface WeekData {
 function weeksNotInList(existing: WeekData[], newWeeks: WeekData[]): WeekData[] {
   const existingIds = new Set(existing.map((w) => w.id))
   return newWeeks.filter((w) => !existingIds.has(w.id))
+}
+
+function findWeekIndex(weeks: WeekData[], date: Dayjs): number {
+  const weekStart = date.startOf('week')
+  return weeks.findIndex((w) => w.weekStart.isSame(weekStart, 'day'))
 }
 
 export interface UseCalendarStripParams {
@@ -81,20 +86,32 @@ export function useCalendarStrip({
   )
 
   const jumpToToday = useCallback(() => {
-    const weekIndex = weeks.findIndex((w) => w.weekStart.isSame(todayWeekStart, 'day'))
+    const weekIndex = findWeekIndex(weeks, today)
     if (weekIndex >= 0) scrollToWeekIndex(weekIndex)
     onDateSelect(today.toDate())
-  }, [today, todayWeekStart, onDateSelect, weeks, scrollToWeekIndex])
+  }, [today, onDateSelect, weeks, scrollToWeekIndex])
 
   const handleDayPress = useCallback(
     (date: Date) => {
       onDateSelect(date)
-      const selectedWeekStart = dayjs(date).startOf('week')
-      const weekIndex = weeks.findIndex((w) => w.weekStart.isSame(selectedWeekStart, 'day'))
+      const weekIndex = findWeekIndex(weeks, dayjs(date))
       if (weekIndex >= 0) scrollToWeekIndex(weekIndex)
     },
     [onDateSelect, weeks, scrollToWeekIndex],
   )
+
+  // Sync the visible week when selectedDate changes externally (e.g. swipe gesture).
+  // Guarded by prevSyncedDateRef so calendar-strip scrolling and infinite-load
+  // prepend/append don't snap the user back to the selected date's week.
+  const prevSyncedDateRef = useRef(dayjs(selectedDate).format('YYYY-MM-DD'))
+  useEffect(() => {
+    const dateKey = dayjs(selectedDate).format('YYYY-MM-DD')
+    if (dateKey === prevSyncedDateRef.current) return
+    prevSyncedDateRef.current = dateKey
+
+    const weekIndex = findWeekIndex(weeks, dayjs(selectedDate))
+    if (weekIndex >= 0) scrollToWeekIndex(weekIndex)
+  }, [selectedDate, weeks, scrollToWeekIndex])
 
   const handleViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
