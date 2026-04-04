@@ -44,14 +44,14 @@
     },
     "android": {
       "package": "com.nader_safa.brnit",
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       }
     },
     "ios": {
-      "buildNumber": "3",
+      "buildNumber": "4",
       "bundleIdentifier": "com.nadersafa.brnit",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false

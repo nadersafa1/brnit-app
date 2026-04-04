@@ -4,6 +4,7 @@ import {
   date,
   index,
   integer,
+  jsonb,
   numeric,
   pgTable,
   text,
@@ -141,8 +142,14 @@ export const dietPlanMealItemOverride = pgTable(
         onUpdate: 'restrict',
       }),
     quantity: numeric('quantity').notNull(),
-    /** NULL = future only (applies when resolution date >= today); non-null = this date only. */
-    effectiveDate: date('effective_date'),
+    /**
+     * Optional intent metadata kept for audit/edit UX.
+     * Canonical runtime resolution still uses effectiveDates.
+     */
+    intentScope: text('intent_scope'),
+    intentStartDate: date('intent_start_date'),
+    /** Snapshot of unique YYYY-MM-DD dates this override applies to. */
+    effectiveDates: jsonb('effective_dates').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
@@ -157,11 +164,38 @@ export const dietPlanMealItemOverride = pgTable(
       table.dietPlanAssignmentId,
       table.dietPlanMealId,
     ),
-    uniqueIndex('diet_plan_meal_item_override_unique_idx').on(
+    index('diet_plan_meal_item_override_slot_idx').on(
       table.dietPlanAssignmentId,
       table.dietPlanMealId,
       table.mealItemId,
-      table.effectiveDate,
+    ),
+    uniqueIndex('diet_plan_meal_item_override_slot_food_item_unique_idx').on(
+      table.dietPlanAssignmentId,
+      table.dietPlanMealId,
+      table.mealItemId,
+      table.foodItemId,
+    ),
+    check(
+      'diet_plan_meal_item_override_intent_scope_check',
+      sql`
+        (
+          ${table.intentScope} IS NULL
+          AND ${table.intentStartDate} IS NULL
+        )
+        OR (
+          ${table.intentScope} = 'single_day'
+          AND ${table.intentStartDate} IS NOT NULL
+        )
+        OR (
+          ${table.intentScope} = 'rest_of_plan'
+          AND ${table.intentStartDate} IS NOT NULL
+        )
+      `
+    ),
+    /** PG disallows subqueries in CHECK; string date format is validated in services. */
+    check(
+      'diet_plan_meal_item_override_effective_dates_array_check',
+      sql`jsonb_typeof(${table.effectiveDates}) = 'array'`
     ),
   ],
 )

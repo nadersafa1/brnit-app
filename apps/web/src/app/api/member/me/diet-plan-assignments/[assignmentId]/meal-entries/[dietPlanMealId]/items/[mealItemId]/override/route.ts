@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { flattenError } from 'zod'
 import { deleteSuccess } from '@/lib/api-helpers/delete-responses'
 import { requireAuth } from '@/lib/api-helpers/require-auth'
-import { upsertMealItemOverride, deleteMealItemOverride } from '@/lib/services/diet-plan-meal-item-override'
+import {
+  deleteMealItemOverride,
+  upsertMealItemOverride,
+} from '@/lib/services/diet-plan-meal-item-override'
 import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 import {
   setDietPlanMealItemOverrideBodySchema,
@@ -19,7 +22,7 @@ type RouteParams = {
   }>
 }
 
-/** PUT/PATCH: upsert override (body.date optional — when set, override applies that day only; else future-only). */
+/** PUT/PATCH: upsert override using explicit single_day/rest_of_plan scope payload. */
 async function handlePutOrPatch(request: NextRequest, params: RouteParams['params']) {
   const authResult = await requireAuth(request.headers)
   if (authResult.error) return authResult.error
@@ -50,6 +53,7 @@ async function handlePutOrPatch(request: NextRequest, params: RouteParams['param
   }
 
   const status = result.created ? 201 : 200
+  const effectiveDates = (result.data.effectiveDates as string[] | null) ?? []
   return NextResponse.json(
     {
       data: {
@@ -59,7 +63,10 @@ async function handlePutOrPatch(request: NextRequest, params: RouteParams['param
         mealItemId: result.data.mealItemId,
         foodItemId: result.data.foodItemId,
         quantity: Number(result.data.quantity),
-        effectiveDate: result.data.effectiveDate ?? null,
+        effectiveDates,
+        effectiveDateCount: effectiveDates.length,
+        coverageStartDate: effectiveDates[0] ?? null,
+        coverageEndDate: effectiveDates.at(-1) ?? null,
         createdAt: result.data.createdAt,
         updatedAt: result.data.updatedAt,
       },
@@ -78,7 +85,8 @@ async function patchHandler(request: NextRequest, context: RouteParams) {
 
 /**
  * DELETE: remove override for this meal item.
- * Optional ?date=YYYY-MM-DD removes that date's override; omit to remove future-only override.
+ * Optional ?date=YYYY-MM-DD removes that date from the latest matching override row;
+ * omit to clear all override rows for this meal item slot.
  */
 async function deleteHandler(request: NextRequest, context: RouteParams) {
   const authResult = await requireAuth(request.headers)

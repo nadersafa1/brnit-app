@@ -115,12 +115,10 @@ export default function Home() {
       </GestureDetector>
 
       <BottomNav activeTab='home' />
-      {selectedMealItem ? (
-        <MealItemDetailSheet
-          payload={selectedMealItem}
-          onClose={() => setSelectedMealItem(null)}
-        />
-      ) : null}
+      <MealItemDetailSheet
+        payload={selectedMealItem}
+        onClose={() => setSelectedMealItem(null)}
+      />
     </View>
   )
 }

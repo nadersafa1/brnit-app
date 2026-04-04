@@ -3,12 +3,33 @@ import { z } from 'zod'
 /** YYYY-MM-DD date string for override date scope and query params. */
 export const dateStringSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD')
 
-export const setDietPlanMealItemOverrideBodySchema = z.object({
+export const mealItemOverrideScopeSchema = z.enum(['single_day', 'rest_of_plan'])
+
+const overrideBaseSchema = z.object({
+  overrideId: z.uuid('Invalid override ID').optional(),
   foodItemId: z.uuid('Invalid food item ID'),
   quantity: z.number().positive('Quantity must be positive'),
-  /** If provided: override applies only for this date. If omitted: override applies for future dates only. */
-  date: dateStringSchema.optional(),
 })
+
+const explicitSingleDaySchema = overrideBaseSchema
+  .extend({
+    scope: z.literal('single_day'),
+    startDate: dateStringSchema,
+  })
+  .strict()
+
+const explicitRestOfPlanSchema = overrideBaseSchema
+  .extend({
+    scope: z.literal('rest_of_plan'),
+    startDate: dateStringSchema,
+  })
+  .strict()
+
+/** Explicit scope payload (preferred). */
+export const setDietPlanMealItemOverrideBodySchema = z.union([
+  explicitSingleDaySchema,
+  explicitRestOfPlanSchema,
+])
 
 export type SetDietPlanMealItemOverrideBody = z.infer<typeof setDietPlanMealItemOverrideBodySchema>
 

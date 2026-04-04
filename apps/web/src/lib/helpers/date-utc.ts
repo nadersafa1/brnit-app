@@ -21,3 +21,8 @@ export function addDaysUTC(dateStr: string, days: number): string {
 export function getTodayUtcDateString(): string {
   return toDateStringUTC(new Date())
 }
+
+/** Lexicographic max for YYYY-MM-DD strings. */
+export function maxDateString(a: string, b: string): string {
+  return a >= b ? a : b
+}

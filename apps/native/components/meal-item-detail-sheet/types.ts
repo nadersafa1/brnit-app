@@ -1,6 +1,15 @@
 import type { CurrentDietPlanMealItem } from "@/lib/api/member-types";
 import type { FoodItemAlternative } from "@/lib/api/member-food-types";
 
+export type MealItemDetailContentProps = {
+  item: CurrentDietPlanMealItem;
+  alternatives: FoodItemAlternative[];
+  isLoading: boolean;
+  isError: boolean;
+  selectedAlternative: FoodItemAlternative | null;
+  onSelectAlternative: (alternative: FoodItemAlternative) => void;
+};
+
 export type MealItemDetailPayload = {
   item: CurrentDietPlanMealItem;
   dietPlanAssignmentId: string;

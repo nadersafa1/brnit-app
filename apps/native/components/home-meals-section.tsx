@@ -45,7 +45,7 @@ export function HomeMealsSection({
   const isToday = dayjs(selectedDate).isSame(dayjs(), 'day')
   const consumedDate = dayjs(selectedDate).format('YYYY-MM-DD')
 
-  // Toast so the user sees the error even if the section is off-screen
+  // Side effect: surface fetch errors via toast (section may be scrolled off-screen).
   useEffect(() => {
     if (error) showError(error.message)
   }, [error])

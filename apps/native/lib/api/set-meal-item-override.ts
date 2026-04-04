@@ -6,9 +6,11 @@ export type SetMealItemOverrideParams = {
   assignmentId: string;
   dietPlanMealId: string;
   mealItemId: string;
+  overrideId?: string;
   foodItemId: string;
   quantity: number;
-  date?: string;
+  scope: "single_day" | "rest_of_plan";
+  startDate: string;
 };
 
 type SetMealItemOverrideResponse = {
@@ -19,7 +21,10 @@ type SetMealItemOverrideResponse = {
     mealItemId: string;
     foodItemId: string;
     quantity: number;
-    effectiveDate: string | null;
+    effectiveDates: string[];
+    effectiveDateCount: number;
+    coverageStartDate: string | null;
+    coverageEndDate: string | null;
     createdAt: string;
     updatedAt: string;
   };

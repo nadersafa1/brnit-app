@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { BottomSheetFooterProps } from "@gorhom/bottom-sheet";
 import {
   AppBottomSheet,
@@ -6,17 +6,44 @@ import {
   type AppBottomSheetRef,
 } from "@/components/bottom-sheet";
 import { useMealItemAlternatives } from "@/hooks/use-meal-item-alternatives";
+import { useMealItemDetailSheetVisibility } from "@/hooks/use-meal-item-detail-sheet-visibility";
 import { useSetMealItemOverride } from "@/hooks/use-set-meal-item-override";
+import type { SetMealItemOverrideParams } from "@/lib/api/set-meal-item-override";
 import type { FoodItemAlternative } from "@/lib/api/member-food-types";
 import { MealItemDetailActions } from "./meal-item-detail-actions";
 import { MealItemDetailContent } from "./meal-item-detail-content";
-import type { MealItemDetailSheetProps, OverrideScope } from "./types";
+import type { MealItemDetailPayload, MealItemDetailSheetProps, OverrideScope } from "./types";
+
+function buildSetMealItemOverrideParams(
+  payload: MealItemDetailPayload,
+  alternative: FoodItemAlternative,
+  scope: OverrideScope
+): SetMealItemOverrideParams {
+  const base = {
+    assignmentId: payload.dietPlanAssignmentId,
+    dietPlanMealId: payload.dietPlanMealId,
+    mealItemId: payload.item.mealItemId,
+    foodItemId: alternative.foodItemId,
+    quantity: alternative.suggestedQuantity,
+    startDate: payload.consumedDate,
+  };
+  if (scope === "day") {
+    return { ...base, scope: "single_day" as const };
+  }
+  return { ...base, scope: "rest_of_plan" as const };
+}
 
 export function MealItemDetailSheet({ payload, onClose }: Readonly<MealItemDetailSheetProps>) {
   const ref = useRef<AppBottomSheetRef>(null);
   const [selectedAlternative, setSelectedAlternative] = useState<FoodItemAlternative | null>(null);
   const [submittingScope, setSubmittingScope] = useState<OverrideScope | null>(null);
   const setMealItemOverrideMutation = useSetMealItemOverride();
+
+  const resetSelection = useCallback(() => {
+    setSelectedAlternative(null);
+  }, []);
+
+  useMealItemDetailSheetVisibility(payload, ref, resetSelection);
 
   const alternativesQuery = useMealItemAlternatives({
     assignmentId: payload?.dietPlanAssignmentId ?? "",
@@ -26,42 +53,23 @@ export function MealItemDetailSheet({ payload, onClose }: Readonly<MealItemDetai
     enabled: payload != null,
   });
 
-  // Keep sheet visibility controlled by selected payload from parent screen state.
-  useEffect(() => {
-    if (payload) {
-      const frameId = requestAnimationFrame(() => {
-        ref.current?.open(1);
-      });
-      setSelectedAlternative(null);
-      return () => cancelAnimationFrame(frameId);
-    }
-
-    ref.current?.close();
-    setSelectedAlternative(null);
-  }, [payload]);
-
   const handleClose = useCallback(() => {
     setSelectedAlternative(null);
     setSubmittingScope(null);
     onClose();
   }, [onClose]);
 
-  // Submit one override mutation with scope-specific body (date only for single-day override).
-  const submitOverride = useCallback((scope: OverrideScope) => {
-    if (!payload || !selectedAlternative) return;
-    setSubmittingScope(scope);
-    setMealItemOverrideMutation.mutate(
-      {
-        assignmentId: payload.dietPlanAssignmentId,
-        dietPlanMealId: payload.dietPlanMealId,
-        mealItemId: payload.item.mealItemId,
-        foodItemId: selectedAlternative.foodItemId,
-        quantity: selectedAlternative.suggestedQuantity,
-        ...(scope === "day" ? { date: payload.consumedDate } : {}),
-      },
-      { onSuccess: handleClose, onSettled: () => setSubmittingScope(null) }
-    );
-  }, [handleClose, payload, selectedAlternative, setMealItemOverrideMutation]);
+  const submitOverride = useCallback(
+    (scope: OverrideScope) => {
+      if (!payload || !selectedAlternative) return;
+      setSubmittingScope(scope);
+      setMealItemOverrideMutation.mutate(buildSetMealItemOverrideParams(payload, selectedAlternative, scope), {
+        onSuccess: handleClose,
+        onSettled: () => setSubmittingScope(null),
+      });
+    },
+    [handleClose, payload, selectedAlternative, setMealItemOverrideMutation]
+  );
 
   const renderFooter = useCallback(
     (props: BottomSheetFooterProps) => (
