@@ -97,11 +97,7 @@ export default function CategoriesPage() {
         </Card>
       )}
 
-      <CreateCategoryDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onSuccess={() => refetch()}
-      />
+      <CreateCategoryDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   )
 }

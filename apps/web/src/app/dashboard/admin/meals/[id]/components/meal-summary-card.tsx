@@ -5,36 +5,49 @@ import { getMacroFactor } from '@/lib/helpers/macros'
 import { roundNutritionMacro } from '@/lib/helpers/nutrition-numbers'
 import type { MealItem } from '@/lib/queries/meals'
 
+export interface MealStoredTotals {
+  totalCalories: number
+  totalProtein: number
+  totalCarbs: number
+  totalFat: number
+}
+
 interface MealSummaryCardProps {
   mealItems: MealItem[]
+  /** When set (from API), matches persisted meal row; avoids drift from client-side math. */
+  storedTotals?: MealStoredTotals
 }
 
-/**
- * Nutrition values are stored per 1 unit (per 100g or per selected food unit),
- * so we reuse the shared macro factor logic for consistent totals.
- */
-function scaleNutrient(perUnit: number | null, quantity: number, unit: MealItem['unit']): number {
-  if (perUnit == null) return 0
-  return getMacroFactor(quantity, unit) * perUnit
-}
-
-export function MealSummaryCard({ mealItems }: Readonly<MealSummaryCardProps>) {
-  // Aggregate raw nutrient totals first to avoid compounding per-item rounding error.
+function computeTotalsFromItems(mealItems: MealItem[]) {
   const rawTotals = mealItems.reduce(
-    (acc, mi) => ({
-      calories: acc.calories + scaleNutrient(mi.calories, mi.quantity, mi.unit),
-      protein: acc.protein + scaleNutrient(mi.protein, mi.quantity, mi.unit),
-      carbs: acc.carbs + scaleNutrient(mi.carbs, mi.quantity, mi.unit),
-      fat: acc.fat + scaleNutrient(mi.fat, mi.quantity, mi.unit),
-    }),
+    (acc, mi) => {
+      const f = getMacroFactor(mi.quantity, mi.unit)
+      return {
+        calories: acc.calories + f * mi.calories,
+        protein: acc.protein + f * mi.protein,
+        carbs: acc.carbs + f * mi.carbs,
+        fat: acc.fat + f * mi.fat,
+      }
+    },
     { calories: 0, protein: 0, carbs: 0, fat: 0 }
   )
-  const totals = {
+  return {
     calories: roundNutritionMacro(rawTotals.calories),
     protein: roundNutritionMacro(rawTotals.protein),
     carbs: roundNutritionMacro(rawTotals.carbs),
     fat: roundNutritionMacro(rawTotals.fat),
   }
+}
+
+export function MealSummaryCard({ mealItems, storedTotals }: Readonly<MealSummaryCardProps>) {
+  const totals = storedTotals
+    ? {
+        calories: storedTotals.totalCalories,
+        protein: storedTotals.totalProtein,
+        carbs: storedTotals.totalCarbs,
+        fat: storedTotals.totalFat,
+      }
+    : computeTotalsFromItems(mealItems)
 
   return (
     <Card>

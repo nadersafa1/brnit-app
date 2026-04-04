@@ -40,10 +40,7 @@ export default function MemberAssignmentsList({
   organizationId,
 }: Readonly<MemberAssignmentsListProps>) {
   // --- Query current assignments and related plan metadata ---
-  const { assignments, isLoading, error, refetch } = useMemberAssignments(
-    memberId,
-    organizationId
-  )
+  const { assignments, isLoading, error } = useMemberAssignments(memberId, organizationId)
   const { data: plans } = useDietPlans({ perPage: 100 }, 'nutritionist')
   const updateAssignment = useUpdateDietPlanAssignment()
   const deleteAssignment = useDeleteDietPlanAssignment()
@@ -95,7 +92,6 @@ export default function MemberAssignmentsList({
         mealTimeOverrides: editMealTimeOverrides,
       })
       setEditingId(null)
-      refetch()
     } catch {
       // toast handled by mutation
     }
@@ -111,7 +107,6 @@ export default function MemberAssignmentsList({
     try {
       await deleteAssignment.mutateAsync(deleteId)
       setDeleteId(null)
-      refetch()
     } catch {
       // toast handled
     }

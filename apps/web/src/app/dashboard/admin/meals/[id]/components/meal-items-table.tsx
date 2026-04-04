@@ -25,12 +25,7 @@ interface MealItemsTableProps {
 }
 
 /** Nutrition values are per 1 unit (per 100g or per the food’s chosen measure). */
-function scaleNutrient(
-  perUnit: number | null,
-  quantity: number,
-  unit: MealItem['unit']
-): string {
-  if (perUnit == null) return '–'
+function scaleNutrient(perUnit: number, quantity: number, unit: MealItem['unit']): string {
   const factor = getMacroFactor(quantity, unit)
   const v = Math.round(factor * perUnit * 10) / 10
   return String(v)

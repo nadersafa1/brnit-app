@@ -97,7 +97,7 @@ export default function DietPlansPage() {
         </Card>
       )}
 
-      <CreateDietPlanDialog open={createOpen} onOpenChange={setCreateOpen} onSuccess={() => refetch()} />
+      <CreateDietPlanDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   )
 }

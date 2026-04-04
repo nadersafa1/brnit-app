@@ -341,9 +341,9 @@ const main = async () => {
         values.push({
           name: f.description,
           calories: calories ?? '0',
-          protein,
-          carbs,
-          fat,
+          protein: protein ?? '0',
+          carbs: carbs ?? '0',
+          fat: fat ?? '0',
           unit: '100g' as const,
           gramsPerUnit: '100',
         })

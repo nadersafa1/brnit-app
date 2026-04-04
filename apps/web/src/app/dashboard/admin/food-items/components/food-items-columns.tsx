@@ -87,25 +87,25 @@ export function createFoodItemsColumns({
       (row) => formatFoodCategoriesDisplay(row.categories),
       {}
     ),
-    createTextColumn<FoodItem>('calories', 'Calories', (row) => row.calories ?? '–', {
+    createTextColumn<FoodItem>('calories', 'Calories', (row) => String(row.calories), {
       sortable: true,
       sortBy,
       sortOrder,
       onSort,
     }),
-    createTextColumn<FoodItem>('protein', 'Protein', (row) => row.protein ?? '–', {
+    createTextColumn<FoodItem>('protein', 'Protein', (row) => String(row.protein), {
       sortable: true,
       sortBy,
       sortOrder,
       onSort,
     }),
-    createTextColumn<FoodItem>('carbs', 'Carbs', (row) => row.carbs ?? '–', {
+    createTextColumn<FoodItem>('carbs', 'Carbs', (row) => String(row.carbs), {
       sortable: true,
       sortBy,
       sortOrder,
       onSort,
     }),
-    createTextColumn<FoodItem>('fat', 'Fat', (row) => row.fat ?? '–', {
+    createTextColumn<FoodItem>('fat', 'Fat', (row) => String(row.fat), {
       sortable: true,
       sortBy,
       sortOrder,

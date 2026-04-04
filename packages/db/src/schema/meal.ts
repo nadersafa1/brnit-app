@@ -8,6 +8,10 @@ export const meal = pgTable('meal', {
     .$defaultFn(() => crypto.randomUUID()),
   name: text('name').notNull(),
   description: text('description'),
+  totalCalories: numeric('total_calories').notNull().default('0'),
+  totalProtein: numeric('total_protein').notNull().default('0'),
+  totalCarbs: numeric('total_carbs').notNull().default('0'),
+  totalFat: numeric('total_fat').notNull().default('0'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()

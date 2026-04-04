@@ -97,7 +97,7 @@ export default function MealsPage() {
         </Card>
       )}
 
-      <CreateMealDialog open={createOpen} onOpenChange={setCreateOpen} onSuccess={() => refetch()} />
+      <CreateMealDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   )
 }

@@ -82,12 +82,7 @@ export default function NutritionistMealsPage() {
         />
       </EntityListPageLayout>
 
-      <CreateMealDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onSuccess={() => refetch()}
-        source='nutritionist'
-      />
+      <CreateMealDialog open={createOpen} onOpenChange={setCreateOpen} source='nutritionist' />
     </>
   )
 }

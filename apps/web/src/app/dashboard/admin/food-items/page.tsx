@@ -103,12 +103,7 @@ export default function FoodItemsPage() {
         </Card>
       )}
 
-      <CreateFoodItemDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onSuccess={() => refetch()}
-        categories={categories}
-      />
+      <CreateFoodItemDialog open={createOpen} onOpenChange={setCreateOpen} categories={categories} />
     </div>
   )
 }

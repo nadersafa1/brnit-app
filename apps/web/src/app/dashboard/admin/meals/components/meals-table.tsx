@@ -13,6 +13,10 @@ import { usePaginationTableConfig, type PaginationFallback } from '@/hooks/use-p
 const COLUMN_LABELS: Record<string, string> = {
   name: 'Name',
   description: 'Description',
+  totalCalories: 'kcal',
+  totalProtein: 'Protein (g)',
+  totalCarbs: 'Carbs (g)',
+  totalFat: 'Fat (g)',
   createdAt: 'Created',
   actions: 'Actions',
 }

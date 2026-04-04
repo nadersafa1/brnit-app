@@ -47,9 +47,8 @@ export default function FoodItemDetailPage() {
     async (data: UpdateFoodItem, options?: { file?: File; clearImage?: boolean }) => {
       await update.mutateAsync({ id, ...data, ...options })
       setEditOpen(false)
-      refetch()
     },
-    [id, update, refetch]
+    [id, update]
   )
 
   const handleDeleteConfirm = useCallback(async () => {

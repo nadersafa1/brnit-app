@@ -52,7 +52,6 @@ export default function CategoryDetailPage() {
     items: foodItems,
     isLoading: itemsLoading,
     error: itemsError,
-    refetch: refetchItems,
     paginationMeta: itemsPaginationMeta,
     paginationFallback: itemsPaginationFallback,
     onPageChange,
@@ -79,10 +78,8 @@ export default function CategoryDetailPage() {
     async (data: UpdateFoodCategory) => {
       await update.mutateAsync({ id, ...data })
       setEditOpen(false)
-      refetch()
-      refetchItems()
     },
-    [id, update, refetch, refetchItems]
+    [id, update]
   )
 
   const handleDeleteConfirm = useCallback(async () => {
@@ -163,7 +160,6 @@ export default function CategoryDetailPage() {
             categoryId={id}
             categoryName={category.name}
             categories={foodCategories}
-            onCreated={refetchItems}
           />
         }
       >

@@ -1,10 +1,19 @@
 import { db } from '@burn-app/db'
+import {
+  computeMealTotalsFromLineItems,
+  mealMacroTotalsToMealColumns,
+  mealTotalsLinesFromDbRows,
+} from '@burn-app/db/meal-totals'
 import { meal, mealItem, foodItem, dietPlanMeal, dietPlanAssignment } from '@burn-app/db/schema'
 import { count, asc, desc, ilike, eq, and, inArray } from 'drizzle-orm'
 import { calculateOffset, combineConditions } from '@/lib/api-helpers/query-builders'
 import { mapFoodCategoriesSorted } from '@/lib/helpers/food-item-categories'
-import { roundNutritionMacroNullable, roundNutritionMacroRequired } from '@/lib/helpers/nutrition-numbers'
+import { roundNutritionMacroRequired } from '@/lib/helpers/nutrition-numbers'
 import type { MealsQuery, CreateMeal, UpdateMeal } from '@/types/api/meal.schemas'
+
+// ---------------------------------------------------------------------------
+// Read paths
+// ---------------------------------------------------------------------------
 
 /** Lists meals with optional search and sort; count and items are fetched in parallel. */
 export async function listMeals(query: MealsQuery) {
@@ -17,6 +26,7 @@ export async function listMeals(query: MealsQuery) {
   }
   const where = combineConditions(conditions)
 
+  // Total count and page rows are independent; run together to cut round-trips.
   const sortFieldMap = {
     name: meal.name,
     createdAt: meal.createdAt,
@@ -24,13 +34,17 @@ export async function listMeals(query: MealsQuery) {
   const sortColumn = sortFieldMap[sortBy ?? 'createdAt'] ?? meal.createdAt
   const sortDir = sortOrder === 'asc' ? asc : desc
 
-  const [countResult, items] = await Promise.all([
+  const [countResult, rawItems] = await Promise.all([
     db.select({ count: count() }).from(meal).where(where),
     db
       .select({
         id: meal.id,
         name: meal.name,
         description: meal.description,
+        totalCalories: meal.totalCalories,
+        totalProtein: meal.totalProtein,
+        totalCarbs: meal.totalCarbs,
+        totalFat: meal.totalFat,
         createdAt: meal.createdAt,
         updatedAt: meal.updatedAt,
       })
@@ -40,6 +54,14 @@ export async function listMeals(query: MealsQuery) {
       .limit(perPage)
       .offset(offset),
   ])
+
+  const items = rawItems.map((row) => ({
+    ...row,
+    totalCalories: roundNutritionMacroRequired(row.totalCalories),
+    totalProtein: roundNutritionMacroRequired(row.totalProtein),
+    totalCarbs: roundNutritionMacroRequired(row.totalCarbs),
+    totalFat: roundNutritionMacroRequired(row.totalFat),
+  }))
 
   return {
     items,
@@ -58,6 +80,10 @@ export async function getMealById(id: string) {
         id: meal.id,
         name: meal.name,
         description: meal.description,
+        totalCalories: meal.totalCalories,
+        totalProtein: meal.totalProtein,
+        totalCarbs: meal.totalCarbs,
+        totalFat: meal.totalFat,
         createdAt: meal.createdAt,
         updatedAt: meal.updatedAt,
       })
@@ -98,8 +124,13 @@ export async function getMealById(id: string) {
   const mealRow = mealRows[0]
   if (!mealRow) return null
 
+  // Header uses stored aggregates; lines still expose per-food macros for editing and breakdown.
   return {
     ...mealRow,
+    totalCalories: roundNutritionMacroRequired(mealRow.totalCalories),
+    totalProtein: roundNutritionMacroRequired(mealRow.totalProtein),
+    totalCarbs: roundNutritionMacroRequired(mealRow.totalCarbs),
+    totalFat: roundNutritionMacroRequired(mealRow.totalFat),
     // Normalize DB numerics to API-safe numbers and clamp macro precision for stable UI display.
     mealItems: mealItems.map(mi => ({
       id: mi.id,
@@ -108,14 +139,18 @@ export async function getMealById(id: string) {
       categories: mapFoodCategoriesSorted(mi.foodItem.foodItemCategories),
       quantity: Number(mi.quantity),
       calories: roundNutritionMacroRequired(mi.foodItem.calories),
-      protein: roundNutritionMacroNullable(mi.foodItem.protein),
-      carbs: roundNutritionMacroNullable(mi.foodItem.carbs),
-      fat: roundNutritionMacroNullable(mi.foodItem.fat),
+      protein: roundNutritionMacroRequired(mi.foodItem.protein),
+      carbs: roundNutritionMacroRequired(mi.foodItem.carbs),
+      fat: roundNutritionMacroRequired(mi.foodItem.fat),
       unit: mi.foodItem.unit ?? '100g',
       gramsPerUnit: mi.foodItem.gramsPerUnit == null ? null : Number(mi.foodItem.gramsPerUnit),
     })),
   }
 }
+
+// ---------------------------------------------------------------------------
+// Write paths (transactions keep meal + lines + denormalized totals consistent)
+// ---------------------------------------------------------------------------
 
 /**
  * Creates a meal and its items atomically. Rolls back if any step fails.
@@ -136,7 +171,10 @@ export async function createMeal(data: CreateMeal) {
         }))
       )
     }
-    return inserted
+    // Denormalized totals must match lines before returning (API consumers expect correct totals).
+    await recomputeMealTotals(tx, inserted.id)
+    const [withTotals] = await tx.select().from(meal).where(eq(meal.id, inserted.id)).limit(1)
+    return withTotals ?? inserted
   })
 
   return newMeal
@@ -152,6 +190,28 @@ export type DeleteMealResult =
 
 /** Drizzle transaction client (same surface as `db` for queries used here). */
 type DbClient = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+/**
+ * Recomputes `meal.total_*` from current `meal_item` rows joined to `food_item`.
+ * Caller must run inside the same transaction as line mutations so readers never see stale totals.
+ */
+async function recomputeMealTotals(tx: DbClient, mealId: string) {
+  const rows = await tx
+    .select({
+      quantity: mealItem.quantity,
+      calories: foodItem.calories,
+      protein: foodItem.protein,
+      carbs: foodItem.carbs,
+      fat: foodItem.fat,
+      unit: foodItem.unit,
+    })
+    .from(mealItem)
+    .innerJoin(foodItem, eq(mealItem.foodItemId, foodItem.id))
+    .where(eq(mealItem.mealId, mealId))
+
+  const totals = computeMealTotalsFromLineItems(mealTotalsLinesFromDbRows(rows))
+  await tx.update(meal).set(mealMacroTotalsToMealColumns(totals)).where(eq(meal.id, mealId))
+}
 
 async function validateMealItemIdsInMeal(
   tx: DbClient,
@@ -215,18 +275,21 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
   const { name, description, add, remove, update } = data
 
   return db.transaction(async tx => {
-    const [mealRow] = await tx.select().from(meal).where(eq(meal.id, id)).limit(1)
+    // Load header and “assigned plan” conflict probe together; both keys only on `id`.
+    const [mealRows, assignedPlanRows] = await Promise.all([
+      tx.select().from(meal).where(eq(meal.id, id)).limit(1),
+      tx
+        .select({ id: dietPlanMeal.id })
+        .from(dietPlanMeal)
+        .innerJoin(dietPlanAssignment, eq(dietPlanAssignment.dietPlanId, dietPlanMeal.dietPlanId))
+        .where(eq(dietPlanMeal.mealId, id))
+        .limit(1),
+    ])
+    const mealRow = mealRows[0]
     if (!mealRow) return { ok: false, error: 'Meal not found', code: 'NOT_FOUND' }
+    const mealInAssignedPlan = assignedPlanRows[0]
 
-    // Intentional join strategy: existence check across plan slots + assignments is cheapest
-    // and clearest as a direct join with a single limit(1) probe.
     // Block edits when this meal appears in any diet plan that has an active assignment.
-    const [mealInAssignedPlan] = await tx
-      .select({ id: dietPlanMeal.id })
-      .from(dietPlanMeal)
-      .innerJoin(dietPlanAssignment, eq(dietPlanAssignment.dietPlanId, dietPlanMeal.dietPlanId))
-      .where(eq(dietPlanMeal.mealId, id))
-      .limit(1)
     if (mealInAssignedPlan) {
       return {
         ok: false,
@@ -235,12 +298,12 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
       }
     }
 
-    // Sync overlap check (CPU-only); then run independent FK validations in parallel.
     const overlapError = validateRemoveUpdateOverlap(remove, update)
     if (overlapError) return overlapError
 
     const mealItemIdsToCheck = [...(remove ?? []), ...(update ?? []).map(u => u.mealItemId)]
     const foodIdsToAdd = [...new Set((add ?? []).map(a => a.foodItemId))]
+    // Meal-item ownership and food FK checks do not depend on each other.
     const [mealItemValidationError, foodValidationError] = await Promise.all([
       validateMealItemIdsInMeal(tx, id, mealItemIdsToCheck),
       validateFoodItemIdsExist(tx, foodIdsToAdd),
@@ -248,7 +311,7 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
     const validationError = mealItemValidationError ?? foodValidationError
     if (validationError) return validationError
 
-    // Apply metadata and line-item changes in order: meal row → deletes → updates → inserts.
+    // Order matters: deletes before updates/inserts avoids unique/FK surprises; quantity patches are per-row.
     const updateData: Record<string, string | null | undefined> = {}
     if (name !== undefined) updateData.name = name
     if (description !== undefined) updateData.description = description
@@ -260,6 +323,7 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
       await tx.delete(mealItem).where(and(eq(mealItem.mealId, id), inArray(mealItem.id, remove)))
     }
     if (update?.length) {
+      // Each update targets a distinct `meal_item` id; parallel is safe within the txn.
       await Promise.all(
         update.map(u =>
           tx
@@ -279,7 +343,16 @@ export async function updateMeal(id: string, data: UpdateMeal): Promise<UpdateMe
       )
     }
 
+    const hadItemMutation =
+      (add?.length ?? 0) > 0 || (remove?.length ?? 0) > 0 || (update?.length ?? 0) > 0
+    if (hadItemMutation) {
+      await recomputeMealTotals(tx, id)
+    }
+
     const [final] = await tx.select().from(meal).where(eq(meal.id, id)).limit(1)
+    if (!final) {
+      return { ok: false, error: 'Meal not found', code: 'NOT_FOUND' }
+    }
     return { ok: true, data: final }
   })
 }
@@ -295,7 +368,7 @@ export async function deleteMeal(id: string): Promise<DeleteMealResult> {
       return { ok: false, error: 'Meal not found', code: 'NOT_FOUND' }
     }
 
-    // Meal-item count and diet-plan membership are independent; evaluate together.
+    // Item count and plan references are independent probes; both must pass before delete.
     const [[itemCountRow], [referencedByPlan]] = await Promise.all([
       tx.select({ count: count() }).from(mealItem).where(eq(mealItem.mealId, id)),
       tx.select({ id: dietPlanMeal.id }).from(dietPlanMeal).where(eq(dietPlanMeal.mealId, id)).limit(1),

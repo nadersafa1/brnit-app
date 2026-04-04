@@ -48,8 +48,10 @@ export function useUpdateMeal(source: DataSource = 'admin') {
       })
       return requireJsonSuccess(res, 'Failed to update meal')
     },
-    onSuccess: (_, variables) => {
-      qc.invalidateQueries({ queryKey: keys.meal(variables.id) })
+    onSuccess: () => {
+      // Prefix `['admin'|'nutritionist', 'meals']` matches both list queries (`…, filters`) and
+      // detail (`…, mealId`). A second invalidate on `keys.meal(id)` duplicated work and could
+      // refetch the same detail query twice per mutation.
       qc.invalidateQueries({ queryKey: keys.meals({}).slice(0, 2) })
       toast.success('Meal updated')
     },

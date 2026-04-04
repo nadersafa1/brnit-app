@@ -10,7 +10,8 @@ type AdminCategoryAddFoodItemActionProps = {
   readonly categoryId: string
   readonly categoryName: string
   readonly categories: FoodCategory[]
-  readonly onCreated: () => void
+  /** Optional; list refresh is handled via React Query invalidation from `useCreateFoodItem`. */
+  readonly onCreated?: () => void
 }
 
 const ADD_ITEM_TITLE = 'Add food item to this category'

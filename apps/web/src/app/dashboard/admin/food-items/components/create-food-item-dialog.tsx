@@ -17,7 +17,7 @@ interface CreateFoodItemDialogProps {
   description?: string
 }
 
-/** Modal wrapper around FoodItemForm; closes on successful create and notifies parent to refetch lists. */
+/** Modal wrapper around FoodItemForm; closes on successful create. List queries refresh via mutation invalidation. */
 export function CreateFoodItemDialog({
   open,
   onOpenChange,

@@ -12,10 +12,10 @@ export interface FoodItem {
   id: string
   name: string
   categories: { id: string; name: string }[]
-  calories: string | null
-  protein: string | null
-  carbs: string | null
-  fat: string | null
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
   unit: FoodUnit
   gramsPerUnit: number | null
   imageUrl: string | null

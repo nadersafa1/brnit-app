@@ -15,10 +15,7 @@ import {
   uploadFileToCloudinary,
 } from '@/lib/cloudinary-utils'
 import { mapFoodCategoriesSorted } from '@/lib/helpers/food-item-categories'
-import {
-  roundNutritionMacroNullable,
-  roundNutritionMacroRequired,
-} from '@/lib/helpers/nutrition-numbers'
+import { roundNutritionMacroRequired } from '@/lib/helpers/nutrition-numbers'
 import type { FoodCategoriesQuery, FoodItemsQuery, FoodUnit } from '@/types/api/food.schemas'
 
 const FOOD_ITEM_IMAGE_FOLDER = 'food-items'
@@ -64,9 +61,9 @@ export type FoodItemApi = {
   name: string
   categories: { id: string; name: string }[]
   calories: number
-  protein: number | null
-  carbs: number | null
-  fat: number | null
+  protein: number
+  carbs: number
+  fat: number
   unit: FoodUnit
   gramsPerUnit: number | null
   imageUrl: string | null
@@ -138,9 +135,9 @@ type FoodNumericFields = {
 function normalizeFoodNumericFields(row: FoodNumericFields) {
   return {
     calories: roundNutritionMacroRequired(row.calories),
-    protein: roundNutritionMacroNullable(row.protein),
-    carbs: roundNutritionMacroNullable(row.carbs),
-    fat: roundNutritionMacroNullable(row.fat),
+    protein: roundNutritionMacroRequired(row.protein),
+    carbs: roundNutritionMacroRequired(row.carbs),
+    fat: roundNutritionMacroRequired(row.fat),
     gramsPerUnit: row.gramsPerUnit == null ? null : Number(row.gramsPerUnit),
   }
 }
@@ -370,8 +367,9 @@ export async function deleteFoodCategory(id: string) {
 
 /**
  * Creates a food row plus junction rows in one transaction.
- * Validates category IDs before Cloudinary upload so a bad request does not leave an orphan image.
- * Cloudinary stays outside the transaction (external service).
+ *
+ * Category IDs are validated before Cloudinary so a bad request never uploads an orphan image.
+ * Image upload stays outside the DB transaction (external I/O); DB work is all-or-nothing.
  */
 export async function createFoodItem(
   data: {
@@ -397,14 +395,15 @@ export async function createFoodItem(
   }
 
   return db.transaction(async (tx) => {
+    // Insert master row first so junction rows can reference a stable food id.
     const [created] = await tx
       .insert(foodItem)
       .values({
         name: data.name,
-        calories: data.calories?.toString(),
-        protein: data.protein?.toString(),
-        carbs: data.carbs?.toString(),
-        fat: data.fat?.toString(),
+        calories: String(data.calories ?? 0),
+        protein: String(data.protein ?? 0),
+        carbs: String(data.carbs ?? 0),
+        fat: String(data.fat ?? 0),
         unit: data.unit ?? '100g',
         gramsPerUnit: data.gramsPerUnit?.toString() ?? null,
         imagePublicId,
@@ -437,10 +436,10 @@ function buildFoodItemUpdatePayload(
 ): Record<string, string | number | null | undefined> {
   const updateData: Record<string, string | number | null | undefined> = {}
   if (data.name !== undefined) updateData.name = data.name
-  if (data.calories !== undefined) updateData.calories = data.calories?.toString() ?? null
-  if (data.protein !== undefined) updateData.protein = data.protein?.toString() ?? null
-  if (data.carbs !== undefined) updateData.carbs = data.carbs?.toString() ?? null
-  if (data.fat !== undefined) updateData.fat = data.fat?.toString() ?? null
+  if (data.calories !== undefined) updateData.calories = String(data.calories ?? 0)
+  if (data.protein !== undefined) updateData.protein = String(data.protein ?? 0)
+  if (data.carbs !== undefined) updateData.carbs = String(data.carbs ?? 0)
+  if (data.fat !== undefined) updateData.fat = String(data.fat ?? 0)
   if (data.unit !== undefined) updateData.unit = data.unit
   if (data.gramsPerUnit !== undefined)
     updateData.gramsPerUnit = data.gramsPerUnit?.toString() ?? null
@@ -450,9 +449,10 @@ function buildFoodItemUpdatePayload(
 
 /**
  * Updates scalar columns and/or replaces category links.
- * Order: load row + blocking check (parallel) → validate new category IDs if needed → Cloudinary →
- * single DB transaction (column patch + delete/insert junction) → reload API shape.
- * Blocking items cannot be edited (product rule); Cloudinary is not in the transaction.
+ *
+ * Flow: (1) load row + blocking refs in parallel, (2) optional category validation, (3) optional
+ * Cloudinary, (4) one transaction for column patch + junction replace, (5) reload API shape.
+ * Blocking references prevent edits to foods used on meals / plans / logs (product rule).
  */
 export async function updateFoodItem(
   id: string,
@@ -513,12 +513,12 @@ export async function updateFoodItem(
     return { ok: false, error: 'No changes to apply', code: 'VALIDATION' }
   }
 
-  // One transaction: scalar update and junction replace succeed or both roll back.
   await db.transaction(async (tx) => {
     if (Object.keys(updateData).length > 0) {
       await tx.update(foodItem).set(updateData).where(eq(foodItem.id, id))
     }
     if (wantsCategoryUpdate) {
+      // Replace-all pattern: clear links then insert validated set (empty array = no categories).
       await tx.delete(foodItemCategory).where(eq(foodItemCategory.foodItemId, id))
       await tx.insert(foodItemCategory).values(
         data.categoryIds!.map((foodCategoryId) => ({

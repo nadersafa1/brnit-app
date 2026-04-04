@@ -97,12 +97,7 @@ export default function NutritionistDietPlansPage() {
         </Card>
       )}
 
-      <CreateDietPlanDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onSuccess={() => refetch()}
-        source='nutritionist'
-      />
+      <CreateDietPlanDialog open={createOpen} onOpenChange={setCreateOpen} source='nutritionist' />
     </div>
   )
 }

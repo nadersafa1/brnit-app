@@ -55,15 +55,15 @@ const categoryIdsUpdateSchema = z
   .transform(ids => [...new Set(ids)])
   .optional()
 
-/** Create payload: name, categoryIds, macros required; unit, gramsPerUnit optional. */
+/** Create payload: name, categoryIds required; macros default to 0; unit, gramsPerUnit optional. */
 export const createFoodItemSchema = z
   .object({
     name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
     categoryIds: categoryIdsSchema,
-    calories: z.number().nonnegative('Calories must be non-negative'),
-    protein: z.number().nonnegative('Protein must be non-negative'),
-    carbs: z.number().nonnegative('Carbs must be non-negative'),
-    fat: z.number().nonnegative('Fat must be non-negative'),
+    calories: z.number().nonnegative('Calories must be non-negative').optional().default(0),
+    protein: z.number().nonnegative('Protein must be non-negative').optional().default(0),
+    carbs: z.number().nonnegative('Carbs must be non-negative').optional().default(0),
+    fat: z.number().nonnegative('Fat must be non-negative').optional().default(0),
     unit: foodUnitSchema.optional().default('100g'),
     gramsPerUnit: z.number().positive('Grams per unit must be positive').nullable().optional(),
   })
@@ -101,10 +101,10 @@ export const createFoodItemFormSchema = z
   .object({
     name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
     categoryIds: categoryIdsSchema,
-    calories: z.coerce.number().nonnegative('Calories must be non-negative'),
-    protein: z.coerce.number().nonnegative('Protein must be non-negative'),
-    carbs: z.coerce.number().nonnegative('Carbs must be non-negative'),
-    fat: z.coerce.number().nonnegative('Fat must be non-negative'),
+    calories: z.coerce.number().nonnegative('Calories must be non-negative').optional().default(0),
+    protein: z.coerce.number().nonnegative('Protein must be non-negative').optional().default(0),
+    carbs: z.coerce.number().nonnegative('Carbs must be non-negative').optional().default(0),
+    fat: z.coerce.number().nonnegative('Fat must be non-negative').optional().default(0),
     unit: foodUnitSchema.optional().default('100g'),
     gramsPerUnit: z.coerce.number().positive('Grams per unit must be positive').nullable().optional(),
   })

@@ -15,9 +15,9 @@ export const foodItem = pgTable('food_item', {
     .$defaultFn(() => crypto.randomUUID()),
   name: text('name').notNull(),
   calories: numeric('calories').notNull().default('0'),
-  protein: numeric('protein'),
-  carbs: numeric('carbs'),
-  fat: numeric('fat'),
+  protein: numeric('protein').notNull().default('0'),
+  carbs: numeric('carbs').notNull().default('0'),
+  fat: numeric('fat').notNull().default('0'),
   /** Reference unit for stored macros (per 1 unit). Default 100g = nutrition per 100g, quantity in grams. */
   unit: foodItemUnitEnum('unit').notNull().default('100g'),
   /** Grams per 1 unit. For 100g use 100; for piece required (e.g. 50 for one egg). */
