@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { Route } from "next";
 import { useRouter } from "next/navigation";
 
 import { authClient } from "@/lib/auth-client";
@@ -24,7 +25,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { LogOut } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 function getInitials(name: string) {
@@ -122,6 +123,15 @@ export function NavUser() {
                 </div>
               </div>
             </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem asChild>
+                <Link href={"/dashboard/account" as Route}>
+                  <User />
+                  Account & preferences
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onClick={handleSignOut}>
               <LogOut />

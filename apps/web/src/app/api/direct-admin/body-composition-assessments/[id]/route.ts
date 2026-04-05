@@ -19,10 +19,8 @@ type Params = { params: Promise<{ id: string }> }
 
 const PATCH_SCALAR_FIELDS = [
   'assessedAt',
-  'heightCm',
   'bodyFatPercent',
   'weightKg',
-  'bmi',
   'muscleMassKg',
   'visceralFatAreaCm2',
   'bodyWaterL',

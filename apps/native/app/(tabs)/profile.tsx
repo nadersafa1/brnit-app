@@ -1,4 +1,6 @@
 import { useRef, useCallback } from 'react'
+import type { PreferencesSheetRef } from '@/components/preferences/preferences-sheet'
+import { PreferencesSheet } from '@/components/preferences/preferences-sheet'
 import { useRouter } from 'expo-router'
 import { Pressable, View, StyleSheet, Image, ScrollView } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -15,6 +17,8 @@ import {
   promptDeleteAccount,
   promptSignOut,
 } from '@/lib/profile/account-alerts'
+import { useAppSettingsStore } from '@/store/app-settings-store'
+import { useUserPreferencesStore } from '@/store/user-preferences-store'
 import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { radii } from '@/theme/radii'
 import { spacing } from '@/theme/spacing'
@@ -30,6 +34,9 @@ export default function Profile() {
   const router = useRouter()
   const { data: session, refetch: refetchSession } = authClient.useSession()
   const editSheetRef = useRef<EditProfileSheetRef>(null)
+  const preferencesSheetRef = useRef<PreferencesSheetRef>(null)
+  const resetPreferences = useUserPreferencesStore((s) => s.reset)
+  const replayOnboardingLocal = useAppSettingsStore((s) => s.replayOnboarding)
 
   const userName = session?.user?.name || 'User'
   const userEmail = session?.user?.email || ''
@@ -40,6 +47,19 @@ export default function Profile() {
     editSheetRef.current?.open(2)
   }, [])
 
+  const openPreferencesSheet = useCallback(() => {
+    preferencesSheetRef.current?.open(0)
+  }, [])
+
+  const handleReplayOnboarding = useCallback(() => {
+    replayOnboardingLocal()
+    resetPreferences()
+    router.replace({
+      pathname: '/(onboarding)/[step]',
+      params: { step: '0' },
+    })
+  }, [replayOnboardingLocal, resetPreferences, router])
+
   // Better Auth session hook exposes `refetch`, not TanStack `invalidateQueries`.
   const handleEditSaveSuccess = useCallback(() => {
     refetchSession?.()
@@ -47,12 +67,13 @@ export default function Profile() {
 
   const handleSignOut = useCallback(() => {
     promptSignOut(() => {
+      resetPreferences()
       authClient.signOut().then(
         () => router.replace('/(auth)'),
         () => undefined
       )
     })
-  }, [router])
+  }, [resetPreferences, router])
 
   const runDeleteAccount = useCallback(async () => {
     const { error } = await authClient.deleteUser()
@@ -63,9 +84,10 @@ export default function Profile() {
       )
       return
     }
+    resetPreferences()
     await authClient.signOut()
     router.replace('/(auth)')
-  }, [router])
+  }, [resetPreferences, router])
 
   const handleDeleteAccountPress = useCallback(() => {
     promptDeleteAccount(() => {
@@ -114,6 +136,18 @@ export default function Profile() {
 
         <View style={[styles.settingsCard, { backgroundColor: colors.card }, elevation.md]}>
           <SettingsRow icon='person-outline' label='Edit Profile' colors={colors} onPress={openEditSheet} />
+          <SettingsRow
+            icon='speedometer-outline'
+            label='Units & measurements'
+            colors={colors}
+            onPress={openPreferencesSheet}
+          />
+          <SettingsRow
+            icon='refresh-outline'
+            label='Run setup wizard again'
+            colors={colors}
+            onPress={handleReplayOnboarding}
+          />
           <SettingsRow icon='notifications-outline' label='Notifications' colors={colors} />
           <SettingsRow icon='fitness-outline' label='Goals' colors={colors} />
           <SettingsRow icon='help-circle-outline' label='Help & Support' colors={colors} />
@@ -150,6 +184,7 @@ export default function Profile() {
         initialImageUrl={userImage}
         onSaveSuccess={handleEditSaveSuccess}
       />
+      <PreferencesSheet ref={preferencesSheetRef} />
     </View>
   )
 }

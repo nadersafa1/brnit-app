@@ -39,7 +39,7 @@ export default function CompleteProfileScreen() {
     )
   }
   if (!session?.user) return <Redirect href='/(auth)/login' />
-  if (session.user.dob) return <Redirect href='/(tabs)' />
+  if (session.user.dob) return <Redirect href='/' />
 
   const onSubmit = form.handleSubmit(async values => {
     try {
@@ -50,7 +50,8 @@ export default function CompleteProfileScreen() {
         showError('Update failed', result.error.message ?? DOB_UPDATE_ERROR)
         return
       }
-      router.replace('/(tabs)')
+      // Root index runs prefs bootstrap (POST onboarding → Postgres) and catch-up routing.
+      router.replace('/')
     } catch {
       showError('Update failed', DOB_UPDATE_ERROR)
     }

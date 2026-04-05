@@ -17,6 +17,7 @@ function RootNavigator() {
       <Stack.Screen name="accept-invitation" />
       <Stack.Screen name="(onboarding)" />
       <Stack.Screen name="(auth)" />
+      <Stack.Screen name="preference-catch-up" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
     </Stack>

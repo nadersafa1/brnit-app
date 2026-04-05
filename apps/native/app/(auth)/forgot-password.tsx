@@ -28,7 +28,10 @@ export default function ForgotPasswordScreen() {
   }
 
   if (session?.user) {
-    return <Redirect href="/(tabs)" />
+    if (!session.user.dob) {
+      return <Redirect href='/(auth)/complete-profile' />
+    }
+    return <Redirect href='/' />
   }
 
   async function handleSendResetLink() {

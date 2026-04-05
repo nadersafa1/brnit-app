@@ -38,20 +38,16 @@ export default function AddAssessmentDialog({
   const create = useCreateAssessment()
   const [file, setFile] = useState<File | null>(null)
   const [assessedAt, setAssessedAt] = useState('')
-  const [heightCm, setHeightCm] = useState('')
   const [bodyFatPercent, setBodyFatPercent] = useState('')
   const [weightKg, setWeightKg] = useState('')
-  const [bmi, setBmi] = useState('')
   const [muscleMassKg, setMuscleMassKg] = useState('')
   const [visceralFatAreaCm2, setVisceralFatAreaCm2] = useState('')
   const [bodyWaterL, setBodyWaterL] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
 
   const reset = useCallback(() => {
-    setHeightCm('')
     setBodyFatPercent('')
     setWeightKg('')
-    setBmi('')
     setMuscleMassKg('')
     setVisceralFatAreaCm2('')
     setBodyWaterL('')
@@ -86,19 +82,15 @@ export default function AddAssessmentDialog({
       return
     }
 
-    const numHeight = Number(heightCm)
     const numBodyFat = Number(bodyFatPercent)
     const numWeight = Number(weightKg)
-    const numBmi = Number(bmi)
     const numMuscle = Number(muscleMassKg)
     const numVisceral = Number(visceralFatAreaCm2)
     const numWater = Number(bodyWaterL)
 
     if (
-      Number.isNaN(numHeight) ||
       Number.isNaN(numBodyFat) ||
       Number.isNaN(numWeight) ||
-      Number.isNaN(numBmi) ||
       Number.isNaN(numMuscle) ||
       Number.isNaN(numVisceral) ||
       Number.isNaN(numWater)
@@ -110,10 +102,8 @@ export default function AddAssessmentDialog({
     await create.mutateAsync({
       memberId: member.id,
       assessedAt: isoAssessedAt,
-      heightCm: numHeight,
       bodyFatPercent: numBodyFat,
       weightKg: numWeight,
-      bmi: numBmi,
       muscleMassKg: numMuscle,
       visceralFatAreaCm2: numVisceral,
       bodyWaterL: numWater,
@@ -135,7 +125,9 @@ export default function AddAssessmentDialog({
         <DialogHeader>
           <DialogTitle>Add assessment</DialogTitle>
           <DialogDescription>
-            Add a body composition assessment for {memberName}.
+            Add a body composition assessment for {memberName}. Height and BMI come from the member’s saved
+            account preferences and this weight — they must set height in the app or under web account
+            preferences first.
           </DialogDescription>
         </DialogHeader>
 
@@ -152,45 +144,16 @@ export default function AddAssessmentDialog({
               />
             </Field>
 
-            <div className="grid grid-cols-2 gap-4">
-              <Field>
-                <FieldLabel htmlFor="heightCm">Height (cm)</FieldLabel>
-                <Input
-                  id="heightCm"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="999.99"
-                  value={heightCm}
-                  onChange={e => setHeightCm(e.target.value)}
-                  required
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="weightKg">Weight (kg)</FieldLabel>
-                <Input
-                  id="weightKg"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="999.99"
-                  value={weightKg}
-                  onChange={e => setWeightKg(e.target.value)}
-                  required
-                />
-              </Field>
-            </div>
-
             <Field>
-              <FieldLabel htmlFor="bmi">BMI</FieldLabel>
+              <FieldLabel htmlFor="weightKg">Weight (kg)</FieldLabel>
               <Input
-                id="bmi"
+                id="weightKg"
                 type="number"
                 step="0.01"
                 min="0"
-                max="99.99"
-                value={bmi}
-                onChange={e => setBmi(e.target.value)}
+                max="999.99"
+                value={weightKg}
+                onChange={e => setWeightKg(e.target.value)}
                 required
               />
             </Field>

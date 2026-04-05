@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Link, Redirect, useLocalSearchParams } from 'expo-router'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -25,6 +25,14 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const acceptInvitationHref = useMemo(
+    () =>
+      invitationId
+        ? ({ pathname: '/accept-invitation', params: { invitationId } } as const)
+        : null,
+    [invitationId]
+  )
+
   /** Sign in with Apple exists only on iOS; capability is re-checked inside the native module when the user taps. */
   const showAppleSocialButton = Platform.OS === 'ios'
 
@@ -40,10 +48,10 @@ export default function LoginScreen() {
     if (!session.user.dob) {
       return <Redirect href='/(auth)/complete-profile' />
     }
-    if (invitationId) {
-      return <Redirect href={{ pathname: '/accept-invitation', params: { invitationId } }} />
+    if (acceptInvitationHref) {
+      return <Redirect href={acceptInvitationHref} />
     }
-    return <Redirect href='/(tabs)' />
+    return <Redirect href='/' />
   }
 
   async function handleLogin() {

@@ -14,6 +14,7 @@
   "dependencies": {
     "@better-auth/expo": "^1.4.9",
     "@burn-app/env": "*",
+    "@burn-app/user-preferences": "*",
     "@expo/metro-runtime": "~55.0.6",
     "@expo/vector-icons": "^15.0.3",
     "@gorhom/bottom-sheet": "^5",

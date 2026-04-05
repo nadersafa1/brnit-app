@@ -35,7 +35,10 @@ export default function ResetPasswordScreen() {
   }
 
   if (session?.user) {
-    return <Redirect href="/(tabs)" />
+    if (!session.user.dob) {
+      return <Redirect href='/(auth)/complete-profile' />
+    }
+    return <Redirect href='/' />
   }
 
   if (!token) {

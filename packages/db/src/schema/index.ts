@@ -1,4 +1,5 @@
 export * from "./auth";
+export * from "./user-preferences";
 export * from "./body-composition-assessment";
 export * from "./food-category";
 export * from "./food-item";

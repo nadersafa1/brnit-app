@@ -7,12 +7,17 @@ type AppSettings = {
   isOnboarded: boolean
   seenFeatures: Record<string, boolean>
   onboardingAnswers: Record<string, string | string[]>
+  /** After we POST onboarding draft prefs for this user id, skip repeating until answers change. */
+  preferencesDraftSyncedForUserId: string | null
 }
 
 type AppSettingsActions = {
   setIsOnboarded: (value: boolean) => void
   setSeenFeature: (feature: string, value: boolean) => void
   updateOnboardingAnswers: (answers: Record<string, string | string[]>) => void
+  markPreferencesDraftSyncedForUser: (userId: string) => void
+  /** Clear onboarding progress and show the wizard again (local only). */
+  replayOnboarding: () => void
   resetSettings: () => void
 }
 
@@ -22,6 +27,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   isOnboarded: false,
   seenFeatures: {},
   onboardingAnswers: {},
+  preferencesDraftSyncedForUserId: null,
 }
 
 function loadSettingsSync(): AppSettings {
@@ -64,6 +70,20 @@ export const useAppSettingsStore = create<AppSettingsStore>((set, get) => ({
     set((state) => ({
       onboardingAnswers: { ...state.onboardingAnswers, ...answers },
     }))
+    persistSettings(get())
+  },
+
+  markPreferencesDraftSyncedForUser: (userId) => {
+    set({ preferencesDraftSyncedForUserId: userId })
+    persistSettings(get())
+  },
+
+  replayOnboarding: () => {
+    set({
+      isOnboarded: false,
+      onboardingAnswers: {},
+      preferencesDraftSyncedForUserId: null,
+    })
     persistSettings(get())
   },
 

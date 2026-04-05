@@ -22,7 +22,7 @@
   },
   "peacock.color": "#ffb402",
   "snyk.advanced.organization": "02bc65b0-e4d7-4689-89e0-df848562d0a6",
-  "snyk.advanced.autoSelectOrganization": true,
+  "snyk.advanced.autoSelectOrganization": false,
   "sonarlint.rules": {
     "typescript:S6766": {
       "level": "off"

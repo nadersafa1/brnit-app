@@ -1,7 +1,7 @@
 'use client'
 
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { View, StyleSheet } from 'react-native'
 
 import { Spinner, Text } from '@/components/ui'
@@ -19,10 +19,18 @@ const AcceptInvitationScreen = () => {
   const { data: session, isPending: sessionPending } = authClient.useSession()
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
 
+  const loginWithInvitationHref = useMemo(
+    () =>
+      invitationId
+        ? ({ pathname: '/(auth)/login', params: { invitationId } } as const)
+        : null,
+    [invitationId]
+  )
+
   useEffect(() => {
     if (status !== 'error') return
     showError('Could not join organization')
-    const t = setTimeout(() => router.replace('/(tabs)'), REDIRECT_DELAY_MS)
+    const t = setTimeout(() => router.replace('/'), REDIRECT_DELAY_MS)
     return () => clearTimeout(t)
   }, [status, router])
 
@@ -55,22 +63,16 @@ const AcceptInvitationScreen = () => {
   }, [session, sessionPending, invitationId, status])
 
   if (!invitationId) {
-    return <Redirect href='/(tabs)' />
+    return <Redirect href='/' />
   }
 
   if (!sessionPending && !session?.user) {
-    return (
-      <Redirect
-        href={{
-          pathname: '/(auth)/login',
-          params: { invitationId },
-        }}
-      />
-    )
+    // `invitationId` is defined here (early return above); href is memoized for stable Redirect identity.
+    return <Redirect href={loginWithInvitationHref!} />
   }
 
   if (status === 'done') {
-    return <Redirect href='/(tabs)' />
+    return <Redirect href='/' />
   }
 
   if (status === 'loading' || status === 'idle' || status === 'error') {

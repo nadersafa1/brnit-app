@@ -13,6 +13,7 @@
     "@base-ui/react": "^1.0.0",
     "@burn-app/auth": "*",
     "@burn-app/db": "*",
+    "@burn-app/user-preferences": "*",
     "@burn-app/env": "*",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-alert-dialog": "^1.1.15",

@@ -18,7 +18,10 @@ export default function AuthScreen() {
   }
 
   if (session?.user) {
-    return <Redirect href='/(tabs)' />
+    if (!session.user.dob) {
+      return <Redirect href='/(auth)/complete-profile' />
+    }
+    return <Redirect href='/' />
   }
 
   return <Redirect href='/(auth)/login' />

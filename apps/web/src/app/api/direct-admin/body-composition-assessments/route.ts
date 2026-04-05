@@ -56,10 +56,8 @@ const postHandler = async (request: NextRequest) => {
   const parsed = {
     memberId: formData.get('memberId') ?? '',
     assessedAt: formData.get('assessedAt') ?? '',
-    heightCm: formData.get('heightCm') ?? '',
     bodyFatPercent: formData.get('bodyFatPercent') ?? '',
     weightKg: formData.get('weightKg') ?? '',
-    bmi: formData.get('bmi') ?? '',
     muscleMassKg: formData.get('muscleMassKg') ?? '',
     visceralFatAreaCm2: formData.get('visceralFatAreaCm2') ?? '',
     bodyWaterL: formData.get('bodyWaterL') ?? '',
@@ -87,6 +85,9 @@ const postHandler = async (request: NextRequest) => {
     }
     if (result.code === 'WRONG_ORG') {
       return NextResponse.json({ error: result.error }, { status: 403 })
+    }
+    if (result.code === 'MISSING_HEIGHT' || result.code === 'INVALID_METRICS') {
+      return NextResponse.json({ error: result.error }, { status: 400 })
     }
     return NextResponse.json({ error: result.error }, { status: 400 })
   }

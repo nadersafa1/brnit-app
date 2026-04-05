@@ -50,7 +50,7 @@ export default function SignUpScreen() {
     if (!session.user.dob) {
       return <Redirect href='/(auth)/complete-profile' />
     }
-    return <Redirect href='/(tabs)' />
+    return <Redirect href='/' />
   }
 
   const passwordRequirements: PasswordRequirement[] = [

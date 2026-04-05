@@ -1,6 +1,8 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
+
+import { computeBmiFromMetric } from '@burn-app/user-preferences'
 
 import {
   Dialog,
@@ -44,22 +46,33 @@ export default function EditAssessmentDialog({
   const [file, setFile] = useState<File | null>(null)
   const [clearImage, setClearImage] = useState(false)
   const [assessedAt, setAssessedAt] = useState('')
-  const [heightCm, setHeightCm] = useState('')
   const [bodyFatPercent, setBodyFatPercent] = useState('')
   const [weightKg, setWeightKg] = useState('')
-  const [bmi, setBmi] = useState('')
   const [muscleMassKg, setMuscleMassKg] = useState('')
   const [visceralFatAreaCm2, setVisceralFatAreaCm2] = useState('')
   const [bodyWaterL, setBodyWaterL] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
 
+  const heightNum = assessment ? Number(assessment.heightCm) : NaN
+  const weightDraft =
+    weightKg === '' && assessment ? Number(assessment.weightKg) : Number(weightKg)
+
+  const bmiPreview = useMemo(() => {
+    if (!assessment) return null
+    if (!Number.isFinite(heightNum) || heightNum <= 0) return null
+    if (!Number.isFinite(weightDraft) || weightDraft < 0) return null
+    try {
+      return computeBmiFromMetric(heightNum, weightDraft)
+    } catch {
+      return null
+    }
+  }, [assessment, heightNum, weightDraft])
+
   useEffect(() => {
     if (assessment) {
       setAssessedAt(toLocalDatetime(assessment.assessedAt))
-      setHeightCm(assessment.heightCm ?? '')
       setBodyFatPercent(assessment.bodyFatPercent ?? '')
       setWeightKg(assessment.weightKg ?? '')
-      setBmi(assessment.bmi ?? '')
       setMuscleMassKg(assessment.muscleMassKg ?? '')
       setVisceralFatAreaCm2(assessment.visceralFatAreaCm2 ?? '')
       setBodyWaterL(assessment.bodyWaterL ?? '')
@@ -95,10 +108,8 @@ export default function EditAssessmentDialog({
 
     const data: Record<string, string | number | boolean | File> = {}
     if (assessedAt) data.assessedAt = isoAssessedAt
-    if (heightCm !== '') data.heightCm = Number(heightCm)
     if (bodyFatPercent !== '') data.bodyFatPercent = Number(bodyFatPercent)
     if (weightKg !== '') data.weightKg = Number(weightKg)
-    if (bmi !== '') data.bmi = Number(bmi)
     if (muscleMassKg !== '') data.muscleMassKg = Number(muscleMassKg)
     if (visceralFatAreaCm2 !== '') data.visceralFatAreaCm2 = Number(visceralFatAreaCm2)
     if (bodyWaterL !== '') data.bodyWaterL = Number(bodyWaterL)
@@ -128,7 +139,8 @@ export default function EditAssessmentDialog({
         <DialogHeader>
           <DialogTitle>Edit assessment</DialogTitle>
           <DialogDescription>
-            Update body composition metrics for this assessment.
+            Height is stored from the member’s profile at the time this assessment was created. Changing weight
+            updates BMI automatically.
           </DialogDescription>
         </DialogHeader>
 
@@ -144,43 +156,31 @@ export default function EditAssessmentDialog({
               />
             </Field>
 
-            <div className="grid grid-cols-2 gap-4">
-              <Field>
-                <FieldLabel htmlFor="edit-heightCm">Height (cm)</FieldLabel>
-                <Input
-                  id="edit-heightCm"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="999.99"
-                  value={heightCm}
-                  onChange={e => setHeightCm(e.target.value)}
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="edit-weightKg">Weight (kg)</FieldLabel>
-                <Input
-                  id="edit-weightKg"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="999.99"
-                  value={weightKg}
-                  onChange={e => setWeightKg(e.target.value)}
-                />
-              </Field>
-            </div>
+            <Field>
+              <FieldLabel>Height at recording (cm)</FieldLabel>
+              <Input readOnly value={assessment.heightCm ?? ''} className="bg-muted" tabIndex={-1} />
+            </Field>
 
             <Field>
-              <FieldLabel htmlFor="edit-bmi">BMI</FieldLabel>
+              <FieldLabel htmlFor="edit-weightKg">Weight (kg)</FieldLabel>
               <Input
-                id="edit-bmi"
+                id="edit-weightKg"
                 type="number"
                 step="0.01"
                 min="0"
-                max="99.99"
-                value={bmi}
-                onChange={e => setBmi(e.target.value)}
+                max="999.99"
+                value={weightKg}
+                onChange={e => setWeightKg(e.target.value)}
+              />
+            </Field>
+
+            <Field>
+              <FieldLabel>BMI (from height & weight above)</FieldLabel>
+              <Input
+                readOnly
+                value={bmiPreview != null ? String(bmiPreview) : (assessment.bmi ?? '')}
+                className="bg-muted"
+                tabIndex={-1}
               />
             </Field>
 

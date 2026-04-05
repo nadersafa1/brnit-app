@@ -2,7 +2,9 @@ import { db } from '@burn-app/db'
 import {
   bodyCompositionAssessment,
   member,
+  userPreferences,
 } from '@burn-app/db/schema'
+import { computeBmiFromMetric, effectivePreferences } from '@burn-app/user-preferences'
 import { count, asc, desc, eq, and, inArray } from 'drizzle-orm'
 import { calculateOffset } from '@/lib/api-helpers/query-builders'
 import {
@@ -25,11 +27,19 @@ export type AssessmentResponse = Omit<
 
 export type CreateAssessmentResult =
   | { ok: true; data: AssessmentResponse }
-  | { ok: false; error: string; code: 'NOT_FOUND' | 'WRONG_ORG' }
+  | {
+      ok: false
+      error: string
+      code: 'NOT_FOUND' | 'WRONG_ORG' | 'MISSING_HEIGHT' | 'INVALID_METRICS'
+    }
 
 export type UpdateAssessmentResult =
   | { ok: true; data: AssessmentResponse }
-  | { ok: false; error: string; code: 'NOT_FOUND' | 'WRONG_ORG' }
+  | {
+      ok: false
+      error: string
+      code: 'NOT_FOUND' | 'WRONG_ORG' | 'INVALID_METRICS'
+    }
 
 export type DeleteAssessmentResult =
   | { ok: true }
@@ -43,6 +53,22 @@ async function getMemberOrgId(memberId: string): Promise<string | null> {
     .where(eq(member.id, memberId))
     .limit(1)
   return m?.organizationId ?? null
+}
+
+/** Height (cm) from the linked user’s preferences; assessments use this as a snapshot at create time. */
+async function getHeightCmForMember(memberId: string): Promise<number | null> {
+  const [m] = await db
+    .select({ userId: member.userId })
+    .from(member)
+    .where(eq(member.id, memberId))
+    .limit(1)
+  if (!m) return null
+  const row = await db.query.userPreferences.findFirst({
+    where: eq(userPreferences.userId, m.userId),
+  })
+  const raw = (row?.preferences as Record<string, unknown>) ?? {}
+  const prefs = effectivePreferences(raw)
+  return prefs.heightCm ?? null
 }
 
 /** Returns whether the assessment's member belongs to the given organization (for admin ownership checks). */
@@ -81,6 +107,35 @@ export async function createBodyCompositionAssessment(
     return { ok: false, error: 'Member does not belong to this organization', code: 'WRONG_ORG' }
   }
 
+  const heightCm = await getHeightCmForMember(data.memberId)
+  if (heightCm == null) {
+    return {
+      ok: false,
+      error:
+        'This member has no height saved. They must add height in account preferences (app or web) before you can record an assessment.',
+      code: 'MISSING_HEIGHT',
+    }
+  }
+
+  let bmi: number
+  try {
+    bmi = computeBmiFromMetric(heightCm, data.weightKg)
+  } catch {
+    return {
+      ok: false,
+      error: 'Could not compute BMI from saved height and entered weight.',
+      code: 'INVALID_METRICS',
+    }
+  }
+
+  if (bmi < 0 || bmi > 99.99) {
+    return {
+      ok: false,
+      error: 'Computed BMI is out of allowed range; check weight.',
+      code: 'INVALID_METRICS',
+    }
+  }
+
   let imagePublicId: string | null = null
   if (options?.file) {
     const { publicId } = await uploadFileToCloudinary(options.file, BODY_ASSESSMENT_IMAGE_FOLDER)
@@ -93,10 +148,10 @@ export async function createBodyCompositionAssessment(
       memberId: data.memberId,
       assessedAt: new Date(data.assessedAt),
       recordedById,
-      heightCm: String(data.heightCm),
+      heightCm: String(heightCm),
       bodyFatPercent: String(data.bodyFatPercent),
       weightKg: String(data.weightKg),
-      bmi: String(data.bmi),
+      bmi: String(bmi),
       muscleMassKg: String(data.muscleMassKg),
       visceralFatAreaCm2: String(data.visceralFatAreaCm2),
       bodyWaterL: String(data.bodyWaterL),
@@ -466,10 +521,8 @@ function buildAssessmentUpdateValues(
 ): Record<string, unknown> {
   const updateValues: Record<string, unknown> = {}
   if (data.assessedAt !== undefined) updateValues.assessedAt = new Date(data.assessedAt)
-  if (data.heightCm !== undefined) updateValues.heightCm = String(data.heightCm)
   if (data.bodyFatPercent !== undefined) updateValues.bodyFatPercent = String(data.bodyFatPercent)
   if (data.weightKg !== undefined) updateValues.weightKg = String(data.weightKg)
-  if (data.bmi !== undefined) updateValues.bmi = String(data.bmi)
   if (data.muscleMassKg !== undefined) updateValues.muscleMassKg = String(data.muscleMassKg)
   if (data.visceralFatAreaCm2 !== undefined)
     updateValues.visceralFatAreaCm2 = String(data.visceralFatAreaCm2)
@@ -506,6 +559,30 @@ export async function updateBodyCompositionAssessment(
     options,
   )
   const updateValues = buildAssessmentUpdateValues(data, newImagePublicId)
+
+  if (data.weightKg !== undefined) {
+    const h = parseNumeric(existing.heightCm)
+    if (h != null && h > 0) {
+      let nextBmi: number
+      try {
+        nextBmi = computeBmiFromMetric(h, data.weightKg)
+      } catch {
+        return {
+          ok: false,
+          error: 'Could not compute BMI for the new weight.',
+          code: 'INVALID_METRICS',
+        }
+      }
+      if (nextBmi < 0 || nextBmi > 99.99) {
+        return {
+          ok: false,
+          error: 'Computed BMI is out of allowed range.',
+          code: 'INVALID_METRICS',
+        }
+      }
+      updateValues.bmi = String(nextBmi)
+    }
+  }
 
   const [updated] = await db
     .update(bodyCompositionAssessment)

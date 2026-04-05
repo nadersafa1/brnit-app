@@ -79,10 +79,8 @@ export function useBodyCompositionAssessments(
 export type CreateAssessmentFormData = {
   memberId: string
   assessedAt: string
-  heightCm: string | number
   bodyFatPercent: string | number
   weightKg: string | number
-  bmi: string | number
   muscleMassKg: string | number
   visceralFatAreaCm2: string | number
   bodyWaterL: string | number
@@ -96,10 +94,8 @@ export function useCreateAssessment() {
       const fd = new FormData()
       fd.set('memberId', formData.memberId)
       fd.set('assessedAt', formData.assessedAt)
-      fd.set('heightCm', String(formData.heightCm))
       fd.set('bodyFatPercent', String(formData.bodyFatPercent))
       fd.set('weightKg', String(formData.weightKg))
-      fd.set('bmi', String(formData.bmi))
       fd.set('muscleMassKg', String(formData.muscleMassKg))
       fd.set('visceralFatAreaCm2', String(formData.visceralFatAreaCm2))
       fd.set('bodyWaterL', String(formData.bodyWaterL))
@@ -126,10 +122,8 @@ export function useCreateAssessment() {
 
 export type UpdateAssessmentFormData = Partial<{
   assessedAt: string
-  heightCm: string | number
   bodyFatPercent: string | number
   weightKg: string | number
-  bmi: string | number
   muscleMassKg: string | number
   visceralFatAreaCm2: string | number
   bodyWaterL: string | number
@@ -147,10 +141,8 @@ export function useUpdateAssessment() {
     }: UpdateAssessmentFormData & { id: string; memberId: string }) => {
       const fd = new FormData()
       if (data.assessedAt !== undefined) fd.set('assessedAt', data.assessedAt)
-      if (data.heightCm !== undefined) fd.set('heightCm', String(data.heightCm))
       if (data.bodyFatPercent !== undefined) fd.set('bodyFatPercent', String(data.bodyFatPercent))
       if (data.weightKg !== undefined) fd.set('weightKg', String(data.weightKg))
-      if (data.bmi !== undefined) fd.set('bmi', String(data.bmi))
       if (data.muscleMassKg !== undefined) fd.set('muscleMassKg', String(data.muscleMassKg))
       if (data.visceralFatAreaCm2 !== undefined)
         fd.set('visceralFatAreaCm2', String(data.visceralFatAreaCm2))
