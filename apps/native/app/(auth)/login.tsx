@@ -22,8 +22,10 @@ export default function LoginScreen() {
   const { data: session, isPending } = authClient.useSession()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [isEmailLoading, setIsEmailLoading] = useState(false)
+  const [isSocialLoading, setIsSocialLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const isFormBusy = isEmailLoading || isSocialLoading
 
   /** Sign in with Apple exists only on iOS; capability is re-checked inside the native module when the user taps. */
   const showAppleSocialButton = Platform.OS === 'ios'
@@ -47,7 +49,7 @@ export default function LoginScreen() {
   }
 
   async function handleLogin() {
-    setIsLoading(true)
+    setIsEmailLoading(true)
     setError(null)
 
     await authClient.signIn.email(
@@ -55,34 +57,42 @@ export default function LoginScreen() {
       {
         onError(error) {
           setError(error.error?.message || 'Failed to sign in')
-          setIsLoading(false)
+          setIsEmailLoading(false)
         },
         onSuccess() {
           setEmail('')
           setPassword('')
         },
         onFinished() {
-          setIsLoading(false)
+          setIsEmailLoading(false)
         },
       }
     )
   }
 
   async function handleGoogleLogin() {
-    setIsLoading(true)
+    setIsSocialLoading(true)
     setError(null)
-    await authClient.signIn.social(
-      { provider: 'google', callbackURL: BETTER_AUTH_SOCIAL_CALLBACK_PATH },
-      createSocialSignInCallbacks(setError, setIsLoading, 'Google sign-in failed'),
-    )
+    try {
+      await authClient.signIn.social(
+        { provider: 'google', callbackURL: BETTER_AUTH_SOCIAL_CALLBACK_PATH },
+        createSocialSignInCallbacks(setError, setIsSocialLoading, 'Google sign-in failed'),
+      )
+    } finally {
+      setIsSocialLoading(false)
+    }
   }
 
   async function handleAppleLogin() {
-    await signInWithAppleUsingBetterAuth(authClient, {
-      setError,
-      setIsLoading,
-      callbackURL: BETTER_AUTH_SOCIAL_CALLBACK_PATH,
-    })
+    try {
+      await signInWithAppleUsingBetterAuth(authClient, {
+        setError,
+        setIsLoading: setIsSocialLoading,
+        callbackURL: BETTER_AUTH_SOCIAL_CALLBACK_PATH,
+      })
+    } finally {
+      setIsSocialLoading(false)
+    }
   }
 
   return (
@@ -136,7 +146,7 @@ export default function LoginScreen() {
             </View>
 
             <AuthSocialIconButtons
-              isLoading={isLoading}
+              isLoading={isFormBusy}
               cardBackgroundColor={colors.card}
               iconMutedColor={colors.subtle}
               onGooglePress={handleGoogleLogin}
@@ -145,7 +155,11 @@ export default function LoginScreen() {
             />
 
             <View style={styles.buttonContainer}>
-              <PrimaryButton onPress={handleLogin} isLoading={isLoading}>
+              <PrimaryButton
+                onPress={handleLogin}
+                isLoading={isEmailLoading}
+                isDisabled={isSocialLoading}
+              >
                 Sign In
               </PrimaryButton>
             </View>

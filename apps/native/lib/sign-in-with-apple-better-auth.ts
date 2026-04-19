@@ -16,23 +16,25 @@ export async function signInWithAppleUsingBetterAuth(client: NativeAuthClient, p
   setIsLoading(true)
   setError(null)
 
-  const credential = await getAppleIdentityTokenForAuth()
-  if (credential.kind === 'unavailable') {
-    setError('Apple Sign In is not available on this device')
-    setIsLoading(false)
-    return
-  }
-  if (credential.kind === 'canceled') {
-    setIsLoading(false)
-    return
-  }
+  try {
+    const credential = await getAppleIdentityTokenForAuth()
+    if (credential.kind === 'unavailable') {
+      setError('Apple Sign In is not available on this device')
+      return
+    }
+    if (credential.kind === 'canceled') {
+      return
+    }
 
-  await client.signIn.social(
-    {
-      provider: 'apple',
-      callbackURL,
-      idToken: { token: credential.identityToken, nonce: credential.nonce },
-    },
-    createSocialSignInCallbacks(setError, setIsLoading, 'Apple sign-in failed'),
-  )
+    await client.signIn.social(
+      {
+        provider: 'apple',
+        callbackURL,
+        idToken: { token: credential.identityToken, nonce: credential.nonce },
+      },
+      createSocialSignInCallbacks(setError, setIsLoading, 'Apple sign-in failed'),
+    )
+  } finally {
+    setIsLoading(false)
+  }
 }

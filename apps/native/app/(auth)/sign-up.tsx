@@ -31,8 +31,10 @@ export default function SignUpScreen() {
   const [dob, setDob] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [isEmailLoading, setIsEmailLoading] = useState(false)
+  const [isSocialLoading, setIsSocialLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const isFormBusy = isEmailLoading || isSocialLoading
   const [sent, setSent] = useState(false)
 
   /** Sign in with Apple exists only on iOS; availability is enforced again inside the Apple auth module on tap. */
@@ -78,7 +80,7 @@ export default function SignUpScreen() {
       return
     }
 
-    setIsLoading(true)
+    setIsEmailLoading(true)
     setError(null)
 
     await authClient.signUp.email(
@@ -92,7 +94,7 @@ export default function SignUpScreen() {
       {
         onError(error) {
           setError(error.error?.message || 'Failed to sign up')
-          setIsLoading(false)
+          setIsEmailLoading(false)
         },
         onSuccess() {
           setName('')
@@ -103,27 +105,35 @@ export default function SignUpScreen() {
           setSent(true)
         },
         onFinished() {
-          setIsLoading(false)
+          setIsEmailLoading(false)
         },
       }
     )
   }
 
   async function handleGoogleLogin() {
-    setIsLoading(true)
+    setIsSocialLoading(true)
     setError(null)
-    await authClient.signIn.social(
-      { provider: 'google', callbackURL: BETTER_AUTH_SOCIAL_CALLBACK_PATH },
-      createSocialSignInCallbacks(setError, setIsLoading, 'Google sign-in failed'),
-    )
+    try {
+      await authClient.signIn.social(
+        { provider: 'google', callbackURL: BETTER_AUTH_SOCIAL_CALLBACK_PATH },
+        createSocialSignInCallbacks(setError, setIsSocialLoading, 'Google sign-in failed'),
+      )
+    } finally {
+      setIsSocialLoading(false)
+    }
   }
 
   async function handleAppleLogin() {
-    await signInWithAppleUsingBetterAuth(authClient, {
-      setError,
-      setIsLoading,
-      callbackURL: BETTER_AUTH_SOCIAL_CALLBACK_PATH,
-    })
+    try {
+      await signInWithAppleUsingBetterAuth(authClient, {
+        setError,
+        setIsLoading: setIsSocialLoading,
+        callbackURL: BETTER_AUTH_SOCIAL_CALLBACK_PATH,
+      })
+    } finally {
+      setIsSocialLoading(false)
+    }
   }
 
   if (sent) {
@@ -223,7 +233,7 @@ export default function SignUpScreen() {
             )}
 
             <AuthSocialIconButtons
-              isLoading={isLoading}
+              isLoading={isFormBusy}
               cardBackgroundColor={colors.card}
               iconMutedColor={colors.subtle}
               onGooglePress={handleGoogleLogin}
@@ -234,8 +244,8 @@ export default function SignUpScreen() {
             <View style={styles.buttonContainer}>
               <PrimaryButton
                 onPress={handleSignUp}
-                isLoading={isLoading}
-                isDisabled={!allRequirementsMet || !passwordsMatch || !isDobValid}
+                isLoading={isEmailLoading}
+                isDisabled={!allRequirementsMet || !passwordsMatch || !isDobValid || isSocialLoading}
               >
                 Create Account
               </PrimaryButton>
