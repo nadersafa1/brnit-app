@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AcceptInvitationRouteImport } from './routes/accept-invitation'
 import { Route as CompleteProfileRouteImport } from './routes/complete-profile'
 import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
@@ -20,12 +21,37 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardAdminRouteRouteImport } from './routes/dashboard/admin/route'
 import { Route as DashboardDirectAdminRouteRouteImport } from './routes/dashboard/direct-admin/route'
 import { Route as DashboardNutritionistRouteRouteImport } from './routes/dashboard/nutritionist/route'
+import { Route as DashboardAdminIndexRouteImport } from './routes/dashboard/admin/index'
+import { Route as DashboardOrganizationsIndexRouteImport } from './routes/dashboard/organizations/index'
+import { Route as DashboardAdminCategoriesIndexRouteImport } from './routes/dashboard/admin/categories/index'
+import { Route as DashboardAdminCategoriesFoodCategoryIdRouteImport } from './routes/dashboard/admin/categories/$foodCategoryId'
+import { Route as DashboardAdminDietPlansIndexRouteImport } from './routes/dashboard/admin/diet-plans/index'
+import { Route as DashboardAdminDietPlansDietPlanIdRouteImport } from './routes/dashboard/admin/diet-plans/$dietPlanId'
 import { Route as DashboardAdminFoodItemsIndexRouteImport } from './routes/dashboard/admin/food-items/index'
 import { Route as DashboardAdminFoodItemsFoodItemIdRouteImport } from './routes/dashboard/admin/food-items/$foodItemId'
+import { Route as DashboardAdminMealsIndexRouteImport } from './routes/dashboard/admin/meals/index'
+import { Route as DashboardAdminMealsMealIdRouteImport } from './routes/dashboard/admin/meals/$mealId'
+import { Route as DashboardDirectAdminMembersIndexRouteImport } from './routes/dashboard/direct-admin/members/index'
+import { Route as DashboardDirectAdminMembersMemberIdRouteImport } from './routes/dashboard/direct-admin/members/$memberId'
+import { Route as DashboardNutritionistCategoriesIndexRouteImport } from './routes/dashboard/nutritionist/categories/index'
+import { Route as DashboardNutritionistCategoriesFoodCategoryIdRouteImport } from './routes/dashboard/nutritionist/categories/$foodCategoryId'
+import { Route as DashboardNutritionistDietPlansIndexRouteImport } from './routes/dashboard/nutritionist/diet-plans/index'
+import { Route as DashboardNutritionistDietPlansDietPlanIdRouteImport } from './routes/dashboard/nutritionist/diet-plans/$dietPlanId'
+import { Route as DashboardNutritionistFoodItemsIndexRouteImport } from './routes/dashboard/nutritionist/food-items/index'
+import { Route as DashboardNutritionistFoodItemsFoodItemIdRouteImport } from './routes/dashboard/nutritionist/food-items/$foodItemId'
+import { Route as DashboardNutritionistMealsIndexRouteImport } from './routes/dashboard/nutritionist/meals/index'
+import { Route as DashboardNutritionistMealsMealIdRouteImport } from './routes/dashboard/nutritionist/meals/$mealId'
+import { Route as DashboardOrganizationsOrganizationIdIndexRouteImport } from './routes/dashboard/organizations/$organizationId/index'
+import { Route as DashboardOrganizationsOrganizationIdMembersMemberIdRouteImport } from './routes/dashboard/organizations/$organizationId/members/$memberId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AcceptInvitationRoute = AcceptInvitationRouteImport.update({
+  id: '/accept-invitation',
+  path: '/accept-invitation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CompleteProfileRoute = CompleteProfileRouteImport.update({
@@ -80,6 +106,41 @@ const DashboardNutritionistRouteRoute =
     path: '/nutritionist',
     getParentRoute: () => DashboardRouteRoute,
   } as any)
+const DashboardAdminIndexRoute = DashboardAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardAdminRouteRoute,
+} as any)
+const DashboardOrganizationsIndexRoute =
+  DashboardOrganizationsIndexRouteImport.update({
+    id: '/organizations/',
+    path: '/organizations/',
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
+const DashboardAdminCategoriesIndexRoute =
+  DashboardAdminCategoriesIndexRouteImport.update({
+    id: '/categories/',
+    path: '/categories/',
+    getParentRoute: () => DashboardAdminRouteRoute,
+  } as any)
+const DashboardAdminCategoriesFoodCategoryIdRoute =
+  DashboardAdminCategoriesFoodCategoryIdRouteImport.update({
+    id: '/categories/$foodCategoryId',
+    path: '/categories/$foodCategoryId',
+    getParentRoute: () => DashboardAdminRouteRoute,
+  } as any)
+const DashboardAdminDietPlansIndexRoute =
+  DashboardAdminDietPlansIndexRouteImport.update({
+    id: '/diet-plans/',
+    path: '/diet-plans/',
+    getParentRoute: () => DashboardAdminRouteRoute,
+  } as any)
+const DashboardAdminDietPlansDietPlanIdRoute =
+  DashboardAdminDietPlansDietPlanIdRouteImport.update({
+    id: '/diet-plans/$dietPlanId',
+    path: '/diet-plans/$dietPlanId',
+    getParentRoute: () => DashboardAdminRouteRoute,
+  } as any)
 const DashboardAdminFoodItemsIndexRoute =
   DashboardAdminFoodItemsIndexRouteImport.update({
     id: '/food-items/',
@@ -92,57 +153,204 @@ const DashboardAdminFoodItemsFoodItemIdRoute =
     path: '/food-items/$foodItemId',
     getParentRoute: () => DashboardAdminRouteRoute,
   } as any)
+const DashboardAdminMealsIndexRoute =
+  DashboardAdminMealsIndexRouteImport.update({
+    id: '/meals/',
+    path: '/meals/',
+    getParentRoute: () => DashboardAdminRouteRoute,
+  } as any)
+const DashboardAdminMealsMealIdRoute =
+  DashboardAdminMealsMealIdRouteImport.update({
+    id: '/meals/$mealId',
+    path: '/meals/$mealId',
+    getParentRoute: () => DashboardAdminRouteRoute,
+  } as any)
+const DashboardDirectAdminMembersIndexRoute =
+  DashboardDirectAdminMembersIndexRouteImport.update({
+    id: '/members/',
+    path: '/members/',
+    getParentRoute: () => DashboardDirectAdminRouteRoute,
+  } as any)
+const DashboardDirectAdminMembersMemberIdRoute =
+  DashboardDirectAdminMembersMemberIdRouteImport.update({
+    id: '/members/$memberId',
+    path: '/members/$memberId',
+    getParentRoute: () => DashboardDirectAdminRouteRoute,
+  } as any)
+const DashboardNutritionistCategoriesIndexRoute =
+  DashboardNutritionistCategoriesIndexRouteImport.update({
+    id: '/categories/',
+    path: '/categories/',
+    getParentRoute: () => DashboardNutritionistRouteRoute,
+  } as any)
+const DashboardNutritionistCategoriesFoodCategoryIdRoute =
+  DashboardNutritionistCategoriesFoodCategoryIdRouteImport.update({
+    id: '/categories/$foodCategoryId',
+    path: '/categories/$foodCategoryId',
+    getParentRoute: () => DashboardNutritionistRouteRoute,
+  } as any)
+const DashboardNutritionistDietPlansIndexRoute =
+  DashboardNutritionistDietPlansIndexRouteImport.update({
+    id: '/diet-plans/',
+    path: '/diet-plans/',
+    getParentRoute: () => DashboardNutritionistRouteRoute,
+  } as any)
+const DashboardNutritionistDietPlansDietPlanIdRoute =
+  DashboardNutritionistDietPlansDietPlanIdRouteImport.update({
+    id: '/diet-plans/$dietPlanId',
+    path: '/diet-plans/$dietPlanId',
+    getParentRoute: () => DashboardNutritionistRouteRoute,
+  } as any)
+const DashboardNutritionistFoodItemsIndexRoute =
+  DashboardNutritionistFoodItemsIndexRouteImport.update({
+    id: '/food-items/',
+    path: '/food-items/',
+    getParentRoute: () => DashboardNutritionistRouteRoute,
+  } as any)
+const DashboardNutritionistFoodItemsFoodItemIdRoute =
+  DashboardNutritionistFoodItemsFoodItemIdRouteImport.update({
+    id: '/food-items/$foodItemId',
+    path: '/food-items/$foodItemId',
+    getParentRoute: () => DashboardNutritionistRouteRoute,
+  } as any)
+const DashboardNutritionistMealsIndexRoute =
+  DashboardNutritionistMealsIndexRouteImport.update({
+    id: '/meals/',
+    path: '/meals/',
+    getParentRoute: () => DashboardNutritionistRouteRoute,
+  } as any)
+const DashboardNutritionistMealsMealIdRoute =
+  DashboardNutritionistMealsMealIdRouteImport.update({
+    id: '/meals/$mealId',
+    path: '/meals/$mealId',
+    getParentRoute: () => DashboardNutritionistRouteRoute,
+  } as any)
+const DashboardOrganizationsOrganizationIdIndexRoute =
+  DashboardOrganizationsOrganizationIdIndexRouteImport.update({
+    id: '/organizations/$organizationId/',
+    path: '/organizations/$organizationId/',
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
+const DashboardOrganizationsOrganizationIdMembersMemberIdRoute =
+  DashboardOrganizationsOrganizationIdMembersMemberIdRouteImport.update({
+    id: '/organizations/$organizationId/members/$memberId',
+    path: '/organizations/$organizationId/members/$memberId',
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/accept-invitation': typeof AcceptInvitationRoute
   '/complete-profile': typeof CompleteProfileRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/dashboard/admin': typeof DashboardAdminRouteRouteWithChildren
-  '/dashboard/direct-admin': typeof DashboardDirectAdminRouteRoute
-  '/dashboard/nutritionist': typeof DashboardNutritionistRouteRoute
+  '/dashboard/direct-admin': typeof DashboardDirectAdminRouteRouteWithChildren
+  '/dashboard/nutritionist': typeof DashboardNutritionistRouteRouteWithChildren
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/admin/': typeof DashboardAdminIndexRoute
+  '/dashboard/organizations/': typeof DashboardOrganizationsIndexRoute
+  '/dashboard/admin/categories/$foodCategoryId': typeof DashboardAdminCategoriesFoodCategoryIdRoute
+  '/dashboard/admin/diet-plans/$dietPlanId': typeof DashboardAdminDietPlansDietPlanIdRoute
   '/dashboard/admin/food-items/$foodItemId': typeof DashboardAdminFoodItemsFoodItemIdRoute
+  '/dashboard/admin/meals/$mealId': typeof DashboardAdminMealsMealIdRoute
+  '/dashboard/direct-admin/members/$memberId': typeof DashboardDirectAdminMembersMemberIdRoute
+  '/dashboard/nutritionist/categories/$foodCategoryId': typeof DashboardNutritionistCategoriesFoodCategoryIdRoute
+  '/dashboard/nutritionist/diet-plans/$dietPlanId': typeof DashboardNutritionistDietPlansDietPlanIdRoute
+  '/dashboard/nutritionist/food-items/$foodItemId': typeof DashboardNutritionistFoodItemsFoodItemIdRoute
+  '/dashboard/nutritionist/meals/$mealId': typeof DashboardNutritionistMealsMealIdRoute
+  '/dashboard/admin/categories/': typeof DashboardAdminCategoriesIndexRoute
+  '/dashboard/admin/diet-plans/': typeof DashboardAdminDietPlansIndexRoute
   '/dashboard/admin/food-items/': typeof DashboardAdminFoodItemsIndexRoute
+  '/dashboard/admin/meals/': typeof DashboardAdminMealsIndexRoute
+  '/dashboard/direct-admin/members/': typeof DashboardDirectAdminMembersIndexRoute
+  '/dashboard/nutritionist/categories/': typeof DashboardNutritionistCategoriesIndexRoute
+  '/dashboard/nutritionist/diet-plans/': typeof DashboardNutritionistDietPlansIndexRoute
+  '/dashboard/nutritionist/food-items/': typeof DashboardNutritionistFoodItemsIndexRoute
+  '/dashboard/nutritionist/meals/': typeof DashboardNutritionistMealsIndexRoute
+  '/dashboard/organizations/$organizationId/': typeof DashboardOrganizationsOrganizationIdIndexRoute
+  '/dashboard/organizations/$organizationId/members/$memberId': typeof DashboardOrganizationsOrganizationIdMembersMemberIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/accept-invitation': typeof AcceptInvitationRoute
   '/complete-profile': typeof CompleteProfileRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/dashboard/admin': typeof DashboardAdminRouteRouteWithChildren
-  '/dashboard/direct-admin': typeof DashboardDirectAdminRouteRoute
-  '/dashboard/nutritionist': typeof DashboardNutritionistRouteRoute
+  '/dashboard/direct-admin': typeof DashboardDirectAdminRouteRouteWithChildren
+  '/dashboard/nutritionist': typeof DashboardNutritionistRouteRouteWithChildren
   '/dashboard': typeof DashboardIndexRoute
+  '/dashboard/admin': typeof DashboardAdminIndexRoute
+  '/dashboard/organizations': typeof DashboardOrganizationsIndexRoute
+  '/dashboard/admin/categories/$foodCategoryId': typeof DashboardAdminCategoriesFoodCategoryIdRoute
+  '/dashboard/admin/diet-plans/$dietPlanId': typeof DashboardAdminDietPlansDietPlanIdRoute
   '/dashboard/admin/food-items/$foodItemId': typeof DashboardAdminFoodItemsFoodItemIdRoute
+  '/dashboard/admin/meals/$mealId': typeof DashboardAdminMealsMealIdRoute
+  '/dashboard/direct-admin/members/$memberId': typeof DashboardDirectAdminMembersMemberIdRoute
+  '/dashboard/nutritionist/categories/$foodCategoryId': typeof DashboardNutritionistCategoriesFoodCategoryIdRoute
+  '/dashboard/nutritionist/diet-plans/$dietPlanId': typeof DashboardNutritionistDietPlansDietPlanIdRoute
+  '/dashboard/nutritionist/food-items/$foodItemId': typeof DashboardNutritionistFoodItemsFoodItemIdRoute
+  '/dashboard/nutritionist/meals/$mealId': typeof DashboardNutritionistMealsMealIdRoute
+  '/dashboard/admin/categories': typeof DashboardAdminCategoriesIndexRoute
+  '/dashboard/admin/diet-plans': typeof DashboardAdminDietPlansIndexRoute
   '/dashboard/admin/food-items': typeof DashboardAdminFoodItemsIndexRoute
+  '/dashboard/admin/meals': typeof DashboardAdminMealsIndexRoute
+  '/dashboard/direct-admin/members': typeof DashboardDirectAdminMembersIndexRoute
+  '/dashboard/nutritionist/categories': typeof DashboardNutritionistCategoriesIndexRoute
+  '/dashboard/nutritionist/diet-plans': typeof DashboardNutritionistDietPlansIndexRoute
+  '/dashboard/nutritionist/food-items': typeof DashboardNutritionistFoodItemsIndexRoute
+  '/dashboard/nutritionist/meals': typeof DashboardNutritionistMealsIndexRoute
+  '/dashboard/organizations/$organizationId': typeof DashboardOrganizationsOrganizationIdIndexRoute
+  '/dashboard/organizations/$organizationId/members/$memberId': typeof DashboardOrganizationsOrganizationIdMembersMemberIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/accept-invitation': typeof AcceptInvitationRoute
   '/complete-profile': typeof CompleteProfileRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/dashboard/admin': typeof DashboardAdminRouteRouteWithChildren
-  '/dashboard/direct-admin': typeof DashboardDirectAdminRouteRoute
-  '/dashboard/nutritionist': typeof DashboardNutritionistRouteRoute
+  '/dashboard/direct-admin': typeof DashboardDirectAdminRouteRouteWithChildren
+  '/dashboard/nutritionist': typeof DashboardNutritionistRouteRouteWithChildren
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/admin/': typeof DashboardAdminIndexRoute
+  '/dashboard/organizations/': typeof DashboardOrganizationsIndexRoute
+  '/dashboard/admin/categories/$foodCategoryId': typeof DashboardAdminCategoriesFoodCategoryIdRoute
+  '/dashboard/admin/diet-plans/$dietPlanId': typeof DashboardAdminDietPlansDietPlanIdRoute
   '/dashboard/admin/food-items/$foodItemId': typeof DashboardAdminFoodItemsFoodItemIdRoute
+  '/dashboard/admin/meals/$mealId': typeof DashboardAdminMealsMealIdRoute
+  '/dashboard/direct-admin/members/$memberId': typeof DashboardDirectAdminMembersMemberIdRoute
+  '/dashboard/nutritionist/categories/$foodCategoryId': typeof DashboardNutritionistCategoriesFoodCategoryIdRoute
+  '/dashboard/nutritionist/diet-plans/$dietPlanId': typeof DashboardNutritionistDietPlansDietPlanIdRoute
+  '/dashboard/nutritionist/food-items/$foodItemId': typeof DashboardNutritionistFoodItemsFoodItemIdRoute
+  '/dashboard/nutritionist/meals/$mealId': typeof DashboardNutritionistMealsMealIdRoute
+  '/dashboard/admin/categories/': typeof DashboardAdminCategoriesIndexRoute
+  '/dashboard/admin/diet-plans/': typeof DashboardAdminDietPlansIndexRoute
   '/dashboard/admin/food-items/': typeof DashboardAdminFoodItemsIndexRoute
+  '/dashboard/admin/meals/': typeof DashboardAdminMealsIndexRoute
+  '/dashboard/direct-admin/members/': typeof DashboardDirectAdminMembersIndexRoute
+  '/dashboard/nutritionist/categories/': typeof DashboardNutritionistCategoriesIndexRoute
+  '/dashboard/nutritionist/diet-plans/': typeof DashboardNutritionistDietPlansIndexRoute
+  '/dashboard/nutritionist/food-items/': typeof DashboardNutritionistFoodItemsIndexRoute
+  '/dashboard/nutritionist/meals/': typeof DashboardNutritionistMealsIndexRoute
+  '/dashboard/organizations/$organizationId/': typeof DashboardOrganizationsOrganizationIdIndexRoute
+  '/dashboard/organizations/$organizationId/members/$memberId': typeof DashboardOrganizationsOrganizationIdMembersMemberIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/accept-invitation'
     | '/complete-profile'
     | '/forgot-password'
     | '/login'
@@ -152,26 +360,67 @@ export interface FileRouteTypes {
     | '/dashboard/direct-admin'
     | '/dashboard/nutritionist'
     | '/dashboard/'
+    | '/dashboard/admin/'
+    | '/dashboard/organizations/'
+    | '/dashboard/admin/categories/$foodCategoryId'
+    | '/dashboard/admin/diet-plans/$dietPlanId'
     | '/dashboard/admin/food-items/$foodItemId'
+    | '/dashboard/admin/meals/$mealId'
+    | '/dashboard/direct-admin/members/$memberId'
+    | '/dashboard/nutritionist/categories/$foodCategoryId'
+    | '/dashboard/nutritionist/diet-plans/$dietPlanId'
+    | '/dashboard/nutritionist/food-items/$foodItemId'
+    | '/dashboard/nutritionist/meals/$mealId'
+    | '/dashboard/admin/categories/'
+    | '/dashboard/admin/diet-plans/'
     | '/dashboard/admin/food-items/'
+    | '/dashboard/admin/meals/'
+    | '/dashboard/direct-admin/members/'
+    | '/dashboard/nutritionist/categories/'
+    | '/dashboard/nutritionist/diet-plans/'
+    | '/dashboard/nutritionist/food-items/'
+    | '/dashboard/nutritionist/meals/'
+    | '/dashboard/organizations/$organizationId/'
+    | '/dashboard/organizations/$organizationId/members/$memberId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/accept-invitation'
     | '/complete-profile'
     | '/forgot-password'
     | '/login'
     | '/reset-password'
     | '/signup'
-    | '/dashboard/admin'
     | '/dashboard/direct-admin'
     | '/dashboard/nutritionist'
     | '/dashboard'
+    | '/dashboard/admin'
+    | '/dashboard/organizations'
+    | '/dashboard/admin/categories/$foodCategoryId'
+    | '/dashboard/admin/diet-plans/$dietPlanId'
     | '/dashboard/admin/food-items/$foodItemId'
+    | '/dashboard/admin/meals/$mealId'
+    | '/dashboard/direct-admin/members/$memberId'
+    | '/dashboard/nutritionist/categories/$foodCategoryId'
+    | '/dashboard/nutritionist/diet-plans/$dietPlanId'
+    | '/dashboard/nutritionist/food-items/$foodItemId'
+    | '/dashboard/nutritionist/meals/$mealId'
+    | '/dashboard/admin/categories'
+    | '/dashboard/admin/diet-plans'
     | '/dashboard/admin/food-items'
+    | '/dashboard/admin/meals'
+    | '/dashboard/direct-admin/members'
+    | '/dashboard/nutritionist/categories'
+    | '/dashboard/nutritionist/diet-plans'
+    | '/dashboard/nutritionist/food-items'
+    | '/dashboard/nutritionist/meals'
+    | '/dashboard/organizations/$organizationId'
+    | '/dashboard/organizations/$organizationId/members/$memberId'
   id:
     | '__root__'
     | '/'
     | '/dashboard'
+    | '/accept-invitation'
     | '/complete-profile'
     | '/forgot-password'
     | '/login'
@@ -181,13 +430,34 @@ export interface FileRouteTypes {
     | '/dashboard/direct-admin'
     | '/dashboard/nutritionist'
     | '/dashboard/'
+    | '/dashboard/admin/'
+    | '/dashboard/organizations/'
+    | '/dashboard/admin/categories/$foodCategoryId'
+    | '/dashboard/admin/diet-plans/$dietPlanId'
     | '/dashboard/admin/food-items/$foodItemId'
+    | '/dashboard/admin/meals/$mealId'
+    | '/dashboard/direct-admin/members/$memberId'
+    | '/dashboard/nutritionist/categories/$foodCategoryId'
+    | '/dashboard/nutritionist/diet-plans/$dietPlanId'
+    | '/dashboard/nutritionist/food-items/$foodItemId'
+    | '/dashboard/nutritionist/meals/$mealId'
+    | '/dashboard/admin/categories/'
+    | '/dashboard/admin/diet-plans/'
     | '/dashboard/admin/food-items/'
+    | '/dashboard/admin/meals/'
+    | '/dashboard/direct-admin/members/'
+    | '/dashboard/nutritionist/categories/'
+    | '/dashboard/nutritionist/diet-plans/'
+    | '/dashboard/nutritionist/food-items/'
+    | '/dashboard/nutritionist/meals/'
+    | '/dashboard/organizations/$organizationId/'
+    | '/dashboard/organizations/$organizationId/members/$memberId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
+  AcceptInvitationRoute: typeof AcceptInvitationRoute
   CompleteProfileRoute: typeof CompleteProfileRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
@@ -202,6 +472,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/accept-invitation': {
+      id: '/accept-invitation'
+      path: '/accept-invitation'
+      fullPath: '/accept-invitation'
+      preLoaderRoute: typeof AcceptInvitationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/complete-profile': {
@@ -274,6 +551,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardNutritionistRouteRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    '/dashboard/admin/': {
+      id: '/dashboard/admin/'
+      path: '/'
+      fullPath: '/dashboard/admin/'
+      preLoaderRoute: typeof DashboardAdminIndexRouteImport
+      parentRoute: typeof DashboardAdminRouteRoute
+    }
+    '/dashboard/organizations/': {
+      id: '/dashboard/organizations/'
+      path: '/organizations'
+      fullPath: '/dashboard/organizations/'
+      preLoaderRoute: typeof DashboardOrganizationsIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/admin/categories/': {
+      id: '/dashboard/admin/categories/'
+      path: '/categories'
+      fullPath: '/dashboard/admin/categories/'
+      preLoaderRoute: typeof DashboardAdminCategoriesIndexRouteImport
+      parentRoute: typeof DashboardAdminRouteRoute
+    }
+    '/dashboard/admin/categories/$foodCategoryId': {
+      id: '/dashboard/admin/categories/$foodCategoryId'
+      path: '/categories/$foodCategoryId'
+      fullPath: '/dashboard/admin/categories/$foodCategoryId'
+      preLoaderRoute: typeof DashboardAdminCategoriesFoodCategoryIdRouteImport
+      parentRoute: typeof DashboardAdminRouteRoute
+    }
+    '/dashboard/admin/diet-plans/': {
+      id: '/dashboard/admin/diet-plans/'
+      path: '/diet-plans'
+      fullPath: '/dashboard/admin/diet-plans/'
+      preLoaderRoute: typeof DashboardAdminDietPlansIndexRouteImport
+      parentRoute: typeof DashboardAdminRouteRoute
+    }
+    '/dashboard/admin/diet-plans/$dietPlanId': {
+      id: '/dashboard/admin/diet-plans/$dietPlanId'
+      path: '/diet-plans/$dietPlanId'
+      fullPath: '/dashboard/admin/diet-plans/$dietPlanId'
+      preLoaderRoute: typeof DashboardAdminDietPlansDietPlanIdRouteImport
+      parentRoute: typeof DashboardAdminRouteRoute
+    }
     '/dashboard/admin/food-items/': {
       id: '/dashboard/admin/food-items/'
       path: '/food-items'
@@ -288,35 +607,210 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminFoodItemsFoodItemIdRouteImport
       parentRoute: typeof DashboardAdminRouteRoute
     }
+    '/dashboard/admin/meals/': {
+      id: '/dashboard/admin/meals/'
+      path: '/meals'
+      fullPath: '/dashboard/admin/meals/'
+      preLoaderRoute: typeof DashboardAdminMealsIndexRouteImport
+      parentRoute: typeof DashboardAdminRouteRoute
+    }
+    '/dashboard/admin/meals/$mealId': {
+      id: '/dashboard/admin/meals/$mealId'
+      path: '/meals/$mealId'
+      fullPath: '/dashboard/admin/meals/$mealId'
+      preLoaderRoute: typeof DashboardAdminMealsMealIdRouteImport
+      parentRoute: typeof DashboardAdminRouteRoute
+    }
+    '/dashboard/direct-admin/members/': {
+      id: '/dashboard/direct-admin/members/'
+      path: '/members'
+      fullPath: '/dashboard/direct-admin/members/'
+      preLoaderRoute: typeof DashboardDirectAdminMembersIndexRouteImport
+      parentRoute: typeof DashboardDirectAdminRouteRoute
+    }
+    '/dashboard/direct-admin/members/$memberId': {
+      id: '/dashboard/direct-admin/members/$memberId'
+      path: '/members/$memberId'
+      fullPath: '/dashboard/direct-admin/members/$memberId'
+      preLoaderRoute: typeof DashboardDirectAdminMembersMemberIdRouteImport
+      parentRoute: typeof DashboardDirectAdminRouteRoute
+    }
+    '/dashboard/nutritionist/categories/': {
+      id: '/dashboard/nutritionist/categories/'
+      path: '/categories'
+      fullPath: '/dashboard/nutritionist/categories/'
+      preLoaderRoute: typeof DashboardNutritionistCategoriesIndexRouteImport
+      parentRoute: typeof DashboardNutritionistRouteRoute
+    }
+    '/dashboard/nutritionist/categories/$foodCategoryId': {
+      id: '/dashboard/nutritionist/categories/$foodCategoryId'
+      path: '/categories/$foodCategoryId'
+      fullPath: '/dashboard/nutritionist/categories/$foodCategoryId'
+      preLoaderRoute: typeof DashboardNutritionistCategoriesFoodCategoryIdRouteImport
+      parentRoute: typeof DashboardNutritionistRouteRoute
+    }
+    '/dashboard/nutritionist/diet-plans/': {
+      id: '/dashboard/nutritionist/diet-plans/'
+      path: '/diet-plans'
+      fullPath: '/dashboard/nutritionist/diet-plans/'
+      preLoaderRoute: typeof DashboardNutritionistDietPlansIndexRouteImport
+      parentRoute: typeof DashboardNutritionistRouteRoute
+    }
+    '/dashboard/nutritionist/diet-plans/$dietPlanId': {
+      id: '/dashboard/nutritionist/diet-plans/$dietPlanId'
+      path: '/diet-plans/$dietPlanId'
+      fullPath: '/dashboard/nutritionist/diet-plans/$dietPlanId'
+      preLoaderRoute: typeof DashboardNutritionistDietPlansDietPlanIdRouteImport
+      parentRoute: typeof DashboardNutritionistRouteRoute
+    }
+    '/dashboard/nutritionist/food-items/': {
+      id: '/dashboard/nutritionist/food-items/'
+      path: '/food-items'
+      fullPath: '/dashboard/nutritionist/food-items/'
+      preLoaderRoute: typeof DashboardNutritionistFoodItemsIndexRouteImport
+      parentRoute: typeof DashboardNutritionistRouteRoute
+    }
+    '/dashboard/nutritionist/food-items/$foodItemId': {
+      id: '/dashboard/nutritionist/food-items/$foodItemId'
+      path: '/food-items/$foodItemId'
+      fullPath: '/dashboard/nutritionist/food-items/$foodItemId'
+      preLoaderRoute: typeof DashboardNutritionistFoodItemsFoodItemIdRouteImport
+      parentRoute: typeof DashboardNutritionistRouteRoute
+    }
+    '/dashboard/nutritionist/meals/': {
+      id: '/dashboard/nutritionist/meals/'
+      path: '/meals'
+      fullPath: '/dashboard/nutritionist/meals/'
+      preLoaderRoute: typeof DashboardNutritionistMealsIndexRouteImport
+      parentRoute: typeof DashboardNutritionistRouteRoute
+    }
+    '/dashboard/nutritionist/meals/$mealId': {
+      id: '/dashboard/nutritionist/meals/$mealId'
+      path: '/meals/$mealId'
+      fullPath: '/dashboard/nutritionist/meals/$mealId'
+      preLoaderRoute: typeof DashboardNutritionistMealsMealIdRouteImport
+      parentRoute: typeof DashboardNutritionistRouteRoute
+    }
+    '/dashboard/organizations/$organizationId/': {
+      id: '/dashboard/organizations/$organizationId/'
+      path: '/organizations/$organizationId'
+      fullPath: '/dashboard/organizations/$organizationId/'
+      preLoaderRoute: typeof DashboardOrganizationsOrganizationIdIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/organizations/$organizationId/members/$memberId': {
+      id: '/dashboard/organizations/$organizationId/members/$memberId'
+      path: '/organizations/$organizationId/members/$memberId'
+      fullPath: '/dashboard/organizations/$organizationId/members/$memberId'
+      preLoaderRoute: typeof DashboardOrganizationsOrganizationIdMembersMemberIdRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
   }
 }
 
 interface DashboardAdminRouteRouteChildren {
+  DashboardAdminIndexRoute: typeof DashboardAdminIndexRoute
+  DashboardAdminCategoriesFoodCategoryIdRoute: typeof DashboardAdminCategoriesFoodCategoryIdRoute
+  DashboardAdminDietPlansDietPlanIdRoute: typeof DashboardAdminDietPlansDietPlanIdRoute
   DashboardAdminFoodItemsFoodItemIdRoute: typeof DashboardAdminFoodItemsFoodItemIdRoute
+  DashboardAdminMealsMealIdRoute: typeof DashboardAdminMealsMealIdRoute
+  DashboardAdminCategoriesIndexRoute: typeof DashboardAdminCategoriesIndexRoute
+  DashboardAdminDietPlansIndexRoute: typeof DashboardAdminDietPlansIndexRoute
   DashboardAdminFoodItemsIndexRoute: typeof DashboardAdminFoodItemsIndexRoute
+  DashboardAdminMealsIndexRoute: typeof DashboardAdminMealsIndexRoute
 }
 
 const DashboardAdminRouteRouteChildren: DashboardAdminRouteRouteChildren = {
+  DashboardAdminIndexRoute: DashboardAdminIndexRoute,
+  DashboardAdminCategoriesFoodCategoryIdRoute:
+    DashboardAdminCategoriesFoodCategoryIdRoute,
+  DashboardAdminDietPlansDietPlanIdRoute:
+    DashboardAdminDietPlansDietPlanIdRoute,
   DashboardAdminFoodItemsFoodItemIdRoute:
     DashboardAdminFoodItemsFoodItemIdRoute,
+  DashboardAdminMealsMealIdRoute: DashboardAdminMealsMealIdRoute,
+  DashboardAdminCategoriesIndexRoute: DashboardAdminCategoriesIndexRoute,
+  DashboardAdminDietPlansIndexRoute: DashboardAdminDietPlansIndexRoute,
   DashboardAdminFoodItemsIndexRoute: DashboardAdminFoodItemsIndexRoute,
+  DashboardAdminMealsIndexRoute: DashboardAdminMealsIndexRoute,
 }
 
 const DashboardAdminRouteRouteWithChildren =
   DashboardAdminRouteRoute._addFileChildren(DashboardAdminRouteRouteChildren)
 
+interface DashboardDirectAdminRouteRouteChildren {
+  DashboardDirectAdminMembersMemberIdRoute: typeof DashboardDirectAdminMembersMemberIdRoute
+  DashboardDirectAdminMembersIndexRoute: typeof DashboardDirectAdminMembersIndexRoute
+}
+
+const DashboardDirectAdminRouteRouteChildren: DashboardDirectAdminRouteRouteChildren =
+  {
+    DashboardDirectAdminMembersMemberIdRoute:
+      DashboardDirectAdminMembersMemberIdRoute,
+    DashboardDirectAdminMembersIndexRoute:
+      DashboardDirectAdminMembersIndexRoute,
+  }
+
+const DashboardDirectAdminRouteRouteWithChildren =
+  DashboardDirectAdminRouteRoute._addFileChildren(
+    DashboardDirectAdminRouteRouteChildren,
+  )
+
+interface DashboardNutritionistRouteRouteChildren {
+  DashboardNutritionistCategoriesFoodCategoryIdRoute: typeof DashboardNutritionistCategoriesFoodCategoryIdRoute
+  DashboardNutritionistDietPlansDietPlanIdRoute: typeof DashboardNutritionistDietPlansDietPlanIdRoute
+  DashboardNutritionistFoodItemsFoodItemIdRoute: typeof DashboardNutritionistFoodItemsFoodItemIdRoute
+  DashboardNutritionistMealsMealIdRoute: typeof DashboardNutritionistMealsMealIdRoute
+  DashboardNutritionistCategoriesIndexRoute: typeof DashboardNutritionistCategoriesIndexRoute
+  DashboardNutritionistDietPlansIndexRoute: typeof DashboardNutritionistDietPlansIndexRoute
+  DashboardNutritionistFoodItemsIndexRoute: typeof DashboardNutritionistFoodItemsIndexRoute
+  DashboardNutritionistMealsIndexRoute: typeof DashboardNutritionistMealsIndexRoute
+}
+
+const DashboardNutritionistRouteRouteChildren: DashboardNutritionistRouteRouteChildren =
+  {
+    DashboardNutritionistCategoriesFoodCategoryIdRoute:
+      DashboardNutritionistCategoriesFoodCategoryIdRoute,
+    DashboardNutritionistDietPlansDietPlanIdRoute:
+      DashboardNutritionistDietPlansDietPlanIdRoute,
+    DashboardNutritionistFoodItemsFoodItemIdRoute:
+      DashboardNutritionistFoodItemsFoodItemIdRoute,
+    DashboardNutritionistMealsMealIdRoute:
+      DashboardNutritionistMealsMealIdRoute,
+    DashboardNutritionistCategoriesIndexRoute:
+      DashboardNutritionistCategoriesIndexRoute,
+    DashboardNutritionistDietPlansIndexRoute:
+      DashboardNutritionistDietPlansIndexRoute,
+    DashboardNutritionistFoodItemsIndexRoute:
+      DashboardNutritionistFoodItemsIndexRoute,
+    DashboardNutritionistMealsIndexRoute: DashboardNutritionistMealsIndexRoute,
+  }
+
+const DashboardNutritionistRouteRouteWithChildren =
+  DashboardNutritionistRouteRoute._addFileChildren(
+    DashboardNutritionistRouteRouteChildren,
+  )
+
 interface DashboardRouteRouteChildren {
   DashboardAdminRouteRoute: typeof DashboardAdminRouteRouteWithChildren
-  DashboardDirectAdminRouteRoute: typeof DashboardDirectAdminRouteRoute
-  DashboardNutritionistRouteRoute: typeof DashboardNutritionistRouteRoute
+  DashboardDirectAdminRouteRoute: typeof DashboardDirectAdminRouteRouteWithChildren
+  DashboardNutritionistRouteRoute: typeof DashboardNutritionistRouteRouteWithChildren
   DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardOrganizationsIndexRoute: typeof DashboardOrganizationsIndexRoute
+  DashboardOrganizationsOrganizationIdIndexRoute: typeof DashboardOrganizationsOrganizationIdIndexRoute
+  DashboardOrganizationsOrganizationIdMembersMemberIdRoute: typeof DashboardOrganizationsOrganizationIdMembersMemberIdRoute
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardAdminRouteRoute: DashboardAdminRouteRouteWithChildren,
-  DashboardDirectAdminRouteRoute: DashboardDirectAdminRouteRoute,
-  DashboardNutritionistRouteRoute: DashboardNutritionistRouteRoute,
+  DashboardDirectAdminRouteRoute: DashboardDirectAdminRouteRouteWithChildren,
+  DashboardNutritionistRouteRoute: DashboardNutritionistRouteRouteWithChildren,
   DashboardIndexRoute: DashboardIndexRoute,
+  DashboardOrganizationsIndexRoute: DashboardOrganizationsIndexRoute,
+  DashboardOrganizationsOrganizationIdIndexRoute:
+    DashboardOrganizationsOrganizationIdIndexRoute,
+  DashboardOrganizationsOrganizationIdMembersMemberIdRoute:
+    DashboardOrganizationsOrganizationIdMembersMemberIdRoute,
 }
 
 const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
@@ -326,6 +820,7 @@ const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
+  AcceptInvitationRoute: AcceptInvitationRoute,
   CompleteProfileRoute: CompleteProfileRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,

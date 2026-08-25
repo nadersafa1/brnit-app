@@ -1,5 +1,6 @@
 import type { OrganizationContextDto } from "@brnit/api";
 import {
+	canInviteMembers,
 	canInviteWithAnyRole,
 	canUpdateMemberRole,
 	isAppAdmin,
@@ -71,15 +72,34 @@ export function canAccessDirectAdminSection(
 }
 
 /**
- * May the actor open the invite dialog?
+ * May the actor open the invite dialog at all?
  *
- * Corrects a long-standing client/server divergence: the old web helper let a
- * `client_admin` through, while better-auth's `beforeCreateInvitation` only
- * accepts `owner` / `direct_admin` for any role above plain `member`. The
- * backend hook is authoritative, so the gate now asks `@brnit/domain` the same
- * question the server asks.
+ * Wider than {@link canInviteOrganizationMembersWithAnyRole} on purpose,
+ * because the server asks two questions at two layers: Better Auth's
+ * access-control statements decide whether an invitation may be sent, and
+ * `beforeCreateInvitation` decides whether it may carry a role above plain
+ * `member`. `client_admin` passes the first and fails the second, so it may
+ * invite participants but not staff.
+ *
+ * Gating the whole affordance on the narrower rule would hide a capability the
+ * server honours — which is what the pre-overhaul UI did in reverse, letting a
+ * `client_admin` choose staff roles the hook then rejected.
  */
 export function canInviteOrganizationMembers(
+	appRole: string | null | undefined,
+	context: DashboardAccessContext
+): boolean {
+	return canInviteMembers({ appRole, orgRole: context.role });
+}
+
+/**
+ * May the actor choose a role other than `member` for an invitation?
+ *
+ * Drives the role selector. When this is false the invite dialog still opens,
+ * but the invitation is fixed to `member` — matching what
+ * `beforeCreateInvitation` will accept.
+ */
+export function canInviteOrganizationMembersWithAnyRole(
 	appRole: string | null | undefined,
 	context: DashboardAccessContext
 ): boolean {

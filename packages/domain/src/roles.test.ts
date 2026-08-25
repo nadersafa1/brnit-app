@@ -3,6 +3,7 @@ import { describe, expect, it } from "bun:test";
 import {
 	APP_ADMIN_ROLE,
 	APP_ROLES,
+	canInviteMembers,
 	canInviteWithAnyRole,
 	canInviteWithRole,
 	canUpdateMemberRole,
@@ -188,5 +189,39 @@ describe("canUpdateMemberRole", () => {
 			false
 		);
 		expect(canUpdateMemberRole({})).toBe(false);
+	});
+});
+
+describe("canInviteMembers vs canInviteWithAnyRole", () => {
+	// Two questions, two layers. `canInviteMembers` mirrors who holds Better
+	// Auth's `invitation` statements; `canInviteWithAnyRole` mirrors what
+	// `beforeCreateInvitation` enforces on top. Gating both on the narrower one
+	// hides a capability the server would honour — which is exactly the
+	// regression these cases exist to prevent.
+	it("lets client_admin invite, but not with a role above member", () => {
+		const actor = { appRole: "user", orgRole: "client_admin" };
+
+		expect(canInviteMembers(actor)).toBe(true);
+		expect(canInviteWithAnyRole(actor)).toBe(false);
+		expect(canInviteWithRole({ ...actor, role: "member" })).toBe(true);
+		expect(canInviteWithRole({ ...actor, role: "nutritionist" })).toBe(false);
+	});
+
+	it("lets owner and direct_admin do both", () => {
+		for (const orgRole of ["owner", "direct_admin"]) {
+			const actor = { appRole: "user", orgRole };
+			expect(canInviteMembers(actor)).toBe(true);
+			expect(canInviteWithAnyRole(actor)).toBe(true);
+		}
+	});
+
+	it("refuses roles that hold no invitation statements", () => {
+		for (const orgRole of ["member", "nutritionist", "coach"]) {
+			expect(canInviteMembers({ appRole: "user", orgRole })).toBe(false);
+		}
+	});
+
+	it("lets an app admin invite regardless of organization role", () => {
+		expect(canInviteMembers({ appRole: "admin", orgRole: null })).toBe(true);
 	});
 });

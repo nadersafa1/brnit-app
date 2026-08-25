@@ -61,6 +61,35 @@ export type InvitableOrganizationRole =
  * member's role. Authoritative: this is what better-auth's
  * `beforeCreateInvitation` hook enforces server-side.
  */
+/**
+ * Organization roles that may send an invitation **at all**, whatever role it
+ * carries.
+ *
+ * Wider than {@link ORG_ROLES_CAN_INVITE} on purpose, and the two answer
+ * different questions asked at different layers:
+ *
+ * - This set mirrors which roles hold Better Auth's `invitation` access-control
+ *   statements. `client_admin` does (it inherits the org-admin statement set),
+ *   so the server accepts an invitation from one.
+ * - {@link ORG_ROLES_CAN_INVITE} is what `beforeCreateInvitation` enforces on
+ *   top: an invitation carrying any role **above** plain `member` additionally
+ *   requires `owner` or `direct_admin`.
+ *
+ * So a `client_admin` may invite participants but not staff. A UI that gates
+ * the whole invite affordance on the narrower set hides a capability the
+ * server would have honoured; one that gates the role selector on the wider
+ * set offers choices the server will reject. Gate the dialog on this, and the
+ * role selector on {@link ORG_ROLES_CAN_INVITE}.
+ */
+export const ORG_ROLES_CAN_INVITE_MEMBERS = [
+	"owner",
+	"direct_admin",
+	"client_admin",
+] as const;
+
+export type OrgRoleCanInviteMembers =
+	(typeof ORG_ROLES_CAN_INVITE_MEMBERS)[number];
+
 export const ORG_ROLES_CAN_INVITE = ["owner", "direct_admin"] as const;
 
 export type OrgRoleCanInvite = (typeof ORG_ROLES_CAN_INVITE)[number];
@@ -139,6 +168,24 @@ export function canInviteWithAnyRole(actor: RoleActor): boolean {
  * `client_admin` open the invite UI, which is fine as long as the role picker is
  * limited to `member` for them — the backend hook rejects anything else.
  */
+/**
+ * May this actor send an invitation at all?
+ *
+ * App admins always may; otherwise the actor's organization role must hold the
+ * `invitation` statements — see {@link ORG_ROLES_CAN_INVITE_MEMBERS}. Use this
+ * to decide whether to show the invite affordance; use
+ * {@link canInviteWithAnyRole} to decide whether the role selector is offered.
+ */
+export function canInviteMembers(actor: RoleActor): boolean {
+	if (isAppAdmin(actor.appRole)) {
+		return true;
+	}
+	return (
+		typeof actor.orgRole === "string" &&
+		(ORG_ROLES_CAN_INVITE_MEMBERS as readonly string[]).includes(actor.orgRole)
+	);
+}
+
 export function canInviteWithRole(
 	actor: RoleActor & { role: string }
 ): boolean {
