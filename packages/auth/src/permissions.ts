@@ -29,16 +29,30 @@ export const owner = ac.newRole({
 	...ownerAc.statements,
 });
 
-/** Client-side org admin (e.g. HR). May invite, but only with the `member` role. */
+/**
+ * Client-side org admin (e.g. HR). May invite, but only with the `member` role:
+ * the access-control layer grants the invitation statements, and
+ * `beforeCreateInvitation` then rejects any role above `member`.
+ */
 export const client_admin = ac.newRole({
 	...adminAc.statements,
 });
 
-/** Brnit staff assigned by an app admin. Manages members; records InBody readings. */
+/**
+ * Brnit staff, assigned by an app admin. Records InBody body-composition
+ * readings, and may update or remove members.
+ *
+ * May invite with **any** role, including staff roles — `direct_admin` sits
+ * alongside `owner` in `ORG_ROLES_CAN_INVITE`, which is what
+ * `beforeCreateInvitation` enforces. The invitation statements are inherited
+ * from `adminAc` rather than hand-listed so the two layers cannot drift: the
+ * access-control check runs *before* the hook, so an empty `invitation` here
+ * would block `direct_admin` outright and make the hook's branch dead code.
+ */
 export const direct_admin = ac.newRole({
 	...memberAc.statements,
 	member: ["update", "delete"],
-	invitation: [],
+	invitation: adminAc.statements.invitation,
 });
 
 /** Adds nutrition plans for the org. No member or invitation management. */
