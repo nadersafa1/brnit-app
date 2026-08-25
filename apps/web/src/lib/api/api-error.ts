@@ -53,7 +53,7 @@ export function readApiErrorMessage(payload: unknown): string | null {
 /** The machine-readable `code` (`OVERLAP`, `NO_ORGANIZATION`, …), when present. */
 export function readApiErrorCode(payload: unknown): string | undefined {
 	if (typeof payload !== "object" || payload === null) {
-		return undefined;
+		return;
 	}
 	const code = (payload as { code?: unknown }).code;
 	return typeof code === "string" ? code : undefined;

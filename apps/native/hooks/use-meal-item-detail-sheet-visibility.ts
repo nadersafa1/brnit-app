@@ -1,7 +1,7 @@
-import { type RefObject, useEffect } from 'react'
+import { type RefObject, useEffect } from "react";
 
 import type { AppBottomSheetRef } from "@/components/bottom-sheet/app-bottom-sheet";
-import type { MealItemDetailPayload } from '@/components/meal-item-detail-sheet/types'
+import type { MealItemDetailPayload } from "@/components/meal-item-detail-sheet/types";
 
 /**
  * Keeps the bottom sheet in sync with parent-controlled `payload`.
@@ -11,20 +11,20 @@ import type { MealItemDetailPayload } from '@/components/meal-item-detail-sheet/
  * useEffect is required here: gorhom bottom sheet is imperative (open/close on ref), not declarative.
  */
 export function useMealItemDetailSheetVisibility(
-  payload: MealItemDetailPayload | null,
-  sheetRef: RefObject<AppBottomSheetRef | null>,
-  resetSelection: () => void
+	payload: MealItemDetailPayload | null,
+	sheetRef: RefObject<AppBottomSheetRef | null>,
+	resetSelection: () => void
 ): void {
-  useEffect(() => {
-    if (payload) {
-      const frameId = requestAnimationFrame(() => {
-        sheetRef.current?.open(1)
-      })
-      resetSelection()
-      return () => cancelAnimationFrame(frameId)
-    }
+	useEffect(() => {
+		if (payload) {
+			const frameId = requestAnimationFrame(() => {
+				sheetRef.current?.open(1);
+			});
+			resetSelection();
+			return () => cancelAnimationFrame(frameId);
+		}
 
-    sheetRef.current?.close()
-    resetSelection()
-  }, [payload, sheetRef, resetSelection])
+		sheetRef.current?.close();
+		resetSelection();
+	}, [payload, sheetRef, resetSelection]);
 }

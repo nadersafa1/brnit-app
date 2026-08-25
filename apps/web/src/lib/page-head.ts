@@ -18,7 +18,11 @@ interface PageHeadOptions {
  * `__root.tsx`. There is no server render, so this is what keeps the tab title
  * and the description in step with the current route.
  */
-export function createPageHead({ title, description, robots }: PageHeadOptions) {
+export function createPageHead({
+	title,
+	description,
+	robots,
+}: PageHeadOptions) {
 	return {
 		meta: [
 			{ title },

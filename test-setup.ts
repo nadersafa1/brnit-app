@@ -3,13 +3,22 @@
  *
  * ## Run tests per workspace, not across the whole repo
  *
- * Use `bun run test` (which is `turbo test`, one process per workspace), or
- * `bun test` from inside a single package. Do NOT run `bun test packages/
- * apps/` in one command: `mock.module` is process-wide and permanent, so the
- * server's route tests — which mock `@brnit/auth` and `@brnit/api` wholesale —
- * leak into the handler tests that run after them and make ~14 of them fail.
- * Each suite passes in isolation; the failures are an artifact of sharing a
- * process, not of the code.
+ * Use `bun run test` — at the root that is `turbo test`, one process per
+ * workspace; inside a package it is that package's own script. Do NOT run
+ * `bun test packages/ apps/` in one command: `mock.module` is process-wide and
+ * permanent, so the server's route tests — which mock `@brnit/auth` and
+ * `@brnit/api` wholesale — leak into the handler tests that run after them and
+ * make ~14 of them fail. Each suite passes in isolation; the failures are an
+ * artifact of sharing a process, not of the code.
+ *
+ * ## Why every workspace passes `--preload ../../test-setup.ts`
+ *
+ * `[test] preload` in the root `bunfig.toml` resolves relative to the working
+ * directory, and turbo runs each task with the cwd inside its own package — so
+ * the root config is simply not seen, and bare `bun test` from inside a package
+ * silently loses these placeholders. Rather than duplicating a bunfig per
+ * workspace, each `test` script names this file explicitly. Every workspace is
+ * exactly two levels deep, so the relative path is uniform.
  *
  * `@brnit/env/server` validates and freezes `process.env` the first time it is
  * imported, and `bun test` shares one process across every test file. Setting

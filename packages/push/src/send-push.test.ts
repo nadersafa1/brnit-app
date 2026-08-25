@@ -4,8 +4,15 @@ interface MulticastResponse {
 	responses: { success: boolean; error?: { code: string } }[];
 }
 
+/** Only the fields these tests assert on; the real message is much wider. */
+interface MulticastMessage {
+	android?: { notification: { channelId: string } };
+	tokens: string[];
+}
+
 const sendEachForMulticast = mock(
-	(): Promise<MulticastResponse> => Promise.resolve({ responses: [] })
+	(_message: MulticastMessage): Promise<MulticastResponse> =>
+		Promise.resolve({ responses: [] })
 );
 const getFirebaseMessaging = mock((): unknown => ({ sendEachForMulticast }));
 

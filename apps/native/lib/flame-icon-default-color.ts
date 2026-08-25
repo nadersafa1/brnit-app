@@ -1,8 +1,11 @@
-import type { ColorScheme, ThemeColors } from '@/theme/colors'
+import type { ThemeColors } from "@/theme/colors";
 
 /**
- * Matches `color="black"` on light surfaces; uses white on dark so the glyph stays visible.
+ * Default colour for the flame glyph.
+ *
+ * `ink` already flips with the scheme — near-black on the blush canvas,
+ * off-white on charcoal — so there is no separate light/dark branch here.
  */
-export function getFlameIconDefaultColor(colors: ThemeColors, scheme: ColorScheme): string {
-  return scheme === 'dark' ? colors.white : colors.black
+export function getFlameIconDefaultColor(colors: ThemeColors): string {
+	return colors.ink;
 }

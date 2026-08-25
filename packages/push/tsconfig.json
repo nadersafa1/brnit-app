@@ -1,8 +1,8 @@
 {
-	"extends": "@brnit/config/tsconfig.base.json",
-	"compilerOptions": {
-		"rootDir": "src",
-		"outDir": "dist"
-	},
-	"include": ["src"]
+  "extends": "@brnit/config/tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": ["src"]
 }

@@ -5,37 +5,29 @@ import "./instrumentation.js";
 process.env.TZ ??= "UTC";
 
 import { env } from "@brnit/env/server";
-import { logger } from "@brnit/logger";
 import type { Worker } from "bullmq";
 
-const workerLog = logger.child({ component: "worker-background" });
+import { registerQueueHandlers } from "./jobs/register-queue-handlers.js";
+import { createWorkerLogger } from "./jobs/worker-logger.js";
+import { closeIoEmitter } from "./sockets/redis-emitter.js";
+import {
+	registerMealReminderScheduler,
+	startMealReminderWorker,
+} from "./workers/meal-reminder.worker.js";
+import { startPushNotificationWorker } from "./workers/push-notification.worker.js";
+import {
+	registerStreakNudgeScheduler,
+	startStreakNudgeWorker,
+} from "./workers/streak-nudge.worker.js";
 
-/**
- * Nothing holds the event loop open until the first BullMQ worker exists, and
- * compose restarts this service on exit — so idle deliberately instead of
- * crash-looping. Delete this once a worker is registered below.
- */
-const IDLE_KEEPALIVE_MS = 60_000;
+const workerLog = createWorkerLogger("worker-background");
 
-function startIdleKeepAlive(): NodeJS.Timeout {
-	workerLog.warn(
-		"no background workers registered; idling to avoid a restart loop"
-	);
-	return setInterval(() => {
-		// Intentionally empty: the timer exists only to keep the process alive.
-	}, IDLE_KEEPALIVE_MS);
-}
-
-function registerShutdownHandlers(
-	workers: readonly Worker[],
-	keepAlive: NodeJS.Timeout | undefined
-): void {
+function registerShutdownHandlers(workers: readonly Worker[]): void {
 	const shutdown = async (): Promise<void> => {
 		workerLog.info({ workerCount: workers.length }, "shutting down workers");
-		if (keepAlive) {
-			clearInterval(keepAlive);
-		}
 		await Promise.all(workers.map((worker) => worker.close()));
+		// Closed after the workers, because a job still draining may emit.
+		await closeIoEmitter();
 		process.exit(0);
 	};
 
@@ -59,31 +51,41 @@ function registerShutdownHandlers(
  * Background worker process (the compose `worker` service).
  *
  * Runs BullMQ workers only — it never listens on a port and never serves HTTP.
- * Cron schedules register here, *after* the workers are listening, so a
- * scheduled job can never fire into a queue with no consumer.
+ * The workers themselves hold the event loop open, which is what replaced the
+ * idle keep-alive this file used to need: with no worker registered, the
+ * process exited immediately and compose's restart policy turned that into a
+ * crash loop.
+ *
+ * Cron schedules register **after** the workers are listening, so a scheduled
+ * job can never fire into a queue with no consumer.
  */
-function main(): void {
+async function main(): Promise<void> {
 	if (!env.REDIS_URL) {
 		workerLog.error("REDIS_URL is required to run background workers");
 		process.exitCode = 1;
 		return;
 	}
 
-	// TODO: brnit has no background jobs yet. Each one contributes a
-	// `startXWorker()` from `src/workers/<name>.worker.ts` to this array, calls
-	// `registerProbeQueue` from its queue module so readiness sees it, and
-	// registers any cron via `upsertJobScheduler` below.
-	const workers: Worker[] = [];
+	// Fill the `@brnit/api` registry slots here too: a handler called from
+	// inside a job needs the same dispatch path a controller gets.
+	registerQueueHandlers();
 
-	const keepAlive = workers.length === 0 ? startIdleKeepAlive() : undefined;
+	const workers: Worker[] = [
+		startPushNotificationWorker(),
+		startMealReminderWorker(),
+		startStreakNudgeWorker(),
+	];
+
+	await registerMealReminderScheduler();
+	await registerStreakNudgeScheduler();
 
 	workerLog.info({ workerCount: workers.length }, "all workers started");
 
-	registerShutdownHandlers(workers, keepAlive);
+	registerShutdownHandlers(workers);
 }
 
 try {
-	main();
+	await main();
 } catch (error: unknown) {
 	workerLog.error({ err: error }, "failed to start workers");
 	process.exitCode = 1;

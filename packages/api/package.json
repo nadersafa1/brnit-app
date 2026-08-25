@@ -47,7 +47,7 @@
   },
   "scripts": {
     "check-types": "tsc --noEmit",
-    "test": "bun test src"
+    "test": "bun test --preload ../../test-setup.ts src"
   },
   "dependencies": {
     "@brnit/audit": "workspace:*",

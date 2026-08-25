@@ -5,9 +5,11 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
+const repoRoot = path.resolve(import.meta.dirname, "../..");
+
 /**
- * `tanstackRouter()` must run **before** `react()` so the generated
- * `routeTree.gen.ts` exists before the React plugin transforms it.
+ * `tanstackRouter()` must run **before** `react()` so `routeTree.gen.ts` exists
+ * before the React plugin transforms it.
  *
  * `apps/web/legacy/**` holds the pre-overhaul Next.js screens, kept only as
  * source material for the remaining page migrations. Nothing imports it, so
@@ -16,9 +18,31 @@ import { defineConfig } from "vite";
 export default defineConfig({
 	plugins: [tailwindcss(), tanstackRouter({}), react()],
 	resolve: {
-		alias: {
-			"@": path.resolve(import.meta.dirname, "./src"),
-		},
+		alias: [
+			{
+				find: "@",
+				replacement: path.resolve(import.meta.dirname, "./src"),
+			},
+			// WORKAROUND — remove once `packages/api/package.json` is fixed.
+			//
+			// That manifest exposes nested subpaths through a two-wildcard exports
+			// pattern. Node resolves it, and so does `tsc`, but Rollup follows the
+			// spec strictly — an exports pattern may contain at most one wildcard —
+			// so `@brnit/api/food/schemas` fails to resolve at build time while
+			// type-checking clean. Only the two-segment paths listed explicitly in
+			// that manifest (`./organization/context`, `./pagination/offset`,
+			// `./pagination/query-params`) work without this.
+			//
+			// The fix belongs in `packages/api/package.json`: list the nested
+			// subpaths explicitly, or use a single wildcard whose target has no
+			// `.ts` suffix so one pattern covers nested paths. Until then this maps
+			// every `@brnit/api/<area>/<module>` onto its source file, which is
+			// exactly what the exports map intends.
+			{
+				find: /^@brnit\/api\/(.+)$/,
+				replacement: path.join(repoRoot, "packages/api/src/$1.ts"),
+			},
+		],
 	},
 	server: {
 		port: 3001,

@@ -1,17 +1,17 @@
-import type { FoodItem, FoodItemAlternative } from "@/lib/api/member-food-types";
+import type { FoodItemAlternativeDto, FoodItemDto } from "@brnit/api";
 
 export type SheetState = "input" | "results";
 
 export interface FoodAlternativesSheetProps {
-  foodItem: FoodItem | null;
-  onClose: () => void;
+	foodItem: FoodItemDto | null;
+	onClose: () => void;
 }
 
 export interface AlternativeItemProps {
-  alternative: FoodItemAlternative;
-  onCopy: (alternative: FoodItemAlternative) => void;
+	alternative: FoodItemAlternativeDto;
+	onCopy: (alternative: FoodItemAlternativeDto) => void;
 }
 
 export interface QuantityFormData {
-  quantity: string;
+	quantity: string;
 }

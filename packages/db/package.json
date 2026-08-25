@@ -34,7 +34,7 @@
     "db:seed": "bun run src/seed.ts",
     "db:deploy": "bun run db:migrate:deploy",
     "check-types": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test --preload ../../test-setup.ts"
   },
   "dependencies": {
     "@brnit/domain": "workspace:*",

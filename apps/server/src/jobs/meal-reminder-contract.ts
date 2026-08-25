@@ -47,7 +47,7 @@ export function mealReminderBody(
 	return `Your ${mealType} is scheduled for ${scheduledTime}.`;
 }
 
-export const mealReminderJobPayloadSchema = z.object({
+const mealReminderJobPayloadSchema = z.object({
 	dietPlanAssignmentId: z.string().min(1),
 	dietPlanMealId: z.string().min(1),
 	userId: z.string().min(1),

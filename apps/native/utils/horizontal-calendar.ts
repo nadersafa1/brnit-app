@@ -32,7 +32,9 @@ export function generateWeeks(centerWeek: Date, count: number): WeekData[] {
 
 	const weeks: WeekData[] = [];
 	for (let index = 0; index < count; index += 1) {
-		weeks.push(toWeekData(addLocalDays(startWeek, index * LOCAL_DAYS_PER_WEEK)));
+		weeks.push(
+			toWeekData(addLocalDays(startWeek, index * LOCAL_DAYS_PER_WEEK))
+		);
 	}
 	return weeks;
 }

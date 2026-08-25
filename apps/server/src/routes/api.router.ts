@@ -4,6 +4,7 @@ import { HealthController } from "../controllers/health.controller.js";
 import { createAssessmentRouter } from "./assessment.routes.js";
 import { createAssignmentRouter } from "./assignment.routes.js";
 import { createConsumptionRouter } from "./consumption.routes.js";
+import { createDeviceTokenRouter } from "./device-token.routes.js";
 import { createDietPlanRouter } from "./diet-plan.routes.js";
 import { createFoodRouter } from "./food.routes.js";
 import { createMealRouter } from "./meal.routes.js";
@@ -50,6 +51,9 @@ export function createApiRouter(): Router {
 	// Identity: /me/profile and /users/me/organization-context.
 	api.use(createProfileRouter());
 	api.use(createUsersRouter());
+
+	// Push delivery addresses for the native app: /me/device-tokens.
+	api.use(createDeviceTokenRouter());
 
 	// Note: the old `/api/cloudinary/sign` signed-direct-upload endpoint is
 	// deliberately not ported. Every entity path uploads server-side through

@@ -2,6 +2,7 @@ import { env } from "@brnit/env/server";
 import cors from "cors";
 import express, { type Express } from "express";
 
+import { registerQueueHandlers } from "../jobs/register-queue-handlers.js";
 import { auditMiddleware } from "../middlewares/audit.middleware.js";
 import { errorMiddleware } from "../middlewares/error.middleware.js";
 import {
@@ -11,6 +12,12 @@ import {
 import { createApiRouter } from "../routes/api.router.js";
 import { registerAuthRoutes } from "../routes/auth.routes.js";
 import { createHealthRouter } from "../routes/health.routes.js";
+
+// Fills the registry slots `@brnit/api` declares, so handlers can dispatch
+// push and jobs without importing BullMQ. Module scope, not inside setupApp:
+// the API process must wire this exactly once, before any route can fire an
+// intent. The worker process calls it separately from worker-background.ts.
+registerQueueHandlers();
 
 const corsOptions: cors.CorsOptions = {
 	origin: env.CORS_ORIGIN,

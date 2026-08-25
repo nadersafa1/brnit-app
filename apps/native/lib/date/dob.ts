@@ -3,8 +3,8 @@ import { toDateStringUTC } from "@brnit/datetime";
 import {
 	isCalendarDateString,
 	parseLocalDateString,
-	toLocalDateString,
 	todayLocalDateString,
+	toLocalDateString,
 } from "./calendar-date";
 import { formatCalendarDateLong } from "./format-date";
 

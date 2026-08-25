@@ -5,9 +5,16 @@ import { createAdapter } from "@socket.io/redis-adapter";
 import { createClient, type RedisClientType } from "redis";
 import { Server } from "socket.io";
 
+import { registerConnectionHandler } from "./handlers/connection.handler.js";
+import { registerJoinRoomsHandler } from "./handlers/join-rooms.handler.js";
+import { socketAuth } from "./middlewares/socket-auth.middleware.js";
+import { socketLogger } from "./middlewares/socket-logger.middleware.js";
+import { setSocketIoForEmit } from "./realtime-emit.service.js";
+import type { AppServer } from "./socket-types.js";
+
 export interface SocketServerBundle {
 	closeRedisAdapter: () => Promise<void>;
-	io: Server;
+	io: AppServer;
 }
 
 let redisPubClient: RedisClientType | undefined;
@@ -20,15 +27,15 @@ let redisSubClient: RedisClientType | undefined;
  * replica (and lets the worker process emit through the emitter). Without it,
  * the server still runs, single-process — that is the local-dev path.
  *
- * TODO: no namespaces, rooms or events exist yet. A connection cannot do
- * anything today, so there is nothing to authorize. Before the first event is
- * added, a `socket-auth.middleware.ts` (Better Auth cookie → `socket.data.user`)
- * and room-authorization handlers must land alongside it.
+ * Middleware order is load-bearing: `socketLogger` first so a handshake that
+ * fails authentication is still logged with a request id, then `socketAuth`,
+ * which refuses the connection outright when there is no session. Every handler
+ * registered afterwards can therefore assume `socket.data.user` exists.
  */
 export async function createSocketServer(
 	httpServer: HttpServer
 ): Promise<SocketServerBundle> {
-	const io = new Server(httpServer, {
+	const io: AppServer = new Server(httpServer, {
 		path: "/api/v1/socket.io",
 		serveClient: false,
 		transports: ["websocket", "polling"],
@@ -56,6 +63,17 @@ export async function createSocketServer(
 	} else {
 		logger.warn("socket.io running without Redis adapter (no REDIS_URL set)");
 	}
+
+	io.use(socketLogger);
+	io.use(socketAuth);
+
+	registerConnectionHandler(io);
+	registerJoinRoomsHandler(io);
+
+	// Publish the instance for the emit service here rather than from the
+	// entrypoint, so the API process cannot end up serving sockets while
+	// silently emitting through Redis.
+	setSocketIoForEmit(io);
 
 	return {
 		io,

@@ -3,6 +3,7 @@ import { db } from "@brnit/db";
 import {
 	dietPlanAssignment,
 	dietPlanMeal,
+	dietPlanMealConsumption,
 	dietPlanMealTimeOverride,
 	member,
 } from "@brnit/db/schema";
@@ -30,7 +31,7 @@ import type { MealReminderJobPayload } from "./meal-reminder-contract.js";
 /** Plan day 0 means "repeats on every day of the plan". */
 const REPEAT_EVERY_DAY = 0;
 
-interface ActiveAssignmentRow {
+export interface ActiveAssignmentRow {
 	dietPlanId: string;
 	endDate: string;
 	id: string;
@@ -75,7 +76,7 @@ async function listAssignmentsActiveOn(
 	}));
 }
 
-interface PlanSlotRow {
+export interface PlanSlotRow {
 	dayNumber: number;
 	dietPlanId: string;
 	id: string;
@@ -99,7 +100,9 @@ async function listPlanSlots(planIds: string[]): Promise<PlanSlotRow[]> {
 		.where(inArray(dietPlanMeal.dietPlanId, planIds));
 }
 
-type TimeOverrideRow = MealTimeOverrideRow & { dietPlanAssignmentId: string };
+export type TimeOverrideRow = MealTimeOverrideRow & {
+	dietPlanAssignmentId: string;
+};
 
 async function listTimeOverrides(
 	assignmentIds: string[]
@@ -137,13 +140,27 @@ function groupBy<Row, Key extends string>(
 	return grouped;
 }
 
-function remindersForAssignment(args: {
+export interface MealReminderSelectionInput {
 	assignment: ActiveAssignmentRow;
 	dateYmd: string;
 	slots: readonly PlanSlotRow[];
 	timeOverrides: readonly TimeOverrideRow[];
 	today: string;
-}): MealReminderJobPayload[] {
+}
+
+/**
+ * The rule this whole queue exists for, as a pure function.
+ *
+ * Picks the slots that apply to `dateYmd` — `day_number = 0` repeats every day,
+ * anything else must equal the plan day — and resolves each one's effective
+ * time through the same override precedence the member Home read uses: an
+ * exact-date override wins, then a future-only override when `dateYmd >= today`,
+ * then the plan slot's own `scheduled_time`. Slots that resolve to no time at
+ * all are dropped; most plans set no times.
+ */
+export function selectMealRemindersForDay(
+	args: MealReminderSelectionInput
+): MealReminderJobPayload[] {
 	const { assignment, dateYmd, slots, timeOverrides, today } = args;
 	if (!assignment.userId) {
 		return [];
@@ -224,7 +241,7 @@ export async function planMealRemindersForDate(
 	const today = options.today ?? getTodayUtcDateString();
 
 	return assignments.flatMap((assignment) =>
-		remindersForAssignment({
+		selectMealRemindersForDay({
 			assignment,
 			dateYmd,
 			slots: slotsByPlanId.get(assignment.dietPlanId) ?? [],
@@ -232,4 +249,33 @@ export async function planMealRemindersForDate(
 			today,
 		})
 	);
+}
+
+/**
+ * Has the member already logged this slot on this date?
+ *
+ * Hits `diet_plan_meal_consumption_unique_idx` — the same
+ * `(assignment, meal, date)` key the duplicate probe on the write path uses —
+ * so a reminder that fires after the member ate is dropped rather than sent.
+ */
+export async function isSlotAlreadyLogged(args: {
+	dateYmd: string;
+	dietPlanAssignmentId: string;
+	dietPlanMealId: string;
+}): Promise<boolean> {
+	const rows = await db
+		.select({ id: dietPlanMealConsumption.id })
+		.from(dietPlanMealConsumption)
+		.where(
+			and(
+				eq(
+					dietPlanMealConsumption.dietPlanAssignmentId,
+					args.dietPlanAssignmentId
+				),
+				eq(dietPlanMealConsumption.dietPlanMealId, args.dietPlanMealId),
+				eq(dietPlanMealConsumption.consumedDate, args.dateYmd)
+			)
+		)
+		.limit(1);
+	return rows.length > 0;
 }

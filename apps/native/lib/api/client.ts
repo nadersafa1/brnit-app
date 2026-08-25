@@ -2,11 +2,7 @@ import { env } from "@brnit/env/native";
 
 import { authClient } from "@/lib/auth-client";
 
-import {
-	ApiError,
-	type ApiErrorResponse,
-	type ApiFetchOptions,
-} from "./types";
+import { ApiError, type ApiErrorResponse, type ApiFetchOptions } from "./types";
 
 const VERSIONED_API_PATH_REGEX = /^\/api\/v\d+\//;
 
@@ -38,11 +34,6 @@ function withVersionedApiPath(path: string): string {
 		"/api/",
 		`/api/v${env.EXPO_PUBLIC_API_VERSION}/`
 	);
-}
-
-/** Full API URL for multipart uploads and other non-`apiFetch` callers. */
-export function buildApiUrl(path: string): string {
-	return `${getBaseURL()}${withVersionedApiPath(path)}`;
 }
 
 function serializeBody(

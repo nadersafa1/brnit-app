@@ -25,9 +25,7 @@ export function createWorkerLogger(component: string, queue?: string): Logger {
  * An allow-list, not a redaction list: job payloads carry push titles and
  * bodies, which can quote a member's plan. Only opaque ids are ever logged.
  */
-export function extractWorkerJobLogFields(
-	data: unknown
-): Record<string, string> {
+function extractWorkerJobLogFields(data: unknown): Record<string, string> {
 	if (typeof data !== "object" || data === null) {
 		return {};
 	}

@@ -607,3 +607,17 @@ export {
 } from "./profile/dto";
 export type { UpdateProfileInput } from "./profile/schemas";
 export { updateProfileInputSchema } from "./profile/schemas";
+export {
+	deleteDevicePushToken,
+	deleteStaleDevicePushTokens,
+	listDevicePushTokensForUser,
+	registerDevicePushToken,
+} from "./push/device-push-token.service";
+export type {
+	PushNotificationDispatch,
+	PushNotificationHandler,
+} from "./push/push-notification.registry";
+export {
+	dispatchPushNotificationBestEffort,
+	setPushNotificationHandler,
+} from "./push/push-notification.registry";

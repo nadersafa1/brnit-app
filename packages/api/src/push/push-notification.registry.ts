@@ -33,9 +33,7 @@ export function setPushNotificationHandler(
 	customHandler = handler;
 }
 
-function defaultNoOpHandler(
-	dispatch: PushNotificationDispatch
-): Promise<void> {
+function defaultNoOpHandler(dispatch: PushNotificationDispatch): Promise<void> {
 	getLogger()
 		.child({ component: "push-notification" })
 		.warn(
