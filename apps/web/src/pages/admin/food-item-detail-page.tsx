@@ -37,6 +37,9 @@ import { getUserFacingErrorMessage } from "@/lib/get-error-message";
 
 const ROUTE_ID = "/dashboard/admin/food-items/$foodItemId";
 const LIST_PATH = "/dashboard/admin/food-items";
+/** Matches the `max-h-56` frame the image is drawn into. */
+const IMAGE_FRAME_HEIGHT = 224;
+const IMAGE_FRAME_WIDTH = 448;
 
 function MacroRow({
 	label,
@@ -79,10 +82,18 @@ function FoodItemSummary({ item }: Readonly<{ item: FoodItemDto }>) {
 				</div>
 				{item.imageUrl ? (
 					<figure className="space-y-2">
+						{/*
+						 * Explicit dimensions reserve the box before the image loads, so
+						 * the macro list beside it does not jump. Cloudinary assets vary in
+						 * aspect ratio, which is what `object-contain` is for — the
+						 * attributes size the frame, not the picture.
+						 */}
 						<img
 							alt={item.name}
 							className="max-h-56 w-full rounded-xl bg-card-alt object-contain"
+							height={IMAGE_FRAME_HEIGHT}
 							src={item.imageUrl}
+							width={IMAGE_FRAME_WIDTH}
 						/>
 						<figcaption className="text-muted-foreground text-xs">
 							<a
