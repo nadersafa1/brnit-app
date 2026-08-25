@@ -27,7 +27,9 @@ interface SelectItemRegistry {
 	skipRegistration: boolean;
 }
 
-const SelectItemRegistryContext = createContext<SelectItemRegistry | null>(null);
+const SelectItemRegistryContext = createContext<SelectItemRegistry | null>(
+	null
+);
 
 function useSelectItemsRegistry(hasExplicitItems: boolean) {
 	const [items, setItems] = useState<SelectItemEntry[]>([]);
@@ -235,7 +237,10 @@ function SelectSeparator({
 }: Readonly<SelectPrimitive.Separator.Props>) {
 	return (
 		<SelectPrimitive.Separator
-			className={cn("pointer-events-none -mx-1.5 my-1.5 h-px bg-border", className)}
+			className={cn(
+				"pointer-events-none -mx-1.5 my-1.5 h-px bg-border",
+				className
+			)}
 			data-slot="select-separator"
 			{...props}
 		/>

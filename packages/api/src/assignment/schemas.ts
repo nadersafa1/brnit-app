@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 import {
+	DEFAULT_ALTERNATIVES_PER_PAGE,
+	MAX_ALTERNATIVES_PER_PAGE,
+} from "../food/alternatives";
+import {
 	pageSchema,
 	perPageSchema,
 	sortOrderSchema,
@@ -244,3 +248,40 @@ export type DeleteMealItemOverrideInput = MealItemOverrideParams & {
 
 /** `?date=` on the override delete. Blank is "all days", not a bad request. */
 export const mealItemOverrideDateQuerySchema = utcDateStringSchema;
+
+// ---------------------------------------------------------------------------
+// Slot-scoped alternatives
+// ---------------------------------------------------------------------------
+
+const FIRST_PAGE = 1;
+const MIN_ALTERNATIVES_PER_PAGE = 1;
+
+/**
+ * Alternatives for what a slot *currently shows*.
+ *
+ * There is no `quantity` here, unlike the food-item alternatives query: the
+ * server resolves both the food and the amount from the plan and any override
+ * covering `date`, so the client cannot ask for alternatives to something the
+ * member is not actually looking at. `date` defaults to today (UTC).
+ *
+ * The page bounds are imported from the food area rather than restated, so the
+ * two alternatives endpoints cannot drift apart.
+ */
+export const mealItemAlternativesQuerySchema = z.object({
+	date: utcDateStringSchema.optional(),
+	page: z.coerce.number().int().positive().optional().default(FIRST_PAGE),
+	perPage: z.coerce
+		.number()
+		.int()
+		.min(MIN_ALTERNATIVES_PER_PAGE)
+		.max(MAX_ALTERNATIVES_PER_PAGE)
+		.optional()
+		.default(DEFAULT_ALTERNATIVES_PER_PAGE),
+});
+
+export type MealItemAlternativesQuery = z.infer<
+	typeof mealItemAlternativesQuerySchema
+>;
+
+export type ListMealItemAlternativesInput = MealItemOverrideParams &
+	MealItemAlternativesQuery;

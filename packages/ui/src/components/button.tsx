@@ -16,11 +16,12 @@ import { cva, type VariantProps } from "class-variance-authority";
  *     `--chrome-foreground` (`--brand-chrome-fg`), never `--foreground`.
  */
 const buttonVariants = cva(
-	"group/button inline-flex shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-full border border-transparent bg-clip-padding font-medium text-sm outline-none transition-all ease-standard active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 aria-invalid:ring-2 aria-invalid:ring-destructive/40 [&_svg:not([class*='size-'])]:size-5 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+	"group/button inline-flex shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-full border border-transparent bg-clip-padding font-medium text-sm outline-none transition-all ease-standard focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-invalid:ring-2 aria-invalid:ring-destructive/40 [&_svg:not([class*='size-'])]:size-5 [&_svg]:pointer-events-none [&_svg]:shrink-0",
 	{
 		variants: {
 			variant: {
-				default: "bg-primary text-primary-foreground shadow-soft hover:bg-primary/90",
+				default:
+					"bg-primary text-primary-foreground shadow-soft hover:bg-primary/90",
 				secondary: "bg-card text-card-foreground shadow-soft hover:bg-card-alt",
 				outline:
 					"border-border bg-transparent text-foreground hover:bg-accent hover:text-accent-foreground aria-expanded:bg-accent",

@@ -277,9 +277,27 @@ describe("buildCurrentDietPlanDays", () => {
 		const days = buildDays({
 			allDates: [DAY_ONE],
 			slots: [
-				{ ...lunchSlot, dayNumber: 0, id: "slot-z", mealOrder: 1, mealType: "b" },
-				{ ...lunchSlot, dayNumber: 0, id: "slot-a", mealOrder: 1, mealType: "b" },
-				{ ...lunchSlot, dayNumber: 0, id: "slot-m", mealOrder: 1, mealType: "a" },
+				{
+					...lunchSlot,
+					dayNumber: 0,
+					id: "slot-z",
+					mealOrder: 1,
+					mealType: "b",
+				},
+				{
+					...lunchSlot,
+					dayNumber: 0,
+					id: "slot-a",
+					mealOrder: 1,
+					mealType: "b",
+				},
+				{
+					...lunchSlot,
+					dayNumber: 0,
+					id: "slot-m",
+					mealOrder: 1,
+					mealType: "a",
+				},
 				{ ...breakfastSlot, id: "slot-late", mealOrder: 2 },
 			],
 		});

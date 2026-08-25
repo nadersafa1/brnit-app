@@ -49,8 +49,7 @@ import { createPaginatedResponse } from "../pagination/offset";
  */
 
 const MEMBER_NOT_FOUND_MESSAGE = "Member not found";
-const WRONG_MEMBER_ORG_MESSAGE =
-	"Member does not belong to this organization";
+const WRONG_MEMBER_ORG_MESSAGE = "Member does not belong to this organization";
 const ASSESSMENT_NOT_FOUND_MESSAGE = "Assessment not found";
 const WRONG_ASSESSMENT_ORG_MESSAGE =
 	"Assessment does not belong to this organization";

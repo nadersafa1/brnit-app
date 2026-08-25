@@ -86,14 +86,23 @@ export const updateAssessmentInputSchema = z.object({
 		)
 		.optional(),
 	bodyWaterL: z
-		.preprocess(blankToUndefined, z.coerce.number().pipe(metricSchema).optional())
+		.preprocess(
+			blankToUndefined,
+			z.coerce.number().pipe(metricSchema).optional()
+		)
 		.optional(),
 	clearImage: clearImageSchema,
 	heightCm: z
-		.preprocess(blankToUndefined, z.coerce.number().pipe(metricSchema).optional())
+		.preprocess(
+			blankToUndefined,
+			z.coerce.number().pipe(metricSchema).optional()
+		)
 		.optional(),
 	muscleMassKg: z
-		.preprocess(blankToUndefined, z.coerce.number().pipe(metricSchema).optional())
+		.preprocess(
+			blankToUndefined,
+			z.coerce.number().pipe(metricSchema).optional()
+		)
 		.optional(),
 	visceralFatAreaCm2: z
 		.preprocess(
@@ -102,7 +111,10 @@ export const updateAssessmentInputSchema = z.object({
 		)
 		.optional(),
 	weightKg: z
-		.preprocess(blankToUndefined, z.coerce.number().pipe(metricSchema).optional())
+		.preprocess(
+			blankToUndefined,
+			z.coerce.number().pipe(metricSchema).optional()
+		)
 		.optional(),
 });
 

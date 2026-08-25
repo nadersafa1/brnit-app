@@ -23,7 +23,9 @@ function ComboboxInput({
 	className,
 	size = "default",
 	...props
-}: ComboboxPrimitive.Input.Props & {
+	// `Omit` the native attribute first: `<input size>` is a `number`, so
+	// intersecting it with the variant union collapses `size` to `never`.
+}: Omit<ComboboxPrimitive.Input.Props, "size"> & {
 	size?: "sm" | "default" | "lg";
 }) {
 	return (
@@ -170,7 +172,7 @@ function ComboboxItem({
 	return (
 		<ComboboxPrimitive.Item
 			className={cn(
-				"relative flex w-full cursor-default select-none items-center gap-2.5 rounded-lg py-2.5 pr-9 pl-3 text-sm outline-hidden transition-colors data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+				"relative flex w-full cursor-default select-none items-center gap-2.5 rounded-lg py-2.5 pr-9 pl-3 text-sm outline-hidden transition-colors data-disabled:pointer-events-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
 				className
 			)}
 			data-slot="combobox-item"

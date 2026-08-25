@@ -33,9 +33,9 @@ describe("dedupeAndSortDateStrings", () => {
 
 describe("parseEffectiveDates", () => {
 	it("normalizes a stored array", () => {
-		expect(parseEffectiveDates(["2026-04-02", "2026-04-01", "2026-04-02"])).toEqual(
-			["2026-04-01", "2026-04-02"]
-		);
+		expect(
+			parseEffectiveDates(["2026-04-02", "2026-04-01", "2026-04-02"])
+		).toEqual(["2026-04-01", "2026-04-02"]);
 	});
 
 	it("drops non-string entries rather than trusting the jsonb column", () => {

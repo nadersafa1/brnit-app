@@ -118,3 +118,63 @@ export function assignmentBelongsToUser(
 	}
 	return row.memberId !== null && memberIds.has(row.memberId);
 }
+
+/**
+ * The organization a nutritionist request operates in.
+ *
+ * `isAppAdmin` is not "has an org too" — app admins have no `member` row at all
+ * and are deliberately unscoped, so `organizationId` is legitimately `null` for
+ * them.
+ */
+export interface NutritionistScope {
+	isAppAdmin: boolean;
+	organizationId: string | null;
+}
+
+/** Resolves whether an assignment's assignee belongs to an organization. */
+export interface OrganizationScopeProbe {
+	assignmentBelongsToOrganization(
+		assignmentId: string,
+		organizationId: string
+	): Promise<boolean>;
+}
+
+/**
+ * May this scope touch that assignment?
+ *
+ * App admins pass without a probe. Everyone else needs an active organization
+ * (**403**) and an assignment whose assignee is one of its members; anything
+ * else is **404**, never 403, so a nutritionist in organization A cannot use the
+ * status code to discover which ids exist in organization B.
+ *
+ * The probe is injected rather than imported so the rule stays free of the
+ * database, matching {@link assertNoOverlappingAssignment}.
+ */
+export async function assertAssignmentVisibleToScope(
+	params: {
+		assignmentId: string;
+		/** Overridable so a consumption reads "Consumption not found". */
+		notFoundMessage?: string;
+		noOrganizationMessage?: string;
+		scope: NutritionistScope;
+	},
+	probe: OrganizationScopeProbe
+): Promise<void> {
+	const { assignmentId, scope } = params;
+	if (scope.isAppAdmin) {
+		return;
+	}
+	if (!scope.organizationId) {
+		throw new HttpError(
+			403,
+			params.noOrganizationMessage ?? "Active organization required"
+		);
+	}
+	const visible = await probe.assignmentBelongsToOrganization(
+		assignmentId,
+		scope.organizationId
+	);
+	if (!visible) {
+		throw new HttpError(404, params.notFoundMessage ?? "Assignment not found");
+	}
+}

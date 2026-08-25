@@ -106,16 +106,20 @@ const updateDietPlanMealSchema = z.object({
  * duplicate; the same slot with a **different** meal is not — that is how a
  * plan offers alternatives for one meal of the day.
  */
-const addArraySchema = z.array(addDietPlanMealSchema).refine(
-	(arr) =>
-		new Set(
-			arr.map((x) => `${x.dayNumber}-${x.mealType}-${x.mealOrder}-${x.mealId}`)
-		).size === arr.length,
-	{
-		message:
-			"Duplicate diet plan meal (same dayNumber, mealType, mealOrder, mealId) in add array",
-	}
-);
+const addArraySchema = z
+	.array(addDietPlanMealSchema)
+	.refine(
+		(arr) =>
+			new Set(
+				arr.map(
+					(x) => `${x.dayNumber}-${x.mealType}-${x.mealOrder}-${x.mealId}`
+				)
+			).size === arr.length,
+		{
+			message:
+				"Duplicate diet plan meal (same dayNumber, mealType, mealOrder, mealId) in add array",
+		}
+	);
 
 const removeArraySchema = z
 	.array(z.uuid("Invalid diet plan meal ID"))

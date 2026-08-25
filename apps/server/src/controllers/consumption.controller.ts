@@ -106,7 +106,9 @@ export class ConsumptionController {
 				return;
 			}
 			const ctx = contextFromExpressRequest(req);
-			res.json(await deleteNutritionistDietPlanMealConsumption(ctx, params.data));
+			res.json(
+				await deleteNutritionistDietPlanMealConsumption(ctx, params.data)
+			);
 		} catch (err) {
 			handleHandlerError(err, res, next);
 		}

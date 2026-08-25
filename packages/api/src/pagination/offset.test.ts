@@ -32,7 +32,9 @@ describe("createPaginatedResponse", () => {
 	});
 
 	it("rounds totalPages up on a partial last page", () => {
-		expect(createPaginatedResponse([], 1, 25, 51).pagination.totalPages).toBe(3);
+		expect(createPaginatedResponse([], 1, 25, 51).pagination.totalPages).toBe(
+			3
+		);
 	});
 
 	it("reports zero pages when there are no items", () => {

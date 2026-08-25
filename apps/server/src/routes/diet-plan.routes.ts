@@ -36,7 +36,11 @@ export function createDietPlanRouter(): Router {
 	const nutritionistGuards = [requireSession(), requireNutritionist()] as const;
 
 	registerDietPlanRoutes(router, "/admin/diet-plans", adminGuards);
-	registerDietPlanRoutes(router, "/nutritionist/diet-plans", nutritionistGuards);
+	registerDietPlanRoutes(
+		router,
+		"/nutritionist/diet-plans",
+		nutritionistGuards
+	);
 
 	return router;
 }

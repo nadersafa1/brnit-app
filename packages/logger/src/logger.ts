@@ -1,7 +1,7 @@
 import type { Writable } from "node:stream";
+import { env } from "@brnit/env/server";
 import { context, trace } from "@opentelemetry/api";
 import { type AnyValue, logs, SeverityNumber } from "@opentelemetry/api-logs";
-import { env } from "@brnit/env/server";
 import pino, {
 	type Level,
 	type LevelWithSilent,

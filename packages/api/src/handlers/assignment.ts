@@ -9,7 +9,7 @@ import {
 	requireAssignmentForUser,
 } from "../assignment/access";
 import {
-	assertAssignmentInOrganization,
+	databaseOrganizationScope,
 	listOrganizationMemberIds,
 	requireAssignableMember,
 	requireNutritionistOrganizationId,
@@ -33,6 +33,7 @@ import {
 	deleteMealItemOverrideDate,
 	deleteMealItemOverrideSlot,
 	requireOverrideSlot,
+	resolveDisplayedMealItemForDate,
 	upsertMealItemOverrideRow,
 } from "../assignment/meal-item-overrides";
 import {
@@ -46,22 +47,28 @@ import {
 	dedupeAndSortDateStrings,
 	normalizeOverrideScopeWindow,
 } from "../assignment/override-dates";
-import { assertNoOverlappingAssignment } from "../assignment/rules";
+import {
+	assertAssignmentVisibleToScope,
+	assertNoOverlappingAssignment,
+} from "../assignment/rules";
 import type {
 	CreateDietPlanAssignmentInput,
 	CreateDietPlanAssignmentNutritionistInput,
 	DeleteMealItemOverrideInput,
 	DietPlanAssignmentIdParams,
 	DietPlanAssignmentListQuery,
+	ListMealItemAlternativesInput,
 	MealTimeOverrideInput,
 	SetMealItemOverrideInput,
 	UpdateDietPlanAssignmentInput,
 } from "../assignment/schemas";
 import type { Context } from "../context";
 import { combineConditions } from "../db/query-conditions";
+import type { FoodItemAlternativesResponse } from "../food/dto";
 import { HttpError } from "../http-error";
 import type { PaginatedResponse } from "../pagination/offset";
 import { calculateOffset, createPaginatedResponse } from "../pagination/offset";
+import { getFoodItemAlternatives } from "./food";
 
 /**
  * Diet-plan assignments and the two kinds of override that hang off them.
@@ -95,14 +102,14 @@ async function assertAssignmentVisible(
 	ctx: Context,
 	assignmentId: string
 ): Promise<void> {
-	const scope = requireNutritionistScope(ctx);
-	if (scope.isAppAdmin) {
-		return;
-	}
-	if (!scope.organizationId) {
-		throw new HttpError(403, NO_ACTIVE_ORG);
-	}
-	await assertAssignmentInOrganization(assignmentId, scope.organizationId);
+	await assertAssignmentVisibleToScope(
+		{
+			assignmentId,
+			noOrganizationMessage: NO_ACTIVE_ORG,
+			scope: requireNutritionistScope(ctx),
+		},
+		databaseOrganizationScope
+	);
 }
 
 async function findAssignmentRow(
@@ -160,7 +167,9 @@ export async function listNutritionistDietPlanAssignments(
 
 	const where = combineConditions([
 		inArray(dietPlanAssignment.memberId, organizationMemberIds),
-		input.memberId ? eq(dietPlanAssignment.memberId, input.memberId) : undefined,
+		input.memberId
+			? eq(dietPlanAssignment.memberId, input.memberId)
+			: undefined,
 		input.userId ? eq(dietPlanAssignment.userId, input.userId) : undefined,
 		input.dietPlanId
 			? eq(dietPlanAssignment.dietPlanId, input.dietPlanId)
@@ -168,7 +177,8 @@ export async function listNutritionistDietPlanAssignments(
 	]);
 
 	const sortColumn = assignmentSortColumns[input.sortBy ?? "createdAt"];
-	const orderBy = input.sortOrder === "asc" ? asc(sortColumn) : desc(sortColumn);
+	const orderBy =
+		input.sortOrder === "asc" ? asc(sortColumn) : desc(sortColumn);
 
 	const [countRows, rows] = await Promise.all([
 		db.select({ count: count() }).from(dietPlanAssignment).where(where),
@@ -514,4 +524,45 @@ export async function deleteMemberMealItemOverride(
 	}
 
 	return { data: { deleted: true } };
+}
+
+/**
+ * Alternatives for what a slot shows on `date`.
+ *
+ * The point of routing this through the assignment rather than through
+ * `/food-items/:id/alternatives` is that the member is not choosing a food id —
+ * they are tapping a line of their plan. So the food *and* the quantity are
+ * resolved server-side from the plan and whatever override covers that day, and
+ * only then handed to the matching algorithm. Swap a slot twice in one day and
+ * the second search is against what they can currently see, not against the
+ * plan's original food.
+ *
+ * Ownership failures are **403**, a slot that is not part of the assignment's
+ * plan is **404**, and the alternatives search contributes its own 404/400 for a
+ * reference food that is missing or has no macros.
+ */
+export async function listMemberMealItemAlternatives(
+	ctx: Context,
+	input: ListMealItemAlternativesInput
+): Promise<FoodItemAlternativesResponse> {
+	const user = requireSessionUser(ctx);
+	const assignment = await requireAssignmentForUser(
+		user.id,
+		input.assignmentId,
+		OVERRIDE_ACCESS_DENIED
+	);
+
+	const displayed = await resolveDisplayedMealItemForDate({
+		assignment,
+		date: input.date ?? getTodayUtcDateString(),
+		dietPlanMealId: input.dietPlanMealId,
+		mealItemId: input.mealItemId,
+	});
+
+	return await getFoodItemAlternatives(ctx, {
+		foodItemId: displayed.foodItemId,
+		page: input.page,
+		perPage: input.perPage,
+		quantity: displayed.quantity,
+	});
 }

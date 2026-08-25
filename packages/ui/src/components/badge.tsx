@@ -20,12 +20,14 @@ const badgeVariants = cva(
 				default: "bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
 				secondary:
 					"bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/80",
-				surface: "bg-card text-card-foreground shadow-soft [a&]:hover:bg-card-alt",
+				surface:
+					"bg-card text-card-foreground shadow-soft [a&]:hover:bg-card-alt",
 				chrome: "bg-chrome text-chrome-foreground shadow-soft",
 				accent: "bg-accent-soft text-accent-fg",
 				outline: "border-border text-foreground [a&]:hover:bg-accent",
 				destructive: "bg-destructive/10 text-destructive",
-				ghost: "text-muted-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+				ghost:
+					"text-muted-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
 				link: "text-accent-fg underline-offset-4 [a&]:hover:underline",
 			},
 		},

@@ -188,9 +188,9 @@ describe("hasNutritionistAccess", () => {
 	});
 
 	it("allows a global nutritionist with no organization", () => {
-		expect(hasNutritionistAccess({ role: "nutritionist" }, buildContext())).toBe(
-			true
-		);
+		expect(
+			hasNutritionistAccess({ role: "nutritionist" }, buildContext())
+		).toBe(true);
 	});
 
 	it("allows an org nutritionist with an active organization", () => {

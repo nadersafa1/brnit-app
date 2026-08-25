@@ -52,7 +52,9 @@ describe("createDietPlanMealConsumptionInputSchema", () => {
 	});
 
 	it("normalizes consumedAt to a Date whichever form it arrives in", () => {
-		const fromString = createDietPlanMealConsumptionInputSchema.safeParse(body());
+		const fromString = createDietPlanMealConsumptionInputSchema.safeParse(
+			body()
+		);
 		const fromDate = createDietPlanMealConsumptionInputSchema.safeParse(
 			body({ consumedAt: new Date("2026-03-10T12:00:00.000Z") })
 		);
@@ -86,10 +88,10 @@ describe("createDietPlanMealConsumptionInputSchema", () => {
 	it("rejects more than the item cap", () => {
 		const result = createDietPlanMealConsumptionInputSchema.safeParse(
 			body({
-				consumedItems: Array.from(
-					{ length: MAX_CONSUMED_ITEMS + 1 },
-					() => ({ foodItemId: FOOD_A, quantity: 100 })
-				),
+				consumedItems: Array.from({ length: MAX_CONSUMED_ITEMS + 1 }, () => ({
+					foodItemId: FOOD_A,
+					quantity: 100,
+				})),
 			})
 		);
 

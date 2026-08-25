@@ -158,9 +158,8 @@ function pickAssignmentForDate(
 	from: string
 ): AssignmentRow | undefined {
 	return (
-		assignments.find(
-			(row) => row.startDate <= from && row.endDate >= from
-		) ?? assignments[0]
+		assignments.find((row) => row.startDate <= from && row.endDate >= from) ??
+		assignments[0]
 	);
 }
 

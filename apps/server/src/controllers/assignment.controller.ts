@@ -7,7 +7,9 @@ import {
 	dietPlanAssignmentListQuerySchema,
 	getNutritionistDietPlanAssignment,
 	listMemberDietPlanAssignments,
+	listMemberMealItemAlternatives,
 	listNutritionistDietPlanAssignments,
+	mealItemAlternativesQuerySchema,
 	mealItemOverrideDateQuerySchema,
 	mealItemOverrideParamsSchema,
 	paginationQueryInput,
@@ -240,6 +242,52 @@ export class AssignmentController {
 				jsonApiError(res, 400, OVERRIDE_CONFLICT_MESSAGE);
 				return;
 			}
+			handleHandlerError(err, res, next);
+		}
+	}
+
+	/**
+	 * Alternatives for the food a slot currently shows. No `quantity` parameter:
+	 * the handler resolves it from the plan and any override covering the date.
+	 */
+	static async listMealItemAlternatives(
+		req: Request,
+		res: Response,
+		next: NextFunction
+	): Promise<void> {
+		try {
+			const params = mealItemOverrideParamsSchema.safeParse(req.params);
+			if (!params.success) {
+				jsonApiError(
+					res,
+					400,
+					"Invalid route parameters",
+					flattenError(params.error)
+				);
+				return;
+			}
+			const query = mealItemAlternativesQuerySchema.safeParse({
+				date: queryParam(req.query.date),
+				page: queryParam(req.query.page),
+				perPage: queryParam(req.query.perPage),
+			});
+			if (!query.success) {
+				jsonApiError(
+					res,
+					400,
+					"Invalid query parameters",
+					flattenError(query.error)
+				);
+				return;
+			}
+			const ctx = contextFromExpressRequest(req);
+			res.json(
+				await listMemberMealItemAlternatives(ctx, {
+					...query.data,
+					...params.data,
+				})
+			);
+		} catch (err) {
 			handleHandlerError(err, res, next);
 		}
 	}

@@ -37,9 +37,7 @@ export const perPageSchema = z
 	.transform((value) => (value ? Number.parseInt(value, 10) : DEFAULT_PER_PAGE))
 	.refine(
 		(value) =>
-			Number.isInteger(value) &&
-			value >= MIN_PER_PAGE &&
-			value <= MAX_PER_PAGE,
+			Number.isInteger(value) && value >= MIN_PER_PAGE && value <= MAX_PER_PAGE,
 		`perPage must be an integer between ${MIN_PER_PAGE} and ${MAX_PER_PAGE}`
 	);
 
@@ -48,7 +46,10 @@ export const paginationQuerySchema = z.object({
 	perPage: perPageSchema,
 });
 
-export const sortOrderSchema = z.enum(["asc", "desc"]).optional().default("desc");
+export const sortOrderSchema = z
+	.enum(["asc", "desc"])
+	.optional()
+	.default("desc");
 
 export const sortQuerySchema = z.object({
 	sortOrder: sortOrderSchema,
@@ -91,9 +92,10 @@ export function queryParam(value: unknown): string | undefined {
  * Builds the object the pagination schemas parse, resolving the `limit` alias
  * for `perPage`. An explicit `perPage` wins over `limit`.
  */
-export function paginationQueryInput(
-	query: Record<string, unknown>
-): { page: string | undefined; perPage: string | undefined } {
+export function paginationQueryInput(query: Record<string, unknown>): {
+	page: string | undefined;
+	perPage: string | undefined;
+} {
 	return {
 		page: queryParam(query.page),
 		perPage: queryParam(query.perPage) ?? queryParam(query.limit),

@@ -79,7 +79,9 @@ function buildAuditInput(
 		// Preserved quirk: the session's active organization is deliberately not
 		// consulted — only an explicit `?orgId=` is recorded.
 		organizationId: deriveOrganizationIdFromUrl(url),
-		requestId: req.id,
+		// pino-http types `req.id` as `ReqId` (`string | number | object`) because
+		// `genReqId` may return any of them; the column is text.
+		requestId: String(req.id),
 		requestMethod: req.method,
 		resource: deriveResource(derivationPath),
 		statusCode,

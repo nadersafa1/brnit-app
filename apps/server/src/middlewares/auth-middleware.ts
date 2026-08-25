@@ -59,10 +59,10 @@ function jsonError(
  * Minimal ban shape. `banExpires` is accepted as a string too, because a
  * session deserialized from cache carries ISO dates rather than `Date`s.
  */
-export type UserBanInput = {
+export interface UserBanInput {
 	banExpires?: Date | string | null;
 	banned?: boolean | null;
-};
+}
 
 /**
  * True when the user is actively banned. Honors `banExpires` so an expired

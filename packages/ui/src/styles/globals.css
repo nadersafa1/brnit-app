@@ -152,8 +152,9 @@
 }
 
 @theme inline {
-	--font-sans: "General Sans", "General Sans Variable", system-ui,
-		-apple-system, "Segoe UI", Roboto, sans-serif;
+	--font-sans:
+		"General Sans", "General Sans Variable", system-ui, -apple-system,
+		"Segoe UI", Roboto, sans-serif;
 
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);

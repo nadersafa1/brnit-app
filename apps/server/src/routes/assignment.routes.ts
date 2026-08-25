@@ -24,8 +24,10 @@ export function createAssignmentRouter(): Router {
 	] as const;
 	const member = [requireSession()] as const;
 
-	const overridePath =
-		"/member/me/diet-plan-assignments/:assignmentId/meal-entries/:dietPlanMealId/items/:mealItemId/override";
+	const slotPath =
+		"/member/me/diet-plan-assignments/:assignmentId/meal-entries/:dietPlanMealId/items/:mealItemId";
+	const overridePath = `${slotPath}/override`;
+	const alternativesPath = `${slotPath}/alternatives`;
 
 	router.get(
 		"/nutritionist/diet-plan-assignments",
@@ -71,6 +73,14 @@ export function createAssignmentRouter(): Router {
 		overridePath,
 		...member,
 		AssignmentController.deleteMealItemOverride
+	);
+
+	// Alternatives for the food the slot currently shows on `?date=`; the food
+	// and the quantity are resolved server-side, so there is no `quantity` param.
+	router.get(
+		alternativesPath,
+		...member,
+		AssignmentController.listMealItemAlternatives
 	);
 
 	return router;

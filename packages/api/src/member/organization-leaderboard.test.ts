@@ -77,7 +77,10 @@ describe("buildLeaderboardCandidates", () => {
 		const candidates = buildLeaderboardCandidates(
 			[{ id: "mem-1", name: "Alice" }],
 			new Map([
-				["mem-1", [assessment("2026-01-01", "20"), assessment("2026-03-01", "23")]],
+				[
+					"mem-1",
+					[assessment("2026-01-01", "20"), assessment("2026-03-01", "23")],
+				],
 			])
 		);
 
@@ -90,7 +93,10 @@ describe("buildLeaderboardCandidates", () => {
 			new Map([
 				[
 					"mem-1",
-					[assessment("2026-01-01", "not-a-number"), assessment("2026-03-01", "")],
+					[
+						assessment("2026-01-01", "not-a-number"),
+						assessment("2026-03-01", ""),
+					],
 				],
 			])
 		);

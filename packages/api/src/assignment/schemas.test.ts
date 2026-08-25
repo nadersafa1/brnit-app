@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 
 import {
 	createDietPlanAssignmentNutritionistInputSchema,
+	mealItemAlternativesQuerySchema,
 	setMealItemOverrideBodySchema,
 	updateDietPlanAssignmentBodySchema,
 } from "./schemas";
@@ -83,7 +84,9 @@ describe("updateDietPlanAssignmentBodySchema", () => {
 	});
 
 	it("rejects an empty patch", () => {
-		expect(updateDietPlanAssignmentBodySchema.safeParse({}).success).toBe(false);
+		expect(updateDietPlanAssignmentBodySchema.safeParse({}).success).toBe(
+			false
+		);
 	});
 
 	it("rejects duplicate dietPlanMealId entries", () => {
@@ -182,5 +185,68 @@ describe("setMealItemOverrideBodySchema", () => {
 		});
 
 		expect(parsed.success).toBe(false);
+	});
+});
+
+describe("mealItemAlternativesQuerySchema", () => {
+	it("defaults page, perPage and date when nothing is supplied", () => {
+		const parsed = mealItemAlternativesQuerySchema.safeParse({});
+
+		expect(parsed.success).toBe(true);
+		if (parsed.success) {
+			expect(parsed.data.page).toBe(1);
+			expect(parsed.data.perPage).toBe(10);
+			// Left undefined so the handler can resolve today at call time.
+			expect(parsed.data.date).toBeUndefined();
+		}
+	});
+
+	it("coerces the string values that arrive from the query string", () => {
+		const parsed = mealItemAlternativesQuerySchema.safeParse({
+			date: "2026-04-10",
+			page: "2",
+			perPage: "20",
+		});
+
+		expect(parsed.success).toBe(true);
+		if (parsed.success) {
+			expect(parsed.data).toEqual({
+				date: "2026-04-10",
+				page: 2,
+				perPage: 20,
+			});
+		}
+	});
+
+	it("rejects a page size above the alternatives cap", () => {
+		expect(
+			mealItemAlternativesQuerySchema.safeParse({ perPage: "21" }).success
+		).toBe(false);
+	});
+
+	it("rejects a zero page size and a zero page", () => {
+		expect(
+			mealItemAlternativesQuerySchema.safeParse({ perPage: "0" }).success
+		).toBe(false);
+		expect(
+			mealItemAlternativesQuerySchema.safeParse({ page: "0" }).success
+		).toBe(false);
+	});
+
+	it("rejects a malformed date", () => {
+		expect(
+			mealItemAlternativesQuerySchema.safeParse({ date: "10-04-2026" }).success
+		).toBe(false);
+	});
+
+	it("takes no quantity — the slot's own amount is authoritative", () => {
+		const parsed = mealItemAlternativesQuerySchema.safeParse({
+			quantity: "250",
+		});
+
+		expect(parsed.success).toBe(true);
+		if (parsed.success) {
+			expect("quantity" in parsed.data).toBe(false);
+		}
 	});
 });

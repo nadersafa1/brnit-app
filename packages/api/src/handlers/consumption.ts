@@ -24,11 +24,13 @@ import {
 	requireAssignmentForUser,
 } from "../assignment/access";
 import {
+	databaseOrganizationScope,
 	listAssignmentIdsForOrganization,
 	requireNutritionistScope,
 	requireSessionUser,
 } from "../assignment/authorization";
 import type { DeletedFlagDto } from "../assignment/dto";
+import { assertAssignmentVisibleToScope } from "../assignment/rules";
 import type {
 	DietPlanMealConsumptionDto,
 	DietPlanMealConsumptionListItemDto,
@@ -116,7 +118,8 @@ async function listConsumptions(
 	]);
 
 	const sortColumn = consumptionSortColumns[input.sortBy ?? "consumedAt"];
-	const orderBy = input.sortOrder === "asc" ? asc(sortColumn) : desc(sortColumn);
+	const orderBy =
+		input.sortOrder === "asc" ? asc(sortColumn) : desc(sortColumn);
 
 	const [countRows, rows] = await Promise.all([
 		db.select({ count: count() }).from(dietPlanMealConsumption).where(where),
@@ -298,52 +301,96 @@ export async function listNutritionistDietPlanMealConsumptions(
 ): Promise<PaginatedResponse<DietPlanMealConsumptionListItemDto>> {
 	const scope = requireNutritionistScope(ctx);
 
-	if (scope.isAppAdmin) {
+	// A named assignment is checked directly — one indexed lookup instead of
+	// materializing every assignment in the organization.
+	if (input.dietPlanAssignmentId) {
+		await assertAssignmentVisibleToScope(
+			{
+				assignmentId: input.dietPlanAssignmentId,
+				noOrganizationMessage: NO_ACTIVE_ORG,
+				notFoundMessage: ASSIGNMENT_NOT_FOUND,
+				scope,
+			},
+			databaseOrganizationScope
+		);
 		return await listConsumptions(input, {
 			assignmentId: input.dietPlanAssignmentId,
 		});
+	}
+
+	if (scope.isAppAdmin) {
+		return await listConsumptions(input, {});
 	}
 	if (!scope.organizationId) {
 		throw new HttpError(403, NO_ACTIVE_ORG);
 	}
-
-	const visibleAssignmentIds = await listAssignmentIdsForOrganization(
-		scope.organizationId
-	);
-
-	if (input.dietPlanAssignmentId) {
-		if (!visibleAssignmentIds.includes(input.dietPlanAssignmentId)) {
-			throw new HttpError(404, ASSIGNMENT_NOT_FOUND);
-		}
-		return await listConsumptions(input, {
-			assignmentId: input.dietPlanAssignmentId,
-		});
-	}
 	return await listConsumptions(input, {
-		assignmentIds: visibleAssignmentIds,
+		assignmentIds: await listAssignmentIdsForOrganization(scope.organizationId),
 	});
 }
 
 /**
  * Logs a consumption on a client's behalf.
  *
- * Only the service-level backdate window applies — a nutritionist correcting a
- * client's log is not bound by the assignment's grace period, which is a
- * client-app affordance.
+ * **Behaviour change from the Next.js route**, agreed as part of the overhaul:
+ * the assignment must belong to the caller's organization. The old handler
+ * wrote against any assignment id it was handed, so a nutritionist could log
+ * meals onto another organization's client.
+ *
+ * Only the service-level backdate window applies once past that — a
+ * nutritionist correcting a client's log is not bound by the assignment's grace
+ * period, which is a client-app affordance.
  */
 export async function createNutritionistDietPlanMealConsumption(
 	ctx: Context,
 	input: CreateDietPlanMealConsumptionInput
 ): Promise<{ data: DietPlanMealConsumptionDto }> {
-	requireNutritionistScope(ctx);
+	await assertAssignmentVisibleToScope(
+		{
+			assignmentId: input.dietPlanAssignmentId,
+			noOrganizationMessage: NO_ACTIVE_ORG,
+			notFoundMessage: ASSIGNMENT_NOT_FOUND,
+			scope: requireNutritionistScope(ctx),
+		},
+		databaseOrganizationScope
+	);
 	return { data: await logConsumption(input) };
 }
 
+/**
+ * Deletes one consumption.
+ *
+ * The row is read before it is removed so its assignment can be checked against
+ * the caller's organization. An out-of-organization consumption answers the same
+ * **404 `Consumption not found`** as one that never existed — the id must not
+ * become an oracle for what other organizations have logged.
+ */
 export async function deleteNutritionistDietPlanMealConsumption(
 	ctx: Context,
 	input: DietPlanMealConsumptionIdParams
 ): Promise<{ data: DietPlanMealConsumptionDto }> {
-	requireNutritionistScope(ctx);
+	const scope = requireNutritionistScope(ctx);
+
+	const [existing] = await db
+		.select({
+			dietPlanAssignmentId: dietPlanMealConsumption.dietPlanAssignmentId,
+		})
+		.from(dietPlanMealConsumption)
+		.where(eq(dietPlanMealConsumption.id, input.id))
+		.limit(1);
+	if (!existing) {
+		throw new HttpError(404, CONSUMPTION_NOT_FOUND);
+	}
+
+	await assertAssignmentVisibleToScope(
+		{
+			assignmentId: existing.dietPlanAssignmentId,
+			noOrganizationMessage: NO_ACTIVE_ORG,
+			notFoundMessage: CONSUMPTION_NOT_FOUND,
+			scope,
+		},
+		databaseOrganizationScope
+	);
 
 	const [deleted] = await db
 		.delete(dietPlanMealConsumption)

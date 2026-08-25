@@ -43,12 +43,11 @@ describe("resolveAccessLogLevel", () => {
 		["GET", "/api/v1/health", 404, 20, "debug"],
 	];
 
-	it.each(cases)(
-		"%s %s status=%s rt=%sms -> %s",
-		(method, originalUrl, statusCode, responseTimeMs, expected) => {
-			expect(
-				resolveAccessLogLevel(method, originalUrl, statusCode, responseTimeMs)
-			).toBe(expected);
-		}
-	);
+	it.each(
+		cases
+	)("%s %s status=%s rt=%sms -> %s", (method, originalUrl, statusCode, responseTimeMs, expected) => {
+		expect(
+			resolveAccessLogLevel(method, originalUrl, statusCode, responseTimeMs)
+		).toBe(expected);
+	});
 });

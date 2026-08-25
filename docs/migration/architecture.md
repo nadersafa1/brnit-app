@@ -214,6 +214,17 @@ the subject — never a `__tests__` directory. Three tiers:
 3. **Route integration** — real Express app on an ephemeral port, real `fetch`.
    Follow the harness in `apps/server/src/routes/test-utils/`.
 
+> **Run tests per workspace.** `bun run test` (= `turbo test`) gives each
+> workspace its own process. Running `bun test packages/ apps/` in a single
+> command fails ~14 tests that pass in isolation: `mock.module` is process-wide
+> and permanent, so the server's route mocks of `@brnit/auth` and `@brnit/api`
+> leak into handler tests that run afterwards.
+
+Environment placeholders live in `test-setup.ts`, preloaded via `bunfig.toml`.
+Individual test files must not set env vars themselves — `@brnit/env/server`
+validates and freezes on first import, so whichever file loads it first would
+decide what the rest of the suite sees.
+
 > brnit currently uses **vitest** in `apps/web`. Those tests must be ported to
 > `bun:test` as part of the overhaul.
 

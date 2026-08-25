@@ -3,13 +3,8 @@ import { beforeEach, describe, expect, it, mock } from "bun:test";
 import type { AssessmentRow } from "../assessment/queries";
 import type { Context } from "../context";
 
-// `@brnit/env/server` validates at import time; these placeholders let the
-// module graph load in a shell with no `.env`.
-process.env.DATABASE_URL ??= "postgresql://test:test@127.0.0.1:5432/brnit_test";
-process.env.BETTER_AUTH_SECRET ??= "test-better-auth-secret-min-32-chars!!!!";
-process.env.BETTER_AUTH_URL ??= "http://127.0.0.1:3000";
-process.env.CORS_ORIGIN ??= "http://127.0.0.1:3000";
-process.env.CLOUDINARY_CLOUD_NAME ??= "demo";
+// Environment placeholders live in `test-setup.ts`, preloaded via bunfig —
+// see the note there about the env module freezing on first import.
 
 const ORGANIZATION = { id: "org-1", name: "Org One" };
 
@@ -251,7 +246,7 @@ describe("createBodyCompositionAssessment", () => {
 		]);
 		expect(result.data.recordedById).toBe("user-1");
 		expect(result.data.imageUrl).toBe(
-			"https://res.cloudinary.com/demo/image/upload/body-composition-assessments/uploaded"
+			`https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/body-composition-assessments/uploaded`
 		);
 		// Metrics stay strings for the staff-facing shape, and the public id
 		// never reaches the client.

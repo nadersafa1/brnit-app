@@ -1,5 +1,8 @@
 import { HttpError } from "../http-error";
-import { findMissingIds, findRemoveUpdateConflicts } from "../meal/mutation-ids";
+import {
+	findMissingIds,
+	findRemoveUpdateConflicts,
+} from "../meal/mutation-ids";
 
 /**
  * The refusals `PATCH` / `DELETE /diet-plans/:id` answer with.

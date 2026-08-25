@@ -23,10 +23,10 @@ const APP_NUTRITIONIST_ROLE = "nutritionist";
 
 /** Everything the catalog check needs, independent of Express and better-auth. */
 export interface NutritionCatalogActor {
-	/** `user.role` — plain `text`, so anything could be in there. */
-	appRole: string | null | undefined;
 	/** The organization the request was authorized against, if any. */
 	activeOrgId: string | null | undefined;
+	/** `user.role` — plain `text`, so anything could be in there. */
+	appRole: string | null | undefined;
 	/** True when the caller's `member.role` in that organization is `nutritionist`. */
 	isOrgNutritionist: boolean;
 }

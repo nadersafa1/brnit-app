@@ -105,7 +105,12 @@ export class AssessmentController {
 				id: routeParamId(req),
 			});
 			if (!params.success) {
-				jsonApiError(res, 400, INVALID_BODY_MESSAGE, flattenError(params.error));
+				jsonApiError(
+					res,
+					400,
+					INVALID_BODY_MESSAGE,
+					flattenError(params.error)
+				);
 				return;
 			}
 			const ctx = contextFromExpressRequest(req);
@@ -126,7 +131,12 @@ export class AssessmentController {
 				id: routeParamId(req),
 			});
 			if (!params.success) {
-				jsonApiError(res, 400, INVALID_BODY_MESSAGE, flattenError(params.error));
+				jsonApiError(
+					res,
+					400,
+					INVALID_BODY_MESSAGE,
+					flattenError(params.error)
+				);
 				return;
 			}
 			const fields = parseMultipartFields(
@@ -161,7 +171,12 @@ export class AssessmentController {
 				id: routeParamId(req),
 			});
 			if (!params.success) {
-				jsonApiError(res, 400, INVALID_BODY_MESSAGE, flattenError(params.error));
+				jsonApiError(
+					res,
+					400,
+					INVALID_BODY_MESSAGE,
+					flattenError(params.error)
+				);
 				return;
 			}
 			const ctx = contextFromExpressRequest(req);

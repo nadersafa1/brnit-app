@@ -75,9 +75,7 @@ export async function loadConsumptionStreak(
 			])
 		);
 
-	const consumedDates = new Set(
-		consumptionRows.map((row) => row.consumedDate)
-	);
+	const consumedDates = new Set(consumptionRows.map((row) => row.consumedDate));
 
 	return { streak: calculateConsumptionStreak(consumedDates, today) };
 }

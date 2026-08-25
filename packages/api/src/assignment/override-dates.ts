@@ -23,9 +23,7 @@ export interface OverrideScopeInput {
 }
 
 /** Unique, ascending. `'YYYY-MM-DD'` sorts lexicographically into date order. */
-export function dedupeAndSortDateStrings(
-	dates: readonly string[]
-): string[] {
+export function dedupeAndSortDateStrings(dates: readonly string[]): string[] {
 	return [...new Set(dates)].sort((a, b) => a.localeCompare(b));
 }
 

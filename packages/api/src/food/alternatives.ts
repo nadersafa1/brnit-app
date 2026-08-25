@@ -36,8 +36,8 @@ const HUNDRED_GRAM_QUANTITY_SCALE = 1000;
 /**
  * Rounds a reported macro to one decimal.
  *
- * Deliberately **not** `roundUpToTenth` from `@brnit/domain`: that rule rounds
- * *up* at every step because the member-facing plan totals must never understate
+ * Deliberately NOT `roundUpToTenth` from `@brnit/domain`: that rule rounds up
+ * at every step because the member-facing plan totals must never understate
  * what someone is eating. Alternatives report a *comparison* — the deltas have
  * to be able to come out negative and symmetric — so they round to nearest, as
  * this endpoint always has.

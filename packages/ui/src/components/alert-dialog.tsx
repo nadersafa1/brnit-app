@@ -53,7 +53,7 @@ function AlertDialogContent({
 			<AlertDialogOverlay />
 			<AlertDialogPrimitive.Popup
 				className={cn(
-					"data-open:fade-in-0 data-open:zoom-in-95 data-closed:fade-out-0 data-closed:zoom-out-95 group/alert-dialog-content fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-5 rounded-2xl bg-popover p-6 text-popover-foreground text-sm outline-none shadow-float duration-(--default-transition-duration) ease-standard data-closed:animate-out data-open:animate-in data-[size=sm]:max-w-xs data-[size=default]:sm:max-w-md",
+					"data-open:fade-in-0 data-open:zoom-in-95 data-closed:fade-out-0 data-closed:zoom-out-95 group/alert-dialog-content fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-5 rounded-2xl bg-popover p-6 text-popover-foreground text-sm shadow-float outline-none duration-(--default-transition-duration) ease-standard data-[size=sm]:max-w-xs data-closed:animate-out data-open:animate-in data-[size=default]:sm:max-w-md",
 					className
 				)}
 				data-size={size}
@@ -118,10 +118,7 @@ function AlertDialogDescription({
 }: AlertDialogPrimitive.Description.Props) {
 	return (
 		<AlertDialogPrimitive.Description
-			className={cn(
-				"text-muted-foreground text-sm leading-relaxed",
-				className
-			)}
+			className={cn("text-muted-foreground text-sm leading-relaxed", className)}
 			data-slot="alert-dialog-description"
 			{...props}
 		/>
@@ -129,7 +126,10 @@ function AlertDialogDescription({
 }
 
 /** Icon well above the title — `design.json` -> `iconography.containers`. */
-function AlertDialogMedia({ className, ...props }: React.ComponentProps<"div">) {
+function AlertDialogMedia({
+	className,
+	...props
+}: React.ComponentProps<"div">) {
 	return (
 		<div
 			className={cn(

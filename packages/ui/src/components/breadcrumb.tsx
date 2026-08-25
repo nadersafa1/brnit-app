@@ -58,12 +58,14 @@ function BreadcrumbLink({
 
 function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
 	return (
+		// The current page is not a link — it is the destination. `role="link"`
+		// on a non-focusable span announces an interactive control that cannot
+		// be reached or activated; `aria-current="page"` alone is the WAI-ARIA
+		// breadcrumb pattern.
 		<span
 			aria-current="page"
-			aria-disabled="true"
 			className={cn("font-medium text-foreground", className)}
 			data-slot="breadcrumb-page"
-			role="link"
 			{...props}
 		/>
 	);

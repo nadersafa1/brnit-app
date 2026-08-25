@@ -90,9 +90,8 @@ export const createFoodCategoryInputSchema = z.object(foodCategoryFieldsShape);
 
 export const updateFoodCategoryInputSchema = z.object(foodCategoryFieldsShape);
 
-export const updateFoodCategoryByIdInputSchema = foodCategoryParamsSchema.extend(
-	foodCategoryFieldsShape
-);
+export const updateFoodCategoryByIdInputSchema =
+	foodCategoryParamsSchema.extend(foodCategoryFieldsShape);
 
 // ---------------------------------------------------------------------------
 // Food items

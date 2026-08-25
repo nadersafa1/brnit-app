@@ -61,12 +61,12 @@ function resetState(): void {
 	state.rows = new Map();
 }
 
-type Thenable = {
+interface Thenable {
 	then: (
 		onFulfilled?: (value: unknown[]) => unknown,
 		onRejected?: (reason: unknown) => unknown
 	) => Promise<unknown>;
-};
+}
 
 /** Chainable, awaitable stand-in for a Drizzle select builder. */
 function selectBuilder(): Thenable {
@@ -254,9 +254,7 @@ describe("getFoodItemAlternatives", () => {
 				calories: "170",
 				carbs: "0",
 				fat: "4",
-				foodItemCategories: [
-					{ category: { id: "cat-1", name: "Proteins" } },
-				],
+				foodItemCategories: [{ category: { id: "cat-1", name: "Proteins" } }],
 				gramsPerUnit: null,
 				id: "turkey",
 				name: "Turkey breast",

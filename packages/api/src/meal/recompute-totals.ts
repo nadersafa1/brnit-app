@@ -42,7 +42,9 @@ export async function recomputeMealTotals(
 		.innerJoin(foodItem, eq(mealItem.foodItemId, foodItem.id))
 		.where(eq(mealItem.mealId, mealId));
 
-	const totals = computeMealTotalsFromLineItems(mealTotalsLinesFromDbRows(rows));
+	const totals = computeMealTotalsFromLineItems(
+		mealTotalsLinesFromDbRows(rows)
+	);
 
 	await tx
 		.update(meal)

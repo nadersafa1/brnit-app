@@ -1,4 +1,4 @@
-import { db, type DbTransaction } from "@brnit/db";
+import { type DbTransaction, db } from "@brnit/db";
 import {
 	dietPlanAssignment,
 	dietPlanMeal,
@@ -87,9 +87,7 @@ export async function listMeals(
 	assertCanManageMeals(ctx);
 
 	const { page, perPage, q, sortBy, sortOrder } = input;
-	const where = combineConditions([
-		q ? ilike(meal.name, `%${q}%`) : undefined,
-	]);
+	const where = combineConditions([q ? ilike(meal.name, `%${q}%`) : undefined]);
 	const sortDirection = sortOrder === "asc" ? asc : desc;
 	const sortColumn = MEAL_SORT_COLUMNS[sortBy ?? "createdAt"];
 
@@ -341,10 +339,7 @@ async function applyMealMutations(
 					.update(mealItem)
 					.set({ quantity: line.quantity.toString() })
 					.where(
-						and(
-							eq(mealItem.id, line.mealItemId),
-							eq(mealItem.mealId, mealId)
-						)
+						and(eq(mealItem.id, line.mealItemId), eq(mealItem.mealId, mealId))
 					)
 			)
 		);

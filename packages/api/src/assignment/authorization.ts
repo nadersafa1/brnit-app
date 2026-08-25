@@ -5,6 +5,7 @@ import { and, eq, inArray } from "drizzle-orm";
 
 import type { Context, SessionUser } from "../context";
 import { HttpError } from "../http-error";
+import type { NutritionistScope, OrganizationScopeProbe } from "./rules";
 
 /**
  * Authorization re-asserted inside the handlers.
@@ -21,16 +22,6 @@ const NUTRITIONIST_FORBIDDEN =
 const APP_ADMIN_ROLE = "admin";
 const APP_NUTRITIONIST_ROLE = "nutritionist";
 
-export interface NutritionistScope {
-	/**
-	 * App admins are not organization-scoped: the pre-overhaul detail routes let
-	 * them read and write assignments outside any organization, and dropping that
-	 * would break support workflows.
-	 */
-	isAppAdmin: boolean;
-	organizationId: string | null;
-}
-
 /** The authenticated user, or **401**. */
 export function requireSessionUser(ctx: Context): SessionUser {
 	if (!ctx.user) {
@@ -42,6 +33,10 @@ export function requireSessionUser(ctx: Context): SessionUser {
 /**
  * Nutritionist access: app admin, the global `nutritionist` app role, or the org
  * role `nutritionist` with an active organization. Mirrors `requireNutritionist`.
+ *
+ * App admins come back with `isAppAdmin: true` and possibly no organization:
+ * the pre-overhaul detail routes let them work outside any organization, and
+ * dropping that would break support workflows.
  */
 export function requireNutritionistScope(ctx: Context): NutritionistScope {
 	const user = requireSessionUser(ctx);
@@ -143,17 +138,12 @@ async function assignmentMemberBelongsToOrg(
 }
 
 /**
- * Out-of-organization assignments answer **404**, never 403 — a nutritionist in
- * organization A must not be able to probe which ids exist in organization B.
+ * The production probe for `assertAssignmentVisibleToScope`. Kept here because
+ * it is the half that touches the database; the rule itself is in `./rules.ts`.
  */
-export async function assertAssignmentInOrganization(
-	assignmentId: string,
-	organizationId: string
-): Promise<void> {
-	if (!(await assignmentMemberBelongsToOrg(assignmentId, organizationId))) {
-		throw new HttpError(404, "Assignment not found");
-	}
-}
+export const databaseOrganizationScope: OrganizationScopeProbe = {
+	assignmentBelongsToOrganization: assignmentMemberBelongsToOrg,
+};
 
 export interface AssignableMember {
 	organizationId: string;

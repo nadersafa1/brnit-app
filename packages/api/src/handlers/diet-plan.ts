@@ -1,4 +1,4 @@
-import { db, type DbTransaction } from "@brnit/db";
+import { type DbTransaction, db } from "@brnit/db";
 import {
 	dietPlan,
 	dietPlanAssignment,
@@ -258,7 +258,10 @@ async function loadExistingSlotIds(
 		.select({ id: dietPlanMeal.id })
 		.from(dietPlanMeal)
 		.where(
-			and(eq(dietPlanMeal.dietPlanId, planId), inArray(dietPlanMeal.id, slotIds))
+			and(
+				eq(dietPlanMeal.dietPlanId, planId),
+				inArray(dietPlanMeal.id, slotIds)
+			)
 		);
 	return rows.map((row) => row.id);
 }
@@ -278,13 +281,13 @@ async function loadExistingMealIds(
 	return rows.map((row) => row.id);
 }
 
-type DietPlanSlotPatch = {
+interface DietPlanSlotPatch {
 	dayNumber?: number;
 	mealId?: string;
 	mealOrder?: number;
 	mealType?: string;
 	scheduledTime?: string | null;
-};
+}
 
 /** Only the fields the caller actually sent, so a patch never blanks a column. */
 function slotPatchColumns(line: UpdateDietPlanMealInput): DietPlanSlotPatch {

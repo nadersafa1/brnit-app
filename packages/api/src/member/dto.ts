@@ -91,10 +91,10 @@ export interface ConsumptionStreakDto {
 export const LEADERBOARD_METRIC = "bodyFatPercentPointDrop" as const;
 
 export interface LeaderboardEntryDto {
-	/** Percentage **points** dropped between the first and last assessment. */
-	fatLossPoints: number;
 	endAssessedAt: string;
 	endBodyFatPercent: number;
+	/** Percentage **points** dropped between the first and last assessment. */
+	fatLossPoints: number;
 	memberId: string;
 	name: string;
 	rank: number;

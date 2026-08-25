@@ -111,7 +111,9 @@ describe("GET /member/me/organization-leaderboard", () => {
 	it("answers 400 NO_ORGANIZATION without an organization to scope to", async () => {
 		apiRouteMocks.session = memberSession(null);
 		await withServer(async (baseUrl) => {
-			const response = await fetch(`${baseUrl}${BASE}/organization-leaderboard`);
+			const response = await fetch(
+				`${baseUrl}${BASE}/organization-leaderboard`
+			);
 			expect(response.status).toBe(400);
 			const body = (await response.json()) as { code: string };
 			expect(body.code).toBe("NO_ORGANIZATION");

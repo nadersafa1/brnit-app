@@ -23,9 +23,9 @@ export class HttpError extends Error {
 
 /** Error envelope returned by every non-2xx response. */
 export interface ApiErrorBody {
-	error: string;
 	code?: string;
 	details?: unknown;
+	error: string;
 	/** Populated outside production only. */
 	stack?: string;
 }

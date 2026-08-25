@@ -63,8 +63,8 @@ describe("buildClonedMealName", () => {
 	it("always keeps at least one character of the base", () => {
 		const cloned = buildClonedMealName("z".repeat(MEAL_NAME_MAX_LENGTH * 2));
 
-		expect(cloned.slice(0, -MEAL_CLONE_NAME_SUFFIX.length).length).toBeGreaterThan(
-			0
-		);
+		expect(
+			cloned.slice(0, -MEAL_CLONE_NAME_SUFFIX.length).length
+		).toBeGreaterThan(0);
 	});
 });

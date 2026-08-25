@@ -14,7 +14,10 @@ export function getTextFromSelectItemChildren(
 		return;
 	}
 	if (typeof children === "string" || typeof children === "number") {
-		return String(children);
+		// `|| undefined` so an empty-string child falls through a caller's `??`
+		// to the placeholder instead of rendering a blank trigger. `0` is a
+		// meaningful label, so only the empty string collapses.
+		return String(children) || undefined;
 	}
 	if (Array.isArray(children)) {
 		const text = children

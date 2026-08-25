@@ -6,16 +6,25 @@ process.env.DATABASE_URL ??= "postgresql://test:test@127.0.0.1:5432/brnit_test";
 process.env.BETTER_AUTH_SECRET ??= "test-better-auth-secret-min-32-chars!!!!";
 process.env.BETTER_AUTH_URL ??= "http://127.0.0.1:3000";
 process.env.CORS_ORIGIN ??= "http://127.0.0.1:3000";
-process.env.CLOUDINARY_CLOUD_NAME ??= "demo";
 
 const { buildCloudinaryUrl, extractPublicId, isCloudinaryUrl } = await import(
 	"./url"
 );
 
+/**
+ * The cloud name comes from `test-setup.ts`, not from a literal here — the env
+ * module freezes on first import, so a value hardcoded in one test file silently
+ * disagrees with the rest of the suite.
+ *
+ * Only URLs that `buildCloudinaryUrl` *produces* need this. The parsing tests
+ * below feed arbitrary URLs in, so their host is irrelevant and stays literal.
+ */
+const CLOUD = process.env.CLOUDINARY_CLOUD_NAME;
+
 describe("buildCloudinaryUrl", () => {
 	it("renders the delivery URL for a public id", () => {
 		expect(buildCloudinaryUrl("profile/abc123")).toBe(
-			"https://res.cloudinary.com/demo/image/upload/profile/abc123"
+			`https://res.cloudinary.com/${CLOUD}/image/upload/profile/abc123`
 		);
 	});
 });

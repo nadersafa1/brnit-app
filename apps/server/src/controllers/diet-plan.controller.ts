@@ -28,10 +28,7 @@ import {
  */
 
 /** Validates `:id`; returns `undefined` when it already answered 400. */
-function parseDietPlanIdParam(
-	req: Request,
-	res: Response
-): string | undefined {
+function parseDietPlanIdParam(req: Request, res: Response): string | undefined {
 	const params = dietPlanParamsSchema.safeParse({
 		dietPlanId: req.params.id,
 	});

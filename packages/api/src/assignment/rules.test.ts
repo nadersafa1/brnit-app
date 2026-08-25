@@ -1,8 +1,13 @@
 import { describe, expect, it } from "bun:test";
 
 import { HttpError } from "../http-error";
-import type { AssigneePoolLoader, AssignmentDateRange } from "./rules";
+import type {
+	AssigneePoolLoader,
+	AssignmentDateRange,
+	OrganizationScopeProbe,
+} from "./rules";
 import {
+	assertAssignmentVisibleToScope,
 	assertNoOverlappingAssignment,
 	assignmentBelongsToUser,
 	dateRangesOverlap,
@@ -25,25 +30,40 @@ function assignment(
 describe("dateRangesOverlap", () => {
 	it("detects a shared middle", () => {
 		expect(
-			dateRangesOverlap(MARCH, { endDate: "2026-03-20", startDate: "2026-03-10" })
+			dateRangesOverlap(MARCH, {
+				endDate: "2026-03-20",
+				startDate: "2026-03-10",
+			})
 		).toBe(true);
 	});
 
 	it("counts a single shared day at either edge", () => {
 		expect(
-			dateRangesOverlap(MARCH, { endDate: "2026-03-01", startDate: "2026-02-01" })
+			dateRangesOverlap(MARCH, {
+				endDate: "2026-03-01",
+				startDate: "2026-02-01",
+			})
 		).toBe(true);
 		expect(
-			dateRangesOverlap(MARCH, { endDate: "2026-04-30", startDate: "2026-03-31" })
+			dateRangesOverlap(MARCH, {
+				endDate: "2026-04-30",
+				startDate: "2026-03-31",
+			})
 		).toBe(true);
 	});
 
 	it("rejects ranges that only touch across the boundary", () => {
 		expect(
-			dateRangesOverlap(MARCH, { endDate: "2026-02-28", startDate: "2026-02-01" })
+			dateRangesOverlap(MARCH, {
+				endDate: "2026-02-28",
+				startDate: "2026-02-01",
+			})
 		).toBe(false);
 		expect(
-			dateRangesOverlap(MARCH, { endDate: "2026-04-30", startDate: "2026-04-01" })
+			dateRangesOverlap(MARCH, {
+				endDate: "2026-04-30",
+				startDate: "2026-04-01",
+			})
 		).toBe(false);
 	});
 
@@ -78,9 +98,7 @@ describe("findOverlappingAssignment", () => {
 	});
 
 	it("ignores the assignment being edited", () => {
-		expect(
-			findOverlappingAssignment(rows, MARCH, "b")
-		).toBeUndefined();
+		expect(findOverlappingAssignment(rows, MARCH, "b")).toBeUndefined();
 	});
 
 	it("still reports a different assignment when one is excluded", () => {
@@ -97,7 +115,9 @@ describe("assertNoOverlappingAssignment", () => {
 	function loaderFor(
 		memberIds: string[],
 		rows: AssignmentDateRange[]
-	): { calls: { memberIds: readonly string[]; userId: string }[] } & AssigneePoolLoader {
+	): {
+		calls: { memberIds: readonly string[]; userId: string }[];
+	} & AssigneePoolLoader {
 		const calls: { memberIds: readonly string[]; userId: string }[] = [];
 		return {
 			calls,
@@ -236,5 +256,124 @@ describe("assignmentBelongsToUser", () => {
 				new Set(["member_org_a"])
 			)
 		).toBe(false);
+	});
+});
+
+describe("assertAssignmentVisibleToScope", () => {
+	function probeFor(visible: boolean): {
+		calls: { assignmentId: string; organizationId: string }[];
+	} & OrganizationScopeProbe {
+		const calls: { assignmentId: string; organizationId: string }[] = [];
+		return {
+			assignmentBelongsToOrganization: (assignmentId, organizationId) => {
+				calls.push({ assignmentId, organizationId });
+				return Promise.resolve(visible);
+			},
+			calls,
+		};
+	}
+
+	it("passes an in-organization assignment", async () => {
+		const probe = probeFor(true);
+
+		await assertAssignmentVisibleToScope(
+			{
+				assignmentId: "assignment_1",
+				scope: { isAppAdmin: false, organizationId: "org_a" },
+			},
+			probe
+		);
+
+		expect(probe.calls).toEqual([
+			{ assignmentId: "assignment_1", organizationId: "org_a" },
+		]);
+	});
+
+	it("lets an app admin through without probing at all", async () => {
+		const probe = probeFor(false);
+
+		await assertAssignmentVisibleToScope(
+			{
+				assignmentId: "assignment_1",
+				scope: { isAppAdmin: true, organizationId: null },
+			},
+			probe
+		);
+
+		expect(probe.calls).toEqual([]);
+	});
+
+	it("keeps the app-admin bypass even when they do have an active organization", async () => {
+		const probe = probeFor(false);
+
+		await assertAssignmentVisibleToScope(
+			{
+				assignmentId: "assignment_1",
+				scope: { isAppAdmin: true, organizationId: "org_a" },
+			},
+			probe
+		);
+
+		expect(probe.calls).toEqual([]);
+	});
+
+	it("answers 404, not 403, for an assignment in another organization", async () => {
+		const thrown = await assertAssignmentVisibleToScope(
+			{
+				assignmentId: "assignment_1",
+				scope: { isAppAdmin: false, organizationId: "org_a" },
+			},
+			probeFor(false)
+		).catch((err: unknown) => err);
+
+		expect(thrown).toBeInstanceOf(HttpError);
+		expect((thrown as HttpError).status).toBe(404);
+		expect((thrown as HttpError).message).toBe("Assignment not found");
+	});
+
+	it("uses the caller's own not-found wording when given one", async () => {
+		const thrown = await assertAssignmentVisibleToScope(
+			{
+				assignmentId: "assignment_1",
+				notFoundMessage: "Consumption not found",
+				scope: { isAppAdmin: false, organizationId: "org_a" },
+			},
+			probeFor(false)
+		).catch((err: unknown) => err);
+
+		expect((thrown as HttpError).status).toBe(404);
+		expect((thrown as HttpError).message).toBe("Consumption not found");
+	});
+
+	it("rejects a non-admin with no active organization before probing", async () => {
+		const probe = probeFor(true);
+
+		const thrown = await assertAssignmentVisibleToScope(
+			{
+				assignmentId: "assignment_1",
+				scope: { isAppAdmin: false, organizationId: null },
+			},
+			probe
+		).catch((err: unknown) => err);
+
+		expect((thrown as HttpError).status).toBe(403);
+		expect((thrown as HttpError).message).toBe("Active organization required");
+		expect(probe.calls).toEqual([]);
+	});
+
+	it("uses the caller's own no-organization wording when given one", async () => {
+		const thrown = await assertAssignmentVisibleToScope(
+			{
+				assignmentId: "assignment_1",
+				noOrganizationMessage: "Active organization required for listing",
+				scope: { isAppAdmin: false, organizationId: null },
+			},
+			probeFor(true)
+		).catch((err: unknown) => err);
+
+		expect((thrown as HttpError).status).toBe(403);
+		expect((thrown as HttpError).message).toBe(
+			"Active organization required for listing"
+		);
 	});
 });

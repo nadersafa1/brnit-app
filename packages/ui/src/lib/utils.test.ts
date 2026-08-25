@@ -21,7 +21,7 @@ describe("cn", () => {
 	});
 
 	it("lets_a_caller_override_a_component_default", () => {
-		expect(cn("h-11 px-4.5 rounded-full", "h-9 rounded-lg")).toBe(
+		expect(cn("h-11 rounded-full px-4.5", "h-9 rounded-lg")).toBe(
 			"px-4.5 h-9 rounded-lg"
 		);
 	});
