@@ -1,0 +1,158 @@
+# brnit API stack: Redis + one-shot db deploy (migrate → seed) + API + workers.
+# PostgreSQL stays outside this file (Dokploy Postgres service, or the local
+# override below).
+#
+# Dokploy: deploy as a Compose application; set env vars in the Dokploy UI.
+# Local:   cp .env.compose.example .env
+#          docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+
+name: brnit
+
+x-app-env: &app-env
+  DATABASE_URL: ${DATABASE_URL}
+  # Composed here, never set directly — the password is the only knob.
+  REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+  NODE_ENV: ${NODE_ENV:-production}
+  BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+  BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+  CORS_ORIGIN: ${CORS_ORIGIN}
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+  GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+  APPLE_CLIENT_ID: ${APPLE_CLIENT_ID:-}
+  APPLE_TEAM_ID: ${APPLE_TEAM_ID:-}
+  APPLE_KEY_ID: ${APPLE_KEY_ID:-}
+  APPLE_PRIVATE_KEY: ${APPLE_PRIVATE_KEY:-}
+  APPLE_APP_BUNDLE_IDENTIFIER: ${APPLE_APP_BUNDLE_IDENTIFIER:-}
+  CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+  CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+  CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+  NODEMAILER_HOST: ${NODEMAILER_HOST:-}
+  NODEMAILER_USER: ${NODEMAILER_USER:-}
+  NODEMAILER_APP_PASSWORD: ${NODEMAILER_APP_PASSWORD:-}
+  NODEMAILER_PORT: ${NODEMAILER_PORT:-465}
+  FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
+  # Raw JSON or base64 (prefer base64 in compose .env — multiline JSON breaks env-file parsing)
+  FIREBASE_SERVICE_ACCOUNT_JSON: ${FIREBASE_SERVICE_ACCOUNT_JSON:-}
+  AUDIT_LOG_DB_ENABLED: ${AUDIT_LOG_DB_ENABLED:-false}
+  LOG_LEVEL: ${LOG_LEVEL:-}
+  MAX_CONSUMPTION_PAST_DAYS: ${MAX_CONSUMPTION_PAST_DAYS:-2}
+  DIET_PLAN_CONSUMPTION_GRACE_DAYS: ${DIET_PLAN_CONSUMPTION_GRACE_DAYS:-2}
+  ALTERNATIVES_TOLERANCE_CAL_PCT: ${ALTERNATIVES_TOLERANCE_CAL_PCT:-15}
+  ALTERNATIVES_TOLERANCE_PROTEIN_PCT: ${ALTERNATIVES_TOLERANCE_PROTEIN_PCT:-15}
+  ALTERNATIVES_TOLERANCE_CARBS_PCT: ${ALTERNATIVES_TOLERANCE_CARBS_PCT:-15}
+  ALTERNATIVES_TOLERANCE_FAT_PCT: ${ALTERNATIVES_TOLERANCE_FAT_PCT:-15}
+  # OpenTelemetry. Deliberately absent from @brnit/env — the OTel SDK reads
+  # these itself, and stays a no-op unless OTEL_EXPORTER_OTLP_ENDPOINT is set.
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+  OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS:-}
+  OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-http/protobuf}
+  OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-}
+  OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-}
+  OTEL_DEPLOYMENT_ENVIRONMENT: ${OTEL_DEPLOYMENT_ENVIRONMENT:-}
+  OTEL_LOG_LEVEL: ${OTEL_LOG_LEVEL:-}
+
+services:
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - internal
+    restart: unless-stopped
+
+  migrate:
+    image: brnit-server
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Drizzle migrations are committed SQL; db:deploy applies them and seeds.
+    command:
+      - bun
+      - run
+      - --cwd
+      - /app/packages/db
+      - db:deploy
+    environment:
+      <<: *app-env
+    networks:
+      - internal
+      - dokploy-network
+    restart: 'no'
+
+  api:
+    image: brnit-server
+    # --preload runs the OTel SDK before the entrypoint module loads, so
+    # auto-instrumentations (express, pino, ioredis, bullmq, pg) hook their
+    # target modules on first import. Note: --preload is a Bun runtime flag,
+    # so it goes between `bun` and the entrypoint — no `run` keyword (that
+    # subcommand does not accept --preload).
+    command:
+      ['bun', '--preload', './dist/instrumentation.mjs', './dist/index.mjs']
+    environment:
+      <<: *app-env
+      PORT: '3000'
+      OTEL_SERVICE_NAME: ${OTEL_API_SERVICE_NAME:-brnit-api}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    expose:
+      - '3000'
+    healthcheck:
+      # Liveness only — readiness (/api/v1/health) probes DB + Redis and can exceed 3s under load.
+      test:
+        [
+          'CMD',
+          'bun',
+          '-e',
+          "fetch('http://127.0.0.1:3000/').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - internal
+      - dokploy-network
+    restart: unless-stopped
+
+  worker:
+    image: brnit-server
+    command:
+      [
+        'bun',
+        '--preload',
+        './dist/instrumentation.mjs',
+        './dist/worker-background.mjs',
+      ]
+    environment:
+      <<: *app-env
+      OTEL_SERVICE_NAME: ${OTEL_WORKER_SERVICE_NAME:-brnit-worker}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+      - dokploy-network
+    restart: unless-stopped
+
+networks:
+  internal:
+    driver: bridge
+  dokploy-network:
+    external: true
+
+volumes:
+  redis_data:

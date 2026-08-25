@@ -1,0 +1,9 @@
+{
+	"extends": "@brnit/config/tsconfig.base.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"rootDir": ".",
+		"baseUrl": "."
+	},
+	"include": ["src/**/*.ts"]
+}

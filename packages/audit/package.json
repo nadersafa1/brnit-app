@@ -1,0 +1,35 @@
+{
+	"name": "@brnit/audit",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./src/index.ts",
+			"import": "./src/index.ts",
+			"default": "./src/index.ts"
+		},
+		"./constants": {
+			"types": "./src/constants.ts",
+			"import": "./src/constants.ts",
+			"default": "./src/constants.ts"
+		},
+		"./dto": {
+			"types": "./src/dto.ts",
+			"import": "./src/dto.ts",
+			"default": "./src/dto.ts"
+		}
+	},
+	"scripts": {
+		"check-types": "tsc --noEmit",
+		"test": "bun test src"
+	},
+	"dependencies": {
+		"@brnit/db": "workspace:*",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@brnit/config": "workspace:*",
+		"typescript": "^6.0.3"
+	}
+}
