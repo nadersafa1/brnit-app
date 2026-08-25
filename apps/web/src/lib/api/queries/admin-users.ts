@@ -35,26 +35,21 @@ export interface AdminUsersPage {
 const FIRST_PAGE = 1;
 
 /**
- * `adminUsersQueryKey` covers page, page size and the search text. The role
- * filter and the sort are appended here because they also change the rows, and
- * two filters sharing one cache entry would show the wrong list.
+ * The full cache key for a users page.
  *
- * The prefix stays `["admin-users", …]`, so `adminUsersQueries()` still
- * invalidates every variant. **`lib/api/query-keys.ts` should grow `role`,
- * `sortBy` and `sortOrder` segments of its own** — this local extension is the
- * stopgap, not the pattern.
+ * Every filter that changes which rows come back is a key segment, and the
+ * shared factory in `lib/api/query-keys.ts` now owns all of them — role and
+ * sort included — so nothing is appended here.
  */
 function adminUsersFullQueryKey(filters: AdminUsersQueryFilters) {
-	return [
-		...adminUsersQueryKey({
-			page: filters.page,
-			perPage: filters.perPage,
-			q: filters.q,
-		}),
-		filters.role,
-		filters.sortBy,
-		filters.sortOrder,
-	] as const;
+	return adminUsersQueryKey({
+		page: filters.page,
+		perPage: filters.perPage,
+		q: filters.q,
+		role: filters.role,
+		sortBy: filters.sortBy,
+		sortOrder: filters.sortOrder,
+	});
 }
 
 interface AuthClientResult<TData> {

@@ -1,12 +1,5 @@
 @import "@brnit/ui/globals.css";
 
-/*
- * `@brnit/ui/globals.css` scans `apps/**` for class names. `apps/web/legacy/**`
- * is the pre-overhaul Next.js tree, kept only as source material for the
- * remaining page migrations — it must not contribute utilities to the bundle.
- */
-@source not "../legacy/**";
-
 /**
  * Brnit app shell — brand tokens live in @brnit/brand/brand.css (via ui globals).
  *

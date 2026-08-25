@@ -18,7 +18,7 @@ import {
  * refresh, and the back button walks through it.
  */
 
-export const ADMIN_USERS_SORT_OPTIONS = [
+const ADMIN_USERS_SORT_OPTIONS = [
 	"name",
 	"email",
 	"role",
@@ -27,8 +27,8 @@ export const ADMIN_USERS_SORT_OPTIONS = [
 
 export type AdminUsersSortBy = (typeof ADMIN_USERS_SORT_OPTIONS)[number];
 
-export const DEFAULT_ADMIN_USERS_SORT_BY: AdminUsersSortBy = "createdAt";
-export const DEFAULT_ADMIN_USERS_SORT_ORDER: SortOrder = "desc";
+const DEFAULT_ADMIN_USERS_SORT_BY: AdminUsersSortBy = "createdAt";
+const DEFAULT_ADMIN_USERS_SORT_ORDER: SortOrder = "desc";
 
 export interface AdminUsersSearch {
 	page: number;

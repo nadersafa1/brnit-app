@@ -1,70 +1,33 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "ignore": [
-    ".claude/**"
-  ],
-  "ignoreWorkspaces": [
-    "packages/ui"
-  ],
-  "ignoreDependencies": [
-    "@biomejs/biome",
-    "@brnit/config",
-    "postcss",
-    "tailwindcss"
-  ],
+  "ignoreWorkspaces": ["packages/ui"],
+  "ignoreDependencies": ["@biomejs/biome", "@brnit/config", "tailwindcss"],
   "workspaces": {
     ".": {
-      "ignoreDependencies": [
-        "@brnit/env",
-        "dotenv",
-        "zod"
-      ]
+      "ignoreDependencies": ["@brnit/env", "dotenv", "zod"]
     },
     "apps/native": {
       "expo": true,
-      "metro": true,
-      "entry": [
-        "**/*.{test,spec}.ts"
-      ]
+      "metro": true
     },
     "apps/web": {
       "vite": true,
-      "entry": [
-        "src/main.tsx",
-        "src/**/*.{test,spec}.{ts,tsx}"
-      ]
+      "entry": ["src/**/*.{test,spec}.{ts,tsx}"]
     },
     "apps/server": {
-      "entry": [
-        "src/index.ts",
-        "src/worker-background.ts",
-        "src/**/*.test.ts"
-      ]
+      "entry": ["src/**/*.test.ts"]
     },
     "packages/api": {
-      "entry": [
-        "src/index.ts",
-        "src/**/*.test.ts"
-      ]
+      "entry": ["src/**/*.test.ts"]
     },
     "packages/domain": {
-      "entry": [
-        "src/index.ts",
-        "src/**/*.test.ts"
-      ]
+      "entry": ["src/**/*.test.ts"]
     },
     "packages/datetime": {
-      "entry": [
-        "src/index.ts",
-        "src/**/*.test.ts"
-      ]
+      "entry": ["src/**/*.test.ts"]
     },
     "packages/db": {
-      "ignoreDependencies": [
-        "drizzle-orm",
-        "pg",
-        "zod"
-      ]
+      "ignoreDependencies": ["zod"]
     }
   }
 }

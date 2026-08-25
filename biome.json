@@ -50,11 +50,7 @@
           "level": "warn",
           "fix": "safe",
           "options": {
-            "functions": [
-              "clsx",
-              "cva",
-              "cn"
-            ]
+            "functions": ["clsx", "cva", "cn"]
           }
         }
       },
@@ -82,10 +78,7 @@
       "tailwindDirectives": true
     }
   },
-  "extends": [
-    "ultracite/biome/core",
-    "ultracite/biome/react"
-  ],
+  "extends": ["ultracite/biome/core", "ultracite/biome/react"],
   "overrides": [
     {
       "includes": [
@@ -111,9 +104,7 @@
       }
     },
     {
-      "includes": [
-        "apps/web/src/routes/**"
-      ],
+      "includes": ["apps/web/src/routes/**"],
       "linter": {
         "rules": {
           "style": {
@@ -123,9 +114,7 @@
       }
     },
     {
-      "includes": [
-        "packages/ui/src/components/label.tsx"
-      ],
+      "includes": ["packages/ui/src/components/label.tsx"],
       "linter": {
         "rules": {
           "a11y": {
@@ -149,9 +138,7 @@
       }
     },
     {
-      "includes": [
-        "packages/ui/src/components/sidebar.tsx"
-      ],
+      "includes": ["packages/ui/src/components/sidebar.tsx"],
       "linter": {
         "rules": {
           "suspicious": {
@@ -161,10 +148,7 @@
       }
     },
     {
-      "includes": [
-        "**/*.test.ts",
-        "**/*.test.tsx"
-      ],
+      "includes": ["**/*.test.ts", "**/*.test.tsx"],
       "linter": {
         "rules": {
           "suspicious": {

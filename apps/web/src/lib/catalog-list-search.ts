@@ -20,13 +20,13 @@ import type { SearchSchemaInput } from "@tanstack/react-router";
  * should show page 1, not an error screen.
  */
 
-export const CATALOG_SORT_OPTIONS = ["name", "createdAt"] as const;
+const CATALOG_SORT_OPTIONS = ["name", "createdAt"] as const;
 
 export type CatalogSortBy = (typeof CATALOG_SORT_OPTIONS)[number];
 
 /** Legacy parity: these lists opened alphabetically, not newest-first. */
-export const DEFAULT_CATALOG_SORT_BY: CatalogSortBy = "name";
-export const DEFAULT_CATALOG_SORT_ORDER: SortOrder = "asc";
+const DEFAULT_CATALOG_SORT_BY: CatalogSortBy = "name";
+const DEFAULT_CATALOG_SORT_ORDER: SortOrder = "asc";
 
 export interface CatalogListSearch {
 	page: number;

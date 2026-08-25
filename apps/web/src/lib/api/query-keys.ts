@@ -225,11 +225,16 @@ export function dietPlanQueries(): readonly ["diet-plan"] {
 
 export function dietPlanAssignmentsQueryKey(
 	organizationId: string,
-	filters: { page: number; perPage: number }
-): readonly ["diet-plan-assignments", string, number, number] {
+	filters: { memberId?: string; page: number; perPage: number }
+): readonly ["diet-plan-assignments", string, string, number, number] {
+	// `memberId` is part of the key because the endpoint accepts it as a
+	// filter: without it two members' lists collide on one cache entry. The
+	// empty string stands for "the whole organization", so an unfiltered list
+	// and a per-member list stay distinct.
 	return [
 		"diet-plan-assignments",
 		organizationId,
+		filters.memberId ?? "",
 		filters.page,
 		filters.perPage,
 	];
@@ -326,8 +331,23 @@ export function adminUsersQueryKey(filters: {
 	page: number;
 	perPage: number;
 	q: string;
-}): readonly ["admin-users", string, number, number] {
-	return ["admin-users", filters.q, filters.page, filters.perPage];
+	role: string;
+	sortBy: string;
+	sortOrder: string;
+}): readonly ["admin-users", string, string, string, string, number, number] {
+	// Every segment that changes which rows come back must be in the key. Role
+	// and sort were missing, so two different role filters shared one cache
+	// entry and showed each other's rows. Most-stable first, so the
+	// `adminUsersQueries()` prefix still invalidates the whole set.
+	return [
+		"admin-users",
+		filters.role,
+		filters.sortBy,
+		filters.sortOrder,
+		filters.q,
+		filters.page,
+		filters.perPage,
+	];
 }
 
 export function adminUsersQueries(): readonly ["admin-users"] {
