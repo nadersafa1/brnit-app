@@ -1,0 +1,10 @@
+{
+  "extends": "@brnit/config/tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ESNext"],
+    "noEmit": true,
+    "rootDir": ".",
+    "baseUrl": "."
+  },
+  "include": ["src/**/*.ts"]
+}

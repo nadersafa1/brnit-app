@@ -24,6 +24,16 @@
       "import": "./src/pagination/query-params.ts",
       "default": "./src/pagination/query-params.ts"
     },
+    "./context": {
+      "types": "./src/context.ts",
+      "import": "./src/context.ts",
+      "default": "./src/context.ts"
+    },
+    "./organization/context": {
+      "types": "./src/organization/context.ts",
+      "import": "./src/organization/context.ts",
+      "default": "./src/organization/context.ts"
+    },
     "./*": {
       "types": "./src/*.ts",
       "import": "./src/*.ts",

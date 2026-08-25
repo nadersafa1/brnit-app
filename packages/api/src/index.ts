@@ -8,6 +8,14 @@
  * This barrel is intentional — `noBarrelFile` is disabled for it in biome.json.
  */
 
+export type {
+	Context,
+	CreateContextInput,
+	RequestAuthForContext,
+	SessionRecord,
+	SessionUser,
+} from "./context";
+export { createContextFromRequest, requireContextUser } from "./context";
 export type { ApiErrorBody } from "./http-error";
 export { HttpError } from "./http-error";
 export type {
@@ -38,3 +46,11 @@ export {
 	textSearchQuerySchema,
 	textSearchSchema,
 } from "./pagination/query-params";
+export type {
+	OrganizationContextDto,
+	OrganizationSummary,
+} from "./organization/context";
+export {
+	ANONYMOUS_ORGANIZATION_CONTEXT,
+	organizationRoleFlags,
+} from "./organization/context";
