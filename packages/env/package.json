@@ -4,16 +4,33 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./server": "./src/server.ts",
-    "./web": "./src/web.ts",
-    "./native": "./src/native.ts"
+    "./server": {
+      "types": "./src/server.ts",
+      "import": "./src/server.ts",
+      "default": "./src/server.ts"
+    },
+    "./web": {
+      "types": "./src/web.ts",
+      "import": "./src/web.ts",
+      "default": "./src/web.ts"
+    },
+    "./native": {
+      "types": "./src/native.ts",
+      "import": "./src/native.ts",
+      "default": "./src/native.ts"
+    }
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "dotenv": "^17.2.2"
+    "@t3-oss/env-core": "^0.13.1",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@brnit/config": "workspace:*",
-    "@types/node": "^22.13.14",
-    "typescript": "^5"
+    "@types/bun": "catalog:",
+    "typescript": "^6.0.3"
   }
 }

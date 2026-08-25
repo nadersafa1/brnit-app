@@ -1,0 +1,4 @@
+{
+  "extends": "@brnit/config/tsconfig.base.json",
+  "include": ["./src/**/*.ts"]
+}
