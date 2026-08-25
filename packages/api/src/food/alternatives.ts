@@ -18,6 +18,15 @@ import type { FoodItemAlternativeDto, FoodItemCategoryDto } from "./dto";
  * if protein, carbs and fat all land inside their bands at that quantity.
  */
 
+/**
+ * Hard ceiling on the alternatives page size, tighter than the generic
+ * `MAX_PER_PAGE`. It lives here rather than with the query schema because it is
+ * the scoring pass it protects: every candidate sharing a category with the
+ * reference is scored in memory before a page can be cut.
+ */
+export const MAX_ALTERNATIVES_PER_PAGE = 20;
+export const DEFAULT_ALTERNATIVES_PER_PAGE = 10;
+
 const PERCENT = 100;
 const MACRO_DISPLAY_SCALE = 10;
 const SUGGESTED_QUANTITY_DECIMAL_SCALE = 10;

@@ -22,9 +22,9 @@ describe("buildCloudinaryUrl", () => {
 
 describe("isCloudinaryUrl", () => {
 	it("accepts Cloudinary hosts and rejects everything else", () => {
-		expect(isCloudinaryUrl("https://res.cloudinary.com/demo/image/upload/x")).toBe(
-			true
-		);
+		expect(
+			isCloudinaryUrl("https://res.cloudinary.com/demo/image/upload/x")
+		).toBe(true);
 		expect(isCloudinaryUrl("https://lh3.googleusercontent.com/a/avatar")).toBe(
 			false
 		);

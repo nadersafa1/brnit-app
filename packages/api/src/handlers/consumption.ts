@@ -7,7 +7,17 @@ import {
 	foodItem,
 } from "@brnit/db/schema";
 import { env } from "@brnit/env/server";
-import { and, asc, count, desc, eq, gte, inArray, lte, type SQL } from "drizzle-orm";
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	gte,
+	inArray,
+	lte,
+	type SQL,
+} from "drizzle-orm";
 
 import {
 	listAssignmentIdsForUser,
@@ -27,19 +37,20 @@ import {
 	dietPlanMealConsumptionToDto,
 	dietPlanMealConsumptionToListItemDto,
 } from "../consumption/dto";
+import {
+	assertNoMissingFoodItems,
+	assertNotAlreadyLogged,
+	assertWithinAssignmentWindow,
+	assertWithinBackdateWindow,
+} from "../consumption/guards";
 import { resolvePlannedItemsForSlot } from "../consumption/planned-items";
-import type { ConsumedItemInput } from "../consumption/schemas";
 import type {
+	ConsumedItemInput,
 	CreateDietPlanMealConsumptionInput,
 	DeleteDietPlanMealConsumptionBySlotInput,
 	DietPlanMealConsumptionIdParams,
 	DietPlanMealConsumptionListQuery,
 } from "../consumption/schemas";
-import {
-	assignmentConsumptionWindow,
-	consumptionBackdateWindow,
-	isWithinDateWindow,
-} from "../consumption/window";
 import type { Context } from "../context";
 import { combineConditions } from "../db/query-conditions";
 import { HttpError } from "../http-error";
@@ -60,10 +71,6 @@ const NO_ACTIVE_ORG = "Active organization required";
 const ASSIGNMENT_NOT_FOUND = "Assignment not found";
 const CONSUMPTION_NOT_FOUND = "Consumption not found";
 const MEMBER_ACCESS_DENIED = "Forbidden: assignment not found or access denied";
-const OUT_OF_ALLOWED_DATE_RANGE =
-	"consumedAt must not be in the future and must be within the allowed backdate window";
-const OUT_OF_ASSIGNMENT_RANGE =
-	"consumedAt must be within the assignment period (startDate to endDate + grace days)";
 
 const consumptionSortColumns = {
 	consumedAt: dietPlanMealConsumption.consumedAt,
@@ -202,15 +209,11 @@ async function logConsumption(
 	input: CreateDietPlanMealConsumptionInput
 ): Promise<DietPlanMealConsumptionDto> {
 	const consumedDate = toDateStringUTC(input.consumedAt);
-	const backdateWindow = consumptionBackdateWindow(
+	assertWithinBackdateWindow(
+		consumedDate,
 		toDateStringUTC(new Date()),
 		env.MAX_CONSUMPTION_PAST_DAYS
 	);
-	if (!isWithinDateWindow(consumedDate, backdateWindow)) {
-		throw new HttpError(400, OUT_OF_ALLOWED_DATE_RANGE, {
-			reason: `consumedAt must be between ${backdateWindow.minDate} and ${backdateWindow.maxDate}`,
-		});
-	}
 
 	let consumedItems = positiveConsumedItems(input.consumedItems);
 
@@ -243,18 +246,8 @@ async function logConsumption(
 		}),
 		findMissingFoodItemIds(foodItemIds),
 	]);
-	if (duplicateId) {
-		throw new HttpError(
-			409,
-			"Consumption already logged for this slot on this date"
-		);
-	}
-	if (missingFoodItemIds.length > 0) {
-		throw new HttpError(
-			400,
-			`Food item(s) not found: ${missingFoodItemIds.join(", ")}`
-		);
-	}
+	assertNotAlreadyLogged(duplicateId);
+	assertNoMissingFoodItems(missingFoodItemIds);
 
 	const items = consumedItems ?? [];
 	const created = await db.transaction(async (tx: DbTransaction) => {
@@ -408,16 +401,11 @@ export async function createMemberDietPlanMealConsumption(
 		MEMBER_ACCESS_DENIED
 	);
 
-	const graceDays = env.DIET_PLAN_CONSUMPTION_GRACE_DAYS;
-	const consumedDate = toDateStringUTC(input.consumedAt);
-	const window = assignmentConsumptionWindow(assignment, graceDays);
-	if (!isWithinDateWindow(consumedDate, window)) {
-		throw new HttpError(400, OUT_OF_ASSIGNMENT_RANGE, {
-			endDate: assignment.endDate,
-			graceDays,
-			startDate: assignment.startDate,
-		});
-	}
+	assertWithinAssignmentWindow(
+		toDateStringUTC(input.consumedAt),
+		assignment,
+		env.DIET_PLAN_CONSUMPTION_GRACE_DAYS
+	);
 
 	return { data: await logConsumption(input) };
 }

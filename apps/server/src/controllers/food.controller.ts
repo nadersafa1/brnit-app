@@ -91,17 +91,17 @@ function multipartString(body: unknown, key: string): string | undefined {
 }
 
 /**
- * Wraps the multer buffer as a `File` for the Cloudinary helper.
+ * The multipart image buffer, when one was actually sent.
  *
- * A zero-byte part is treated as "no file", matching the pre-overhaul routes —
- * some clients always append the input, empty or not.
+ * A zero-byte part counts as "no file", matching the pre-overhaul routes —
+ * some clients append the file input whether or not the user picked anything.
  */
-function uploadedFile(req: Request): File | undefined {
+function uploadedImage(req: Request): { file?: Buffer } {
 	const file = req.file;
 	if (!file?.buffer || file.size === 0) {
-		return;
+		return {};
 	}
-	return new File([file.buffer], file.originalname, { type: file.mimetype });
+	return { file: file.buffer };
 }
 
 // biome-ignore lint/complexity/noStaticOnlyClass: intentional Express controller shape
@@ -318,10 +318,7 @@ export class FoodController {
 			res
 				.status(201)
 				.json(
-					await createFoodItem(ctx, {
-						...input.data,
-						file: uploadedFile(req),
-					})
+					await createFoodItem(ctx, { ...input.data, ...uploadedImage(req) })
 				);
 		} catch (err) {
 			handleHandlerError(err, res, next);
@@ -349,10 +346,7 @@ export class FoodController {
 			}
 			const ctx = contextFromExpressRequest(req);
 			res.json(
-				await updateFoodItem(ctx, {
-					...input.data,
-					file: uploadedFile(req),
-				})
+				await updateFoodItem(ctx, { ...input.data, ...uploadedImage(req) })
 			);
 		} catch (err) {
 			handleHandlerError(err, res, next);

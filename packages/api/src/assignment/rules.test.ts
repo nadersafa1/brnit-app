@@ -1,12 +1,13 @@
 import { describe, expect, it } from "bun:test";
 
 import { HttpError } from "../http-error";
-import type { AssigneePoolLoader, AssignmentDateRange } from "./overlap";
+import type { AssigneePoolLoader, AssignmentDateRange } from "./rules";
 import {
 	assertNoOverlappingAssignment,
+	assignmentBelongsToUser,
 	dateRangesOverlap,
 	findOverlappingAssignment,
-} from "./overlap";
+} from "./rules";
 
 const MARCH = {
 	endDate: "2026-03-31",
@@ -185,5 +186,55 @@ describe("assertNoOverlappingAssignment", () => {
 		);
 
 		expect(loader.calls[0]?.memberIds).toEqual([]);
+	});
+});
+
+describe("assignmentBelongsToUser", () => {
+	const USER = "user_1";
+
+	it("accepts a directly assigned row", () => {
+		expect(
+			assignmentBelongsToUser({ memberId: null, userId: USER }, USER, new Set())
+		).toBe(true);
+	});
+
+	it("accepts a row assigned through one of the caller's memberships", () => {
+		expect(
+			assignmentBelongsToUser(
+				{ memberId: "member_org_b", userId: null },
+				USER,
+				new Set(["member_org_a", "member_org_b"])
+			)
+		).toBe(true);
+	});
+
+	it("rejects a membership belonging to somebody else", () => {
+		expect(
+			assignmentBelongsToUser(
+				{ memberId: "member_other", userId: null },
+				USER,
+				new Set(["member_org_a"])
+			)
+		).toBe(false);
+	});
+
+	it("rejects another user's direct assignment", () => {
+		expect(
+			assignmentBelongsToUser(
+				{ memberId: null, userId: "user_2" },
+				USER,
+				new Set(["member_org_a"])
+			)
+		).toBe(false);
+	});
+
+	it("rejects a row with neither assignee set", () => {
+		expect(
+			assignmentBelongsToUser(
+				{ memberId: null, userId: null },
+				USER,
+				new Set(["member_org_a"])
+			)
+		).toBe(false);
 	});
 });

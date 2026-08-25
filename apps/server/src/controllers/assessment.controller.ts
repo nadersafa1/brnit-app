@@ -1,20 +1,21 @@
+import { paginationQueryInput, queryParam } from "@brnit/api";
 import {
 	assessmentParamsSchema,
 	createAssessmentInputSchema,
+	listAssessmentsInputSchema,
+	memberAssessmentInputSchema,
+	memberRecentAssessmentsInputSchema,
+	updateAssessmentInputSchema,
+} from "@brnit/api/assessment/schemas";
+import {
 	createBodyCompositionAssessment,
 	deleteBodyCompositionAssessment,
 	getBodyCompositionAssessment,
 	getMemberAssessment,
-	listAssessmentsInputSchema,
 	listBodyCompositionAssessments,
 	listMemberRecentAssessments,
-	memberAssessmentInputSchema,
-	memberRecentAssessmentsInputSchema,
-	paginationQueryInput,
-	queryParam,
-	updateAssessmentInputSchema,
 	updateBodyCompositionAssessment,
-} from "@brnit/api";
+} from "@brnit/api/handlers/assessment";
 import type { NextFunction, Request, Response } from "express";
 import { flattenError } from "zod";
 

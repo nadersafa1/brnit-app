@@ -133,3 +133,88 @@ export function findOverrideRowCoveringDate<Row extends DatedOverrideRow>(
 		parseEffectiveDates(row.effectiveDates).includes(date)
 	);
 }
+
+/**
+ * What a swap write should do to the database.
+ *
+ * Pulling the decision out of the transaction keeps the three-way rule of §8.5
+ * — replace, merge, or insert — a pure function of what was read, so it can be
+ * reasoned about (and tested) without a database.
+ */
+export type OverrideWritePlan =
+	| { effectiveDates: string[]; id: string; kind: "merge" }
+	| { effectiveDates: string[]; id: string; kind: "replace" }
+	| { effectiveDates: string[]; kind: "insert" };
+
+export interface OverrideWritePlanInput {
+	/** Days the caller's scope resolved to. */
+	effectiveDates: string[];
+	/** The slot's existing row for the *same food*, when there is one. */
+	existingForFood?: DatedOverrideRow | null;
+	/** The row the caller named with `overrideId`, when they named one. */
+	targetedRow?: DatedOverrideRow | null;
+}
+
+/**
+ * - A **targeted** edit (`overrideId`) *replaces* the row's dates: the member is
+ *   editing an alternative they can see, so their new window is authoritative.
+ * - An **untargeted** write onto an existing slot+food row *merges*: the member
+ *   asked for "this food on this day" without knowing the row exists, and
+ *   replacing would silently un-swap the days it already covered.
+ * - Otherwise, **insert**.
+ */
+export function planOverrideWrite(
+	input: OverrideWritePlanInput
+): OverrideWritePlan {
+	if (input.targetedRow) {
+		return {
+			effectiveDates: dedupeAndSortDateStrings(input.effectiveDates),
+			id: input.targetedRow.id,
+			kind: "replace",
+		};
+	}
+	if (input.existingForFood) {
+		return {
+			effectiveDates: mergeEffectiveDates(
+				parseEffectiveDates(input.existingForFood.effectiveDates),
+				input.effectiveDates
+			),
+			id: input.existingForFood.id,
+			kind: "merge",
+		};
+	}
+	return {
+		effectiveDates: dedupeAndSortDateStrings(input.effectiveDates),
+		kind: "insert",
+	};
+}
+
+/**
+ * What removing one day from a slot should do: shrink a row, or delete it once
+ * it covers nothing. `null` means no row covered the day — a 404.
+ */
+export type OverrideDateRemovalPlan =
+	| { effectiveDates: string[]; id: string; kind: "shrink" }
+	| { id: string; kind: "delete-row" };
+
+export function planOverrideDateRemoval(
+	rowsNewestFirst: readonly DatedOverrideRow[],
+	date: string
+): OverrideDateRemovalPlan | null {
+	const target = findOverrideRowCoveringDate(rowsNewestFirst, date);
+	if (!target) {
+		return null;
+	}
+
+	const remaining = removeDateFromEffectiveDates(
+		parseEffectiveDates(target.effectiveDates),
+		date
+	);
+	if (remaining === null) {
+		return null;
+	}
+	if (remaining.length === 0) {
+		return { id: target.id, kind: "delete-row" };
+	}
+	return { effectiveDates: remaining, id: target.id, kind: "shrink" };
+}

@@ -1,11 +1,13 @@
+import { queryParam } from "@brnit/api";
 import {
-	currentDietPlanQuerySchema,
 	getConsumptionStreak,
 	getCurrentDietPlan,
 	getOrganizationLeaderboard,
+} from "@brnit/api/handlers/member";
+import {
+	currentDietPlanQuerySchema,
 	organizationLeaderboardQuerySchema,
-	queryParam,
-} from "@brnit/api";
+} from "@brnit/api/member/schemas";
 import type { NextFunction, Request, Response } from "express";
 import { flattenError } from "zod";
 

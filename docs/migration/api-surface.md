@@ -360,9 +360,13 @@ Metric label is the literal `'bodyFatPercentPointDrop'`. Positive = fat lost.
 Missing user name → `'Unknown'`. Invalid numerics parse to 0. Only members with
 role exactly `member` compete.
 
-> ⚠️ The tiebreaker's date comparison is inverted relative to its comment
-> (it effectively sorts oldest-latest-assessment first). Decide whether to
-> preserve or fix; if fixing, note it as a behavior change.
+> **Correction.** An earlier draft of this document claimed the tiebreaker's
+> date comparison was inverted relative to its comment. That was wrong — it was
+> verified empirically against the source during the port. The comparator reads
+> `const tA = b.endAssessedAt; const tB = a.endAssessedAt; return tA - tB`,
+> which is `b - a`: **descending, so the newest latest-assessment ranks
+> higher**, exactly as its comment says. No change was needed and none was
+> made.
 
 ### 8.8 Meal cloning
 

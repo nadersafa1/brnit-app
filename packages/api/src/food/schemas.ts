@@ -6,6 +6,10 @@ import {
 	sortQuerySchema,
 	textSearchQuerySchema,
 } from "../pagination/query-params";
+import {
+	DEFAULT_ALTERNATIVES_PER_PAGE,
+	MAX_ALTERNATIVES_PER_PAGE,
+} from "./alternatives";
 
 /**
  * Zod input schemas for the food-category and food-item endpoints.
@@ -30,14 +34,6 @@ const DEFAULT_MACRO = 0;
 const MAX_ALTERNATIVES_QUANTITY = 10_000;
 const DEFAULT_ALTERNATIVES_PAGE = 1;
 const MIN_ALTERNATIVES_PER_PAGE = 1;
-
-/**
- * Hard ceiling on alternatives page size, tighter than the generic `MAX_PER_PAGE`
- * because the endpoint scores every candidate that shares a category with the
- * reference food in memory before it can paginate.
- */
-export const MAX_ALTERNATIVES_PER_PAGE = 20;
-export const DEFAULT_ALTERNATIVES_PER_PAGE = 10;
 
 /** Mirrors the `food_item_unit` Postgres enum via the domain constant. */
 export const foodUnitSchema = z.enum(FOOD_UNITS);
@@ -125,10 +121,11 @@ function unitRequiresGramsPerUnit(unit: string | undefined): boolean {
 	return unit != null && unit !== DEFAULT_FOOD_UNIT;
 }
 
+/** Not `as const`: zod's refine options type wants a mutable `path` array. */
 const gramsPerUnitRefinement = {
 	message: "Grams per unit is required when unit is not 100g",
 	path: ["gramsPerUnit"],
-} as const;
+};
 
 function hasGramsPerUnitWhenRequired(value: {
 	gramsPerUnit?: number | null;
@@ -302,11 +299,12 @@ export type FoodItemAlternativesInput = z.infer<
 
 /**
  * The uploaded image is not part of any Zod schema — multer parses it out of
- * the multipart stream and the controller hands it to the handler alongside the
- * validated text fields.
+ * the multipart stream and the controller hands the buffer to the handler
+ * alongside the validated text fields.
  */
 export interface FoodItemImageInput {
-	file?: File;
+	/** Multipart image buffer from `req.file`, when one was attached. */
+	file?: Buffer;
 }
 
 export type CreateFoodItemInput = CreateFoodItemFields & FoodItemImageInput;

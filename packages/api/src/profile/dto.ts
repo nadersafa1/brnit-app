@@ -1,3 +1,5 @@
+import { toDateStringUTC } from "@brnit/datetime";
+
 /**
  * `GET`/`PATCH /me/profile` response.
  *
@@ -21,7 +23,7 @@ export function dobToDateString(
 		return null;
 	}
 	if (dob instanceof Date) {
-		return dob.toISOString().slice(0, "YYYY-MM-DD".length);
+		return toDateStringUTC(dob);
 	}
 	return dob;
 }

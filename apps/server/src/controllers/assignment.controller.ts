@@ -8,6 +8,7 @@ import {
 	getNutritionistDietPlanAssignment,
 	listMemberDietPlanAssignments,
 	listNutritionistDietPlanAssignments,
+	mealItemOverrideDateQuerySchema,
 	mealItemOverrideParamsSchema,
 	paginationQueryInput,
 	queryParam,
@@ -15,7 +16,6 @@ import {
 	setMemberMealItemOverride,
 	updateDietPlanAssignmentBodySchema,
 	updateNutritionistDietPlanAssignment,
-	utcDateStringSchema,
 } from "@brnit/api";
 import type { NextFunction, Request, Response } from "express";
 import { flattenError } from "zod";
@@ -265,7 +265,7 @@ export class AssignmentController {
 			const rawDate = queryParam(req.query.date)?.trim();
 			let date: string | undefined;
 			if (rawDate) {
-				const parsed = utcDateStringSchema.safeParse(rawDate);
+				const parsed = mealItemOverrideDateQuerySchema.safeParse(rawDate);
 				if (!parsed.success) {
 					jsonApiError(
 						res,

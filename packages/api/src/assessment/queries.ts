@@ -1,5 +1,9 @@
 import { db } from "@brnit/db";
-import { bodyCompositionAssessment, member, organization } from "@brnit/db/schema";
+import {
+	bodyCompositionAssessment,
+	member,
+	organization,
+} from "@brnit/db/schema";
 import { and, asc, count, desc, eq, inArray } from "drizzle-orm";
 
 import { combineConditions } from "../db/query-conditions";

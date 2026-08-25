@@ -24,7 +24,7 @@ const HOUR_MINUTE_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
  * A UTC calendar date, `'YYYY-MM-DD'`. Dates stay strings end to end — Drizzle
  * reads `date` columns as strings and the clients send and expect strings.
  */
-export const utcDateStringSchema = z
+const utcDateStringSchema = z
 	.string()
 	.regex(UTC_DATE_PATTERN, "Date must be YYYY-MM-DD");
 
@@ -241,3 +241,6 @@ export type DeleteMealItemOverrideInput = MealItemOverrideParams & {
 	/** Omitted clears the whole slot; present removes just that day. */
 	date?: string;
 };
+
+/** `?date=` on the override delete. Blank is "all days", not a bad request. */
+export const mealItemOverrideDateQuerySchema = utcDateStringSchema;

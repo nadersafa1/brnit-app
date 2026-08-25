@@ -28,7 +28,10 @@ import type {
 	MemberRecentAssessmentsInput,
 	UpdateAssessmentInput,
 } from "../assessment/schemas";
-import { deleteCloudinaryImage, uploadFileToCloudinary } from "../cloudinary/assets";
+import {
+	deleteCloudinaryImage,
+	uploadFileToCloudinary,
+} from "../cloudinary/assets";
 import { CLOUDINARY_ASSESSMENT_FOLDER } from "../cloudinary/folders";
 import type { Context } from "../context";
 import { requireContextUser } from "../context";

@@ -18,7 +18,6 @@ const DOB_MESSAGE = "Date of birth must be a valid past date";
 const optionalTrimmedString = z
 	.string()
 	.trim()
-	.optional()
 	.transform((value) => (value === "" ? undefined : value));
 
 /**
@@ -26,14 +25,23 @@ const optionalTrimmedString = z
  *
  * Today itself is accepted — the pre-overhaul check was `!isAfter(today)`,
  * despite the "must be past" wording, and tightening it would start rejecting
- * newborn sign-ups that used to pass.
+ * a date of birth recorded on the day it is entered.
  */
-const dobSchema = optionalTrimmedString.refine(
-	(value) =>
-		value === undefined ||
-		(isUtcDateString(value) && value <= getTodayUtcDateString()),
-	DOB_MESSAGE
-);
+const dobSchema = optionalTrimmedString
+	.refine(
+		(value) =>
+			value === undefined ||
+			(isUtcDateString(value) && value <= getTodayUtcDateString()),
+		DOB_MESSAGE
+	)
+	.optional();
+
+const nameSchema = optionalTrimmedString
+	.refine(
+		(value) => value === undefined || value.length <= MAX_NAME_LENGTH,
+		`Name must be at most ${MAX_NAME_LENGTH} characters`
+	)
+	.optional();
 
 export const updateProfileInputSchema = z.object({
 	/** Only the exact string `"true"` clears the avatar. */
@@ -42,10 +50,7 @@ export const updateProfileInputSchema = z.object({
 		.optional()
 		.transform((value) => value === "true"),
 	dob: dobSchema,
-	name: optionalTrimmedString.refine(
-		(value) => value === undefined || value.length <= MAX_NAME_LENGTH,
-		`Name must be at most ${MAX_NAME_LENGTH} characters`
-	),
+	name: nameSchema,
 });
 
 export type UpdateProfileInput = z.infer<typeof updateProfileInputSchema>;

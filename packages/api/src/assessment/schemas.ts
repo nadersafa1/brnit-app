@@ -73,36 +73,37 @@ export type CreateAssessmentInput = z.infer<typeof createAssessmentInputSchema>;
  * see whether a file was actually attached.
  */
 export const updateAssessmentInputSchema = z.object({
-	assessedAt: z.preprocess(blankToUndefined, assessedAtSchema.optional()),
-	bmi: z.preprocess(
-		blankToUndefined,
-		z.coerce.number().pipe(bmiSchema).optional()
-	),
-	bodyFatPercent: z.preprocess(
-		blankToUndefined,
-		z.coerce.number().pipe(bodyFatPercentSchema).optional()
-	),
-	bodyWaterL: z.preprocess(
-		blankToUndefined,
-		z.coerce.number().pipe(metricSchema).optional()
-	),
+	assessedAt: z
+		.preprocess(blankToUndefined, assessedAtSchema.optional())
+		.optional(),
+	bmi: z
+		.preprocess(blankToUndefined, z.coerce.number().pipe(bmiSchema).optional())
+		.optional(),
+	bodyFatPercent: z
+		.preprocess(
+			blankToUndefined,
+			z.coerce.number().pipe(bodyFatPercentSchema).optional()
+		)
+		.optional(),
+	bodyWaterL: z
+		.preprocess(blankToUndefined, z.coerce.number().pipe(metricSchema).optional())
+		.optional(),
 	clearImage: clearImageSchema,
-	heightCm: z.preprocess(
-		blankToUndefined,
-		z.coerce.number().pipe(metricSchema).optional()
-	),
-	muscleMassKg: z.preprocess(
-		blankToUndefined,
-		z.coerce.number().pipe(metricSchema).optional()
-	),
-	visceralFatAreaCm2: z.preprocess(
-		blankToUndefined,
-		z.coerce.number().pipe(visceralFatAreaSchema).optional()
-	),
-	weightKg: z.preprocess(
-		blankToUndefined,
-		z.coerce.number().pipe(metricSchema).optional()
-	),
+	heightCm: z
+		.preprocess(blankToUndefined, z.coerce.number().pipe(metricSchema).optional())
+		.optional(),
+	muscleMassKg: z
+		.preprocess(blankToUndefined, z.coerce.number().pipe(metricSchema).optional())
+		.optional(),
+	visceralFatAreaCm2: z
+		.preprocess(
+			blankToUndefined,
+			z.coerce.number().pipe(visceralFatAreaSchema).optional()
+		)
+		.optional(),
+	weightKg: z
+		.preprocess(blankToUndefined, z.coerce.number().pipe(metricSchema).optional())
+		.optional(),
 });
 
 export type UpdateAssessmentInput = z.infer<typeof updateAssessmentInputSchema>;

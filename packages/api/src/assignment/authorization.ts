@@ -116,7 +116,7 @@ export async function listAssignmentIdsForOrganization(
  * an assignment that names a bare user belongs to no organization and is
  * therefore invisible to organization-scoped callers.
  */
-export async function assignmentMemberBelongsToOrg(
+async function assignmentMemberBelongsToOrg(
 	assignmentId: string,
 	organizationId: string
 ): Promise<boolean> {

@@ -1,7 +1,6 @@
-import type { DbClient, DbTransaction } from "@brnit/db";
+import type { DbTransaction } from "@brnit/db";
 import { db } from "@brnit/db";
 import { dietPlanMeal, dietPlanMealTimeOverride } from "@brnit/db/schema";
-import type { MealTimeOverrideRow } from "@brnit/domain";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 
 import { HttpError } from "../http-error";
@@ -18,11 +17,9 @@ import type { MealTimeOverrideInput } from "./schemas";
  * them, so a save must never touch them.
  *
  * Resolution itself lives in `@brnit/domain` as `resolveMealTimeOverridesForDate`
- * — it is a pure function of (rows, date, today) and is shared with the member
- * Home read.
+ * — a pure function of (rows, date, today), shared with the member Home read,
+ * which loads the full row set (exact-date rows included) for itself.
  */
-
-type MealTimeOverrideClient = DbClient | DbTransaction;
 
 /**
  * Replaces the future-only meal-time overrides for the meals named in
@@ -33,11 +30,12 @@ type MealTimeOverrideClient = DbClient | DbTransaction;
  * not named in the payload keep whatever they had. An empty payload is a no-op
  * rather than "delete everything".
  *
- * Runs inside the caller's transaction so an assignment and its times are
- * written atomically. Throws **400** when a meal does not belong to the plan.
+ * Always runs inside the caller's transaction — an assignment and its meal times
+ * are written atomically or not at all. Throws **400** when a meal does not
+ * belong to the plan.
  */
 export async function saveAssignmentMealTimeOverrides(
-	client: MealTimeOverrideClient,
+	client: DbTransaction,
 	assignmentId: string,
 	dietPlanId: string,
 	mealTimeOverrides: readonly MealTimeOverrideInput[]
@@ -116,7 +114,7 @@ export async function listFutureMealTimeOverrides(
 }
 
 /** Groups future-only rows for a page of assignments; one query, grouped in memory. */
-export function groupFutureMealTimeOverridesByAssignment(
+function groupFutureMealTimeOverridesByAssignment(
 	rows: readonly {
 		dietPlanAssignmentId: string;
 		dietPlanMealId: string;
@@ -158,21 +156,4 @@ export async function listFutureMealTimeOverridesForAssignments(
 			)
 		);
 	return groupFutureMealTimeOverridesByAssignment(rows);
-}
-
-/**
- * Every meal-time row for an assignment — exact-date and future-only alike —
- * ready for `resolveMealTimeOverridesForDate`.
- */
-export async function listMealTimeOverrideRows(
-	assignmentId: string
-): Promise<MealTimeOverrideRow[]> {
-	return await db
-		.select({
-			dietPlanMealId: dietPlanMealTimeOverride.dietPlanMealId,
-			effectiveDate: dietPlanMealTimeOverride.effectiveDate,
-			scheduledTime: dietPlanMealTimeOverride.scheduledTime,
-		})
-		.from(dietPlanMealTimeOverride)
-		.where(eq(dietPlanMealTimeOverride.dietPlanAssignmentId, assignmentId));
 }

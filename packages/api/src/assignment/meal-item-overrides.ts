@@ -10,11 +10,11 @@ import { and, desc, eq, type SQL, sql } from "drizzle-orm";
 
 import { HttpError } from "../http-error";
 import type { OwnedAssignment } from "./access";
+import type { OverrideWritePlan } from "./override-dates";
 import {
-	findOverrideRowCoveringDate,
-	mergeEffectiveDates,
 	parseEffectiveDates,
-	removeDateFromEffectiveDates,
+	planOverrideDateRemoval,
+	planOverrideWrite,
 } from "./override-dates";
 import type { MealItemOverrideScope } from "./schemas";
 
@@ -30,6 +30,7 @@ import type { MealItemOverrideScope } from "./schemas";
  */
 
 const OVERRIDE_NOT_FOUND = "Override not found";
+const FAILED_TO_SAVE = "Failed to save override";
 
 export interface MealItemOverrideSlot {
 	assignmentId: string;
@@ -210,79 +211,66 @@ export async function upsertMealItemOverrideRow(
 
 	return await db.transaction(async (tx) => {
 		const scoped = slotCondition(slot);
-
-		if (overrideId) {
-			const [existingById] = await tx
+		const readSlotRow = (condition: SQL<unknown> | undefined) =>
+			tx
 				.select()
 				.from(dietPlanMealItemOverride)
-				.where(and(scoped, eq(dietPlanMealItemOverride.id, overrideId)))
+				.where(and(scoped, condition))
 				.limit(1);
-			if (!existingById) {
+
+		let plan: OverrideWritePlan;
+		if (overrideId) {
+			const [targetedRow] = await readSlotRow(
+				eq(dietPlanMealItemOverride.id, overrideId)
+			);
+			if (!targetedRow) {
 				throw new HttpError(404, OVERRIDE_NOT_FOUND);
 			}
+			plan = planOverrideWrite({ effectiveDates, targetedRow });
+		} else {
+			const [existingForFood] = await readSlotRow(
+				eq(dietPlanMealItemOverride.foodItemId, nextFoodItemId)
+			);
+			plan = planOverrideWrite({ effectiveDates, existingForFood });
+		}
 
-			const [updated] = await tx
-				.update(dietPlanMealItemOverride)
-				.set({
-					effectiveDates,
+		if (plan.kind === "insert") {
+			const [created] = await tx
+				.insert(dietPlanMealItemOverride)
+				.values({
+					dietPlanAssignmentId: slot.assignmentId,
+					dietPlanMealId: slot.dietPlanMealId,
+					effectiveDates: plan.effectiveDates,
 					foodItemId: nextFoodItemId,
 					intentScope,
 					intentStartDate,
+					mealItemId: slot.mealItemId,
 					quantity: String(quantity),
 				})
-				.where(eq(dietPlanMealItemOverride.id, existingById.id))
 				.returning();
-			if (!updated) {
-				throw new HttpError(400, "Failed to save override");
+			if (!created) {
+				throw new HttpError(400, FAILED_TO_SAVE);
 			}
-			return { created: false, row: updated };
+			return { created: true, row: created };
 		}
 
-		const [existing] = await tx
-			.select()
-			.from(dietPlanMealItemOverride)
-			.where(
-				and(scoped, eq(dietPlanMealItemOverride.foodItemId, nextFoodItemId))
-			)
-			.limit(1);
-
-		if (existing) {
-			const [updated] = await tx
-				.update(dietPlanMealItemOverride)
-				.set({
-					effectiveDates: mergeEffectiveDates(
-						parseEffectiveDates(existing.effectiveDates),
-						effectiveDates
-					),
-					intentScope,
-					intentStartDate,
-					quantity: String(quantity),
-				})
-				.where(eq(dietPlanMealItemOverride.id, existing.id))
-				.returning();
-			if (!updated) {
-				throw new HttpError(400, "Failed to save override");
-			}
-			return { created: false, row: updated };
-		}
-
-		const [created] = await tx
-			.insert(dietPlanMealItemOverride)
-			.values({
-				dietPlanAssignmentId: slot.assignmentId,
-				dietPlanMealId: slot.dietPlanMealId,
-				effectiveDates,
+		// A targeted edit may also move the row to a different food; a merge never
+		// does, because the row was found *by* its food.
+		const [updated] = await tx
+			.update(dietPlanMealItemOverride)
+			.set({
+				effectiveDates: plan.effectiveDates,
 				foodItemId: nextFoodItemId,
 				intentScope,
 				intentStartDate,
-				mealItemId: slot.mealItemId,
 				quantity: String(quantity),
 			})
+			.where(eq(dietPlanMealItemOverride.id, plan.id))
 			.returning();
-		if (!created) {
-			throw new HttpError(400, "Failed to save override");
+		if (!updated) {
+			throw new HttpError(400, FAILED_TO_SAVE);
 		}
-		return { created: true, row: created };
+		return { created: false, row: updated };
 	});
 }
 
@@ -321,30 +309,22 @@ export async function deleteMealItemOverrideDate(
 			.where(slotCondition(slot))
 			.orderBy(desc(dietPlanMealItemOverride.updatedAt));
 
-		const target = findOverrideRowCoveringDate(rows, date);
-		if (!target) {
+		const plan = planOverrideDateRemoval(rows, date);
+		if (!plan) {
 			throw new HttpError(404, OVERRIDE_NOT_FOUND);
 		}
 
-		const remaining = removeDateFromEffectiveDates(
-			parseEffectiveDates(target.effectiveDates),
-			date
-		);
-		if (remaining === null) {
-			throw new HttpError(404, OVERRIDE_NOT_FOUND);
-		}
-
-		if (remaining.length === 0) {
+		if (plan.kind === "delete-row") {
 			await tx
 				.delete(dietPlanMealItemOverride)
-				.where(eq(dietPlanMealItemOverride.id, target.id));
+				.where(eq(dietPlanMealItemOverride.id, plan.id));
 			return;
 		}
 
 		await tx
 			.update(dietPlanMealItemOverride)
-			.set({ effectiveDates: remaining })
-			.where(eq(dietPlanMealItemOverride.id, target.id));
+			.set({ effectiveDates: plan.effectiveDates })
+			.where(eq(dietPlanMealItemOverride.id, plan.id));
 	});
 }
 

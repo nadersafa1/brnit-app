@@ -1,8 +1,5 @@
-import {
-	getProfile,
-	updateProfile,
-	updateProfileInputSchema,
-} from "@brnit/api";
+import { getProfile, updateProfile } from "@brnit/api/handlers/profile";
+import { updateProfileInputSchema } from "@brnit/api/profile/schemas";
 import type { NextFunction, Request, Response } from "express";
 
 import { contextFromExpressRequest } from "../utils/context-from-express-request.js";

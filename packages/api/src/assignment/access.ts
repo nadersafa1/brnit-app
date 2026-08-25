@@ -3,6 +3,7 @@ import { dietPlanAssignment, member } from "@brnit/db/schema";
 import { eq, inArray, or } from "drizzle-orm";
 
 import { HttpError } from "../http-error";
+import { assignmentBelongsToUser } from "./rules";
 
 /**
  * Ownership of an assignment, from the member's side.
@@ -26,18 +27,6 @@ export interface OwnedAssignment {
 	userId: string | null;
 }
 
-/** Pure ownership predicate — the rule the SQL below feeds. */
-export function assignmentBelongsToUser(
-	row: Pick<OwnedAssignment, "memberId" | "userId">,
-	userId: string,
-	memberIds: ReadonlySet<string>
-): boolean {
-	if (row.userId === userId) {
-		return true;
-	}
-	return row.memberId !== null && memberIds.has(row.memberId);
-}
-
 /** All `member.id` values for a user, across every organization. */
 export async function listMemberIdSetForUser(
 	userId: string
@@ -53,7 +42,7 @@ export async function listMemberIdSetForUser(
  * The assignment, or `null` when it does not exist **or** is not the caller's.
  * The two cases are deliberately indistinguishable to the client.
  */
-export async function findAssignmentForUser(
+async function findAssignmentForUser(
 	userId: string,
 	assignmentId: string
 ): Promise<OwnedAssignment | null> {

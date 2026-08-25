@@ -5,6 +5,10 @@ import { dietPlan, dietPlanAssignment, member } from "@brnit/db/schema";
 import { asc, count, desc, eq, inArray, or } from "drizzle-orm";
 
 import {
+	listMemberIdSetForUser,
+	requireAssignmentForUser,
+} from "../assignment/access";
+import {
 	assertAssignmentInOrganization,
 	listOrganizationMemberIds,
 	requireAssignableMember,
@@ -12,10 +16,6 @@ import {
 	requireNutritionistScope,
 	requireSessionUser,
 } from "../assignment/authorization";
-import {
-	listMemberIdSetForUser,
-	requireAssignmentForUser,
-} from "../assignment/access";
 import type {
 	DeletedFlagDto,
 	DietPlanAssignmentDto,
@@ -40,12 +40,13 @@ import {
 	listFutureMealTimeOverridesForAssignments,
 	saveAssignmentMealTimeOverrides,
 } from "../assignment/meal-time-overrides";
+import { databaseAssigneePool } from "../assignment/overlap";
 import {
 	buildEffectiveDatesForScope,
 	dedupeAndSortDateStrings,
 	normalizeOverrideScopeWindow,
 } from "../assignment/override-dates";
-import { assertNoOverlappingAssignment } from "../assignment/overlap";
+import { assertNoOverlappingAssignment } from "../assignment/rules";
 import type {
 	CreateDietPlanAssignmentInput,
 	CreateDietPlanAssignmentNutritionistInput,
@@ -69,7 +70,7 @@ import { calculateOffset, createPaginatedResponse } from "../pagination/offset";
  * is the anchor for everything the member sees: consumptions, meal-time changes
  * and food swaps all cascade from it. The invariant that makes the rest of the
  * product coherent is that a person holds **at most one assignment covering any
- * given day, organization-wide** — see `../assignment/overlap.ts`.
+ * given day, organization-wide** — see `../assignment/rules.ts`.
  */
 
 const NO_ACTIVE_ORG_FOR_LIST =
@@ -239,10 +240,13 @@ async function createAssignment(
 		throw new HttpError(404, "Member or user not found");
 	}
 
-	await assertNoOverlappingAssignment({
-		assigneeUserId: resolvedUserId,
-		range: { endDate: input.endDate, startDate: input.startDate },
-	});
+	await assertNoOverlappingAssignment(
+		{
+			assigneeUserId: resolvedUserId,
+			range: { endDate: input.endDate, startDate: input.startDate },
+		},
+		databaseAssigneePool
+	);
 
 	const created = await db.transaction(async (tx: DbTransaction) => {
 		const [inserted] = await tx
@@ -331,11 +335,14 @@ export async function updateNutritionistDietPlanAssignment(
 		existing.userId
 	);
 	if (assigneeUserId) {
-		await assertNoOverlappingAssignment({
-			assigneeUserId,
-			excludeAssignmentId: input.id,
-			range: { endDate, startDate },
-		});
+		await assertNoOverlappingAssignment(
+			{
+				assigneeUserId,
+				excludeAssignmentId: input.id,
+				range: { endDate, startDate },
+			},
+			databaseAssigneePool
+		);
 	}
 
 	const mealTimeOverrides: MealTimeOverrideInput[] | undefined =

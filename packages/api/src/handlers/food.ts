@@ -28,6 +28,7 @@ import { combineConditions } from "../db/query-conditions";
 import type { AlternativesTolerancePct } from "../food/alternatives";
 import {
 	buildFoodItemAlternatives,
+	MAX_ALTERNATIVES_PER_PAGE,
 	paginateAlternatives,
 	referenceMacroTotals,
 	toMacroNumber,
@@ -61,7 +62,6 @@ import type {
 	UpdateFoodCategoryByIdInput,
 	UpdateFoodItemInput,
 } from "../food/schemas";
-import { MAX_ALTERNATIVES_PER_PAGE } from "../food/schemas";
 import { HttpError } from "../http-error";
 import { calculateOffset, createPaginatedResponse } from "../pagination/offset";
 
@@ -505,11 +505,11 @@ export async function createFoodItem(
 	// Category ids are validated BEFORE the upload: a request naming a category
 	// that does not exist must not leave an orphaned Cloudinary asset behind.
 	if (!(await foodCategoryIdsExist(db, fields.categoryIds))) {
-		// NOTE: pre-overhaul behaviour. The route mapped this to a bare 500
-		// ("Failed to create food item") even though it is a client error; the
-		// equivalent check on update answers 400. Preserved verbatim — changing it
-		// is a client-visible contract change, not a cleanup.
-		throw new HttpError(500, "Failed to create food item");
+		// Pre-overhaul this answered a bare 500 ("Failed to create food item")
+		// even though naming a category that does not exist is a client error,
+		// while the identical check on update already answered 400. Aligned to
+		// 400 so the two paths agree; see docs/migration/api-surface.md.
+		throw new HttpError(400, INVALID_CATEGORY_IDS_MESSAGE);
 	}
 
 	// External I/O stays outside the transaction below.

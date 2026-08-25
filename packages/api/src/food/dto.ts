@@ -1,8 +1,8 @@
 import type { FoodUnit } from "@brnit/domain";
 import { roundNutritionMacroRequired } from "@brnit/domain";
 
+import { buildCloudinaryUrl } from "../cloudinary/url";
 import type { PaginatedResponse } from "../pagination/offset";
-import { foodItemImageUrl } from "./image";
 
 /**
  * DTOs for food categories and food items.
@@ -183,6 +183,11 @@ export interface DeletedFoodItemRow {
  * meaningless to a reader, so the API sorts once here and every consumer —
  * list, detail and alternatives — renders the same order.
  */
+/** Delivery URL for a stored public id, or `null` when the item has no image. */
+function foodItemImageUrl(publicId: string | null): string | null {
+	return publicId ? buildCloudinaryUrl(publicId) : null;
+}
+
 export function foodItemCategoriesToDto(
 	rows: FoodItemCategoryJoinRow[]
 ): FoodItemCategoryDto[] {
