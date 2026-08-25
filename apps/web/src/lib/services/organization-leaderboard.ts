@@ -1,8 +1,8 @@
-import { db } from '@burn-app/db'
+import { db } from '@brnit/db'
 import {
   bodyCompositionAssessment,
   member,
-} from '@burn-app/db/schema'
+} from '@brnit/db/schema'
 import { and, eq, asc, inArray } from 'drizzle-orm'
 
 const TOP_COUNT = 3

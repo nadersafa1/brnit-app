@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
-import { auth } from '@burn-app/auth'
+import { auth } from '@brnit/auth'
 import { cloudinary } from '@/lib/cloudinary'
 import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 import { logger } from '@/lib/server-logger'

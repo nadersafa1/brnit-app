@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@better-auth/expo": "^1.4.9",
-    "@burn-app/env": "*",
+    "@brnit/env": "workspace:*",
     "@expo/metro-runtime": "~55.0.6",
     "@expo/vector-icons": "^15.0.3",
     "@gorhom/bottom-sheet": "^5",
@@ -60,7 +60,7 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
-    "@burn-app/config": "*",
+    "@brnit/config": "workspace:*",
     "@types/node": "^24.10.0",
     "@types/react": "~19.2.10",
     "typescript": "^5"

@@ -1,4 +1,4 @@
-import { auth } from "@burn-app/auth";
+import { auth } from "@brnit/auth";
 import { headers } from "next/headers";
 
 import { WelcomeCard } from "./welcome-card";

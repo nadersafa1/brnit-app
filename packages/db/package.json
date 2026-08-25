@@ -1,5 +1,5 @@
 {
-  "name": "@burn-app/db",
+  "name": "@brnit/db",
   "type": "module",
   "exports": {
     ".": {
@@ -23,7 +23,7 @@
     "seed": "tsx src/seed.ts"
   },
   "dependencies": {
-    "@burn-app/env": "*",
+    "@brnit/env": "workspace:*",
     "dotenv": "^17.2.2",
     "drizzle-orm": "^0.45.1",
     "drizzle-seed": "^0.3.1",
@@ -31,7 +31,7 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
-    "@burn-app/config": "*",
+    "@brnit/config": "workspace:*",
     "@types/pg": "^8.16.0",
     "drizzle-kit": "^0.31.8",
     "tsx": "^4.21.0",

@@ -1,10 +1,10 @@
-import { db } from '@burn-app/db'
+import { db } from '@brnit/db'
 import {
   computeMealTotalsFromLineItems,
   mealMacroTotalsToMealColumns,
   mealTotalsLinesFromDbRows,
-} from '@burn-app/db/meal-totals'
-import { meal, mealItem, foodItem, dietPlanMeal, dietPlanAssignment } from '@burn-app/db/schema'
+} from '@brnit/db/meal-totals'
+import { meal, mealItem, foodItem, dietPlanMeal, dietPlanAssignment } from '@brnit/db/schema'
 import { count, asc, desc, ilike, eq, and, inArray } from 'drizzle-orm'
 import { calculateOffset, combineConditions } from '@/lib/api-helpers/query-builders'
 import { mapFoodCategoriesSorted } from '@/lib/helpers/food-item-categories'

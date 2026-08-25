@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@burn-app/auth'
+import { auth } from '@brnit/auth'
 import { requireAuth } from '@/lib/api-helpers/require-auth'
 import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 import { logger } from '@/lib/server-logger'

@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => {
   return { getSessionMock, valuesMock, insertMock }
 })
 
-vi.mock('@burn-app/auth', () => ({
+vi.mock('@brnit/auth', () => ({
   auth: {
     api: {
       getSession: mocks.getSessionMock,
@@ -16,7 +16,7 @@ vi.mock('@burn-app/auth', () => ({
   },
 }))
 
-vi.mock('@burn-app/db', () => ({
+vi.mock('@brnit/db', () => ({
   db: {
     insert: mocks.insertMock,
   },

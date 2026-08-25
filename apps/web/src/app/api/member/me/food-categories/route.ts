@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-helpers/require-auth'
-import { db } from '@burn-app/db'
-import { foodCategory } from '@burn-app/db/schema'
+import { db } from '@brnit/db'
+import { foodCategory } from '@brnit/db/schema'
 import { asc } from 'drizzle-orm'
 import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 

@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { env } from "@burn-app/env/server";
+import { env } from "@brnit/env/server";
 
 const transporter = nodemailer.createTransport({
   host: env.NODEMAILER_HOST,

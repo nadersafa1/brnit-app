@@ -1,10 +1,10 @@
-import { db } from '@burn-app/db'
+import { db } from '@brnit/db'
 import {
   dietPlanAssignment,
   dietPlanMealConsumption,
   dietPlanMealConsumptionItem,
   foodItem,
-} from '@burn-app/db/schema'
+} from '@brnit/db/schema'
 import { count, asc, desc, eq, and, gte, lte, inArray } from 'drizzle-orm'
 import { calculateOffset } from '@/lib/api-helpers/query-builders'
 import { getMaxConsumptionPastDays } from '@/lib/config/consumption-window'

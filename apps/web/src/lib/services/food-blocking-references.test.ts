@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-vi.mock('@burn-app/db', () => ({
+vi.mock('@brnit/db', () => ({
   db: {
     select: vi.fn(),
   },
@@ -20,7 +20,7 @@ describe('foodItemHasBlockingReferences', () => {
   })
 
   it('returns false when no table references the food item', async () => {
-    const { db } = await import('@burn-app/db')
+    const { db } = await import('@brnit/db')
     const { foodItemHasBlockingReferences } = await import('./food')
 
     vi.mocked(db.select)
@@ -33,7 +33,7 @@ describe('foodItemHasBlockingReferences', () => {
   })
 
   it('returns true when meal_item references the food item', async () => {
-    const { db } = await import('@burn-app/db')
+    const { db } = await import('@brnit/db')
     const { foodItemHasBlockingReferences } = await import('./food')
 
     vi.mocked(db.select)

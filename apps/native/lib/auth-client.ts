@@ -1,5 +1,5 @@
 import { expoClient } from '@better-auth/expo/client'
-import { env } from '@burn-app/env/native'
+import { env } from '@brnit/env/native'
 import { adminClient, inferAdditionalFields, organizationClient } from 'better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/react'
 import Constants from 'expo-constants'
@@ -12,7 +12,7 @@ import {
   nutritionist,
   coach,
   member,
-} from '@burn-app/auth/permissions'
+} from '@brnit/auth/permissions'
 
 const authClient = createAuthClient({
   baseURL: env.EXPO_PUBLIC_SERVER_URL,

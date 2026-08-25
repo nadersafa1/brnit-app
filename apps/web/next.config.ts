@@ -1,4 +1,4 @@
-import '@burn-app/env/web'
+import '@brnit/env/web'
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {

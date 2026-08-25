@@ -1,4 +1,4 @@
-import { env } from "@burn-app/env/server";
+import { env } from "@brnit/env/server";
 import transporter from "./lib/nodemailer";
 
 const brandColors = {

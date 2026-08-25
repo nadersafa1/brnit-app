@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@burn-app/auth'
-import { db } from '@burn-app/db'
-import { member, organization } from '@burn-app/db/schema'
+import { auth } from '@brnit/auth'
+import { db } from '@brnit/db'
+import { member, organization } from '@brnit/db/schema'
 import { and, eq } from 'drizzle-orm'
 
 type Session = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>

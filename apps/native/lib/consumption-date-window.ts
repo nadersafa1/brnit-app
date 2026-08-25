@@ -1,5 +1,5 @@
 import dayjs from 'dayjs'
-import { env } from '@burn-app/env/native'
+import { env } from '@brnit/env/native'
 
 const DEFAULT_MAX_PAST_DAYS = 2
 const MAX_PAST_DAYS_UPPER_BOUND = 365

@@ -1,4 +1,4 @@
-import { auth } from '@burn-app/auth'
+import { auth } from '@brnit/auth'
 import { NextResponse } from 'next/server'
 import { getOrganizationContext } from '@/lib/organization-helpers'
 import type { OrganizationContext } from '@/types/organization'

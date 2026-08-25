@@ -1,5 +1,5 @@
-import { db } from '@burn-app/db'
-import { dietPlanMeal, dietPlanMealTimeOverride } from '@burn-app/db/schema'
+import { db } from '@brnit/db'
+import { dietPlanMeal, dietPlanMealTimeOverride } from '@brnit/db/schema'
 import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { getTodayUtcDateString } from '@/lib/helpers/date-utc'
 

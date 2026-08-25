@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   computeMealTotalsFromLineItems,
   mealTotalsLinesFromDbRows,
-} from '@burn-app/db/meal-totals'
+} from '@brnit/db/meal-totals'
 
 describe('computeMealTotalsFromLineItems', () => {
   it('scales 100g rows by quantity/100 and rounds totals to 2 decimals', () => {

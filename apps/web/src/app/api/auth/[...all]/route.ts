@@ -4,7 +4,7 @@ import path from 'node:path'
 // Ensure server env (including NODEMAILER_*) is loaded from apps/web/.env when this route runs
 config({ path: path.resolve(process.cwd(), '.env') })
 
-import { auth } from '@burn-app/auth'
+import { auth } from '@brnit/auth'
 import { toNextJsHandler } from 'better-auth/next-js'
 import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 

@@ -1,5 +1,5 @@
-import { db } from '@burn-app/db'
-import { dietPlanAssignment, dietPlan, member, dietPlanMealTimeOverride } from '@burn-app/db/schema'
+import { db } from '@brnit/db'
+import { dietPlanAssignment, dietPlan, member, dietPlanMealTimeOverride } from '@brnit/db/schema'
 import { count, asc, desc, eq, and, or, sql, inArray, gte, lte, isNull } from 'drizzle-orm'
 import { calculateOffset, combineConditions } from '@/lib/api-helpers/query-builders'
 import type {

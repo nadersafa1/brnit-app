@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
-import { auth } from '@burn-app/auth'
-import { db } from '@burn-app/db'
-import { auditLog } from '@burn-app/db/schema'
+import { auth } from '@brnit/auth'
+import { db } from '@brnit/db'
+import { auditLog } from '@brnit/db/schema'
 
 import { logger } from '@/lib/server-logger'
 

@@ -1,4 +1,4 @@
-import { db } from '@burn-app/db'
+import { db } from '@brnit/db'
 import {
   dietPlan,
   dietPlanMeal,
@@ -6,7 +6,7 @@ import {
   meal,
   mealItem,
   foodItem,
-} from '@burn-app/db/schema'
+} from '@brnit/db/schema'
 import { count, asc, desc, ilike, eq, and, inArray } from 'drizzle-orm'
 import { calculateOffset, combineConditions } from '@/lib/api-helpers/query-builders'
 import type { DietPlansQuery, CreateDietPlan, UpdateDietPlan } from '@/types/api/diet-plan.schemas'

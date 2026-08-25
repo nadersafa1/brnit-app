@@ -1,8 +1,8 @@
-import { db } from '@burn-app/db'
+import { db } from '@brnit/db'
 import {
   bodyCompositionAssessment,
   member,
-} from '@burn-app/db/schema'
+} from '@brnit/db/schema'
 import { count, asc, desc, eq, and, inArray } from 'drizzle-orm'
 import { calculateOffset } from '@/lib/api-helpers/query-builders'
 import {

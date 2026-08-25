@@ -1,4 +1,4 @@
-import { auth } from '@burn-app/auth'
+import { auth } from '@brnit/auth'
 import { NextResponse } from 'next/server'
 
 type Session = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>

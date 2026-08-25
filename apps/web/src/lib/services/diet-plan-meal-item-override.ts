@@ -1,4 +1,4 @@
-import { db } from '@burn-app/db'
+import { db } from '@brnit/db'
 import {
   dietPlanAssignment,
   dietPlanMeal,
@@ -6,7 +6,7 @@ import {
   member,
   mealItem,
   foodItem,
-} from '@burn-app/db/schema'
+} from '@brnit/db/schema'
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { addDaysUTC, getTodayUtcDateString, maxDateString } from '@/lib/helpers/date-utc'
 import type { SetDietPlanMealItemOverrideBody } from '@/types/api/diet-plan-meal-item-override.schemas'

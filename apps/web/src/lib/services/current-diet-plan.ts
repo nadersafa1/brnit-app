@@ -1,5 +1,5 @@
-import { db } from '@burn-app/db'
-import { dietPlanAssignment, dietPlanMealConsumption, foodItem, member } from '@burn-app/db/schema'
+import { db } from '@brnit/db'
+import { dietPlanAssignment, dietPlanMealConsumption, foodItem, member } from '@brnit/db/schema'
 import { and, asc, eq, inArray, or, SQL } from 'drizzle-orm'
 import {
   calculateMacrosForDay,

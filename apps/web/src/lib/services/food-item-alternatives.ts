@@ -2,8 +2,8 @@
  * Food alternatives: candidates that share at least one category with the reference item and whose
  * scaled macros fall within configured tolerance vs the reference at the requested quantity.
  */
-import { db } from '@burn-app/db'
-import { foodItem, foodItemCategory } from '@burn-app/db/schema'
+import { db } from '@brnit/db'
+import { foodItem, foodItemCategory } from '@brnit/db/schema'
 import { and, eq, ne, isNotNull, inArray } from 'drizzle-orm'
 import { getAlternativesToleranceConfig } from '@/lib/config/alternatives-tolerance'
 import { mapFoodCategoriesSorted } from '@/lib/helpers/food-item-categories'

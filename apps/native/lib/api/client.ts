@@ -1,4 +1,4 @@
-import { env } from "@burn-app/env/native";
+import { env } from "@brnit/env/native";
 import { authClient } from "@/lib/auth-client";
 import { ApiError, type ApiFetchOptions, type ApiErrorDetails } from "./types";
 

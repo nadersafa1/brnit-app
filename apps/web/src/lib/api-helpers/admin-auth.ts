@@ -1,4 +1,4 @@
-import { auth } from '@burn-app/auth'
+import { auth } from '@brnit/auth'
 import { NextResponse } from 'next/server'
 
 type AdminAuthResult =

@@ -1,5 +1,5 @@
-import { db } from '@burn-app/db'
-import { dietPlanAssignment, dietPlanMealConsumption, member } from '@burn-app/db/schema'
+import { db } from '@brnit/db'
+import { dietPlanAssignment, dietPlanMealConsumption, member } from '@brnit/db/schema'
 import { and, eq, gte, inArray, or, SQL } from 'drizzle-orm'
 import { addDaysUTC, toDateStringUTC } from '@/lib/helpers/date-utc'
 

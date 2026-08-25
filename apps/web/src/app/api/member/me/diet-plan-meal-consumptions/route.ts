@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { flattenError } from 'zod'
 import { deleteSuccess } from '@/lib/api-helpers/delete-responses'
 import { requireAuth } from '@/lib/api-helpers/require-auth'
-import { db } from '@burn-app/db'
-import { dietPlanAssignment, member } from '@burn-app/db/schema'
+import { db } from '@brnit/db'
+import { dietPlanAssignment, member } from '@brnit/db/schema'
 import { eq, or, inArray, sql } from 'drizzle-orm'
 import {
   logDietPlanMealConsumption,

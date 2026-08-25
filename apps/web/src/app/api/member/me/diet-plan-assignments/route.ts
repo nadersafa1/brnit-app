@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { flattenError } from 'zod'
 import { requireAuth } from '@/lib/api-helpers/require-auth'
-import { db } from '@burn-app/db'
-import { dietPlanAssignment, dietPlan, member } from '@burn-app/db/schema'
+import { db } from '@brnit/db'
+import { dietPlanAssignment, dietPlan, member } from '@brnit/db/schema'
 import { eq, or, inArray, asc } from 'drizzle-orm'
 import { withRequestLogging } from '@/lib/api-helpers/with-request-logging'
 

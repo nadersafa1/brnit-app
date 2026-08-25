@@ -1,7 +1,7 @@
 import { headers } from 'next/headers'
-import { auth } from '@burn-app/auth'
-import { db } from '@burn-app/db'
-import * as schema from '@burn-app/db/schema/auth'
+import { auth } from '@brnit/auth'
+import { db } from '@brnit/db'
+import * as schema from '@brnit/db/schema/auth'
 import { and, eq } from 'drizzle-orm'
 import type { OrganizationContext, OrganizationRole } from '@/types/organization'
 

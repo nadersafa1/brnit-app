@@ -17,7 +17,7 @@ const { findFirst, findMany } = vi.hoisted(() => ({
   findMany: vi.fn(),
 }))
 
-vi.mock('@burn-app/db', () => ({
+vi.mock('@brnit/db', () => ({
   db: {
     select: vi.fn(),
     query: {
@@ -36,7 +36,7 @@ describe('getFoodItemAlternatives', () => {
   })
 
   it('returns REFERENCE_NOT_FOUND when food item does not exist', async () => {
-    const { db } = await import('@burn-app/db')
+    const { db } = await import('@brnit/db')
     vi.mocked(db.select).mockReturnValue(mockSelectChain(Promise.resolve([])) as never)
     findFirst.mockResolvedValue(null)
 
@@ -48,7 +48,7 @@ describe('getFoodItemAlternatives', () => {
   })
 
   it('returns REFERENCE_INVALID when reference has null macros', async () => {
-    const { db } = await import('@burn-app/db')
+    const { db } = await import('@brnit/db')
     vi.mocked(db.select).mockReturnValue(
       mockSelectChain(Promise.resolve([{ foodCategoryId: 'cat-1' }])) as never
     )
@@ -71,7 +71,7 @@ describe('getFoodItemAlternatives', () => {
   })
 
   it('returns REFERENCE_INVALID when reference has no categories', async () => {
-    const { db } = await import('@burn-app/db')
+    const { db } = await import('@brnit/db')
     vi.mocked(db.select).mockReturnValue(mockSelectChain(Promise.resolve([])) as never)
     findFirst.mockResolvedValue({
       id: 'ref-1',
@@ -92,7 +92,7 @@ describe('getFoodItemAlternatives', () => {
   })
 
   it('returns ok with empty items when no candidates share a category', async () => {
-    const { db } = await import('@burn-app/db')
+    const { db } = await import('@brnit/db')
     vi.mocked(db.select).mockReturnValue(
       mockSelectChain(Promise.resolve([{ foodCategoryId: 'cat-1' }])) as never
     )

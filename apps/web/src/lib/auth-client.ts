@@ -8,7 +8,7 @@ import {
   nutritionist,
   coach,
   member,
-} from '@burn-app/auth/permissions'
+} from '@brnit/auth/permissions'
 
 const authClient = createAuthClient({
   plugins: [
