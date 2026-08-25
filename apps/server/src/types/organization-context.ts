@@ -1,56 +1,28 @@
 /**
- * brnit's organization model.
+ * brnit's organization model, re-exported for server-local use.
  *
  * App roles live on `user.role` (better-auth admin plugin); organization roles
- * live on `member.role`. The two are independent: an app `admin` has no member
- * row and therefore no org role, while an org `owner` may be a plain app `user`.
+ * live on `member.role`. The two are independent: an app `admin` has no
+ * `member` row and therefore no organization role, while an organization
+ * `owner` may be a plain app `user`.
  *
- * TODO(@brnit/domain): `docs/migration/architecture.md` puts framework-free
- * roles in `packages/domain`. Move `ORGANIZATION_ROLES` / `APP_ROLES` there once
- * that package exists and re-export the types from here.
+ * The definitions themselves live upstream so there is exactly one copy:
+ * - roles and their predicates in `@brnit/domain` (framework-free, shared with
+ *   the web and native clients)
+ * - the resolved context shape in `@brnit/api`, because it is serialized
+ *   verbatim by `GET /api/v1/users/me/organization-context` and is therefore a
+ *   client contract, not an internal type
  */
 
-/** `user.role` — better-auth admin plugin, `defaultRole: "user"`. */
-export const APP_ROLES = ["admin", "nutritionist", "coach", "user"] as const;
-
-export type AppRole = (typeof APP_ROLES)[number];
-
-/** `member.role` — better-auth organization plugin. */
-export const ORGANIZATION_ROLES = [
-	"owner",
-	"client_admin",
-	"direct_admin",
-	"nutritionist",
-	"coach",
-	"member",
-] as const;
-
-export type OrganizationRole = (typeof ORGANIZATION_ROLES)[number];
-
-export interface OrganizationSummary {
-	createdAt: Date;
-	id: string;
-	logo?: string | null;
-	name: string;
-	slug: string;
-}
-
-/**
- * Resolved org scope for the current request. Serialized verbatim by
- * `GET /api/v1/users/me/organization-context`, so the field set is a client
- * contract — the web sidebar and the native org picker both read these flags.
- */
-export interface OrganizationContext {
-	activeOrgId: string | null;
-	isAppAdmin: boolean;
-	isAuthenticated: boolean;
-	isClientAdmin: boolean;
-	isCoach: boolean;
-	isDirectAdmin: boolean;
-	isMember: boolean;
-	isNutritionist: boolean;
-	isOwner: boolean;
-	organization: OrganizationSummary | null;
-	role: OrganizationRole | null;
-	userId: string | null;
-}
+export type {
+	OrganizationContextDto as OrganizationContext,
+	OrganizationSummary,
+} from "@brnit/api";
+export { ANONYMOUS_ORGANIZATION_CONTEXT } from "@brnit/api";
+export type { AppRole, OrganizationRole } from "@brnit/domain";
+export {
+	APP_ROLES,
+	isAppRole,
+	isOrganizationRole,
+	ORGANIZATION_ROLES,
+} from "@brnit/domain";

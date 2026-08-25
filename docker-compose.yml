@@ -74,7 +74,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    # Drizzle migrations are committed SQL; db:deploy applies them and seeds.
+    # Drizzle migrations are committed SQL; db:deploy applies them.
+    # It deliberately does NOT seed — packages/db/src/seed.ts resets the food
+    # catalogue and is run by hand, never on deploy.
     command:
       - bun
       - run

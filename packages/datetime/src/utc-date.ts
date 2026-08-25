@@ -97,9 +97,7 @@ export function addDaysUTC(
 	dateStr: UtcDateString,
 	days: number
 ): UtcDateString {
-	return parseUtcDateString(dateStr)
-		.plus({ days })
-		.toFormat(UTC_DATE_FORMAT);
+	return parseUtcDateString(dateStr).plus({ days }).toFormat(UTC_DATE_FORMAT);
 }
 
 /** Today's UTC calendar date. The server's definition of "today", everywhere. */

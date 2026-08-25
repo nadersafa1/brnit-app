@@ -1,6 +1,7 @@
 import { env } from "@brnit/env/server";
 import { drizzle } from "drizzle-orm/node-postgres";
 
+// biome-ignore lint/performance/noNamespaceImport: drizzle needs the whole schema object to build db.query
 import * as schema from "./schema";
 
 /**

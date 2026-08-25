@@ -1,222 +1,225 @@
-import { expo } from '@better-auth/expo'
-import { db } from '@brnit/db'
-import { bodyCompositionAssessment } from '@brnit/db/schema'
-import * as schema from '@brnit/db/schema/auth'
-import { and, eq } from 'drizzle-orm'
-import { canInviteWithAnyRole, canUpdateMemberRole } from './authorization'
-import { env } from '@brnit/env/server'
-import { betterAuth } from 'better-auth'
-import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { APIError } from 'better-auth/api'
-import { nextCookies } from 'better-auth/next-js'
-import { admin, organization, openAPI } from 'better-auth/plugins'
-import { sendOrganizationInvitation } from './emails/send-organization-invitation'
-import { sendPasswordResetEmail } from './emails/send-password-reset-email'
-import { sendVerificationEmail } from './emails/send-verification-email'
+/**
+ * The Better Auth instance. Mounted by `apps/server` with
+ * `toNodeHandler(auth)` on `/api/auth/*`, **before** `express.json()` — Better
+ * Auth reads the raw request body itself and a JSON body parser upstream
+ * breaks every POST.
+ *
+ * There is deliberately no `nextCookies()` plugin: the API is a standalone
+ * Express app now, not Next.js route handlers.
+ */
+import { expo } from "@better-auth/expo";
+import { createDbClient } from "@brnit/db";
+import { bodyCompositionAssessment } from "@brnit/db/schema";
 import {
-  ac,
-  client_admin,
-  coach,
-  direct_admin,
-  member,
-  nutritionist,
-  owner,
-} from './permissions'
-import { importPKCS8, SignJWT } from 'jose'
+	account,
+	invitation,
+	member as memberTable,
+	organization as organizationTable,
+	session,
+	user as userTable,
+	verification,
+} from "@brnit/db/schema/auth";
+import { DEFAULT_APP_ROLE, isAppAdmin } from "@brnit/domain";
+import { env } from "@brnit/env/server";
+import { getLogger } from "@brnit/logger";
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { admin, openAPI, organization } from "better-auth/plugins";
+import { eq } from "drizzle-orm";
 
-async function generateAppleClientSecret(
-  clientId: string,
-  teamId: string,
-  keyId: string,
-  privateKeyPem: string,
-) {
-  const key = await importPKCS8(privateKeyPem, 'ES256')
-  const now = Math.floor(Date.now() / 1000)
-  return new SignJWT({})
-    .setProtectedHeader({ alg: 'ES256', kid: keyId })
-    .setIssuer(teamId)
-    .setSubject(clientId)
-    .setAudience('https://appleid.apple.com')
-    .setIssuedAt(now)
-    .setExpirationTime(now + 180 * 24 * 60 * 60)
-    .sign(key)
+import { sendOrganizationInvitation } from "./emails/send-organization-invitation";
+import { sendPasswordResetEmail } from "./emails/send-password-reset-email";
+import { sendVerificationEmail } from "./emails/send-verification-email";
+import {
+	createOrganizationHooks,
+	createOrgRoleLookup,
+} from "./organization-hooks";
+import {
+	ac,
+	client_admin,
+	coach,
+	direct_admin,
+	member,
+	nutritionist,
+	owner,
+} from "./permissions";
+import { ORG_CREATOR_ROLE, ORG_MEMBERSHIP_LIMIT } from "./role-ranks";
+import { resolveWebAppOrigin } from "./send-email";
+import {
+	appleConfigState,
+	googleConfigState,
+	type ProviderConfigState,
+	resolveAppleSocialProvider,
+	resolveGoogleSocialProvider,
+} from "./social-providers";
+
+const EMAIL_VERIFICATION_EXPIRY_SECONDS = 60 * 60 * 24;
+
+/**
+ * Isolated Drizzle client with its own pool, so Better Auth's internal reads and
+ * the `beforeDelete` cleanup never share request-scoped transaction state with
+ * the API handlers. Same reasoning as `qpadel/packages/auth/src/index.ts`.
+ */
+const db = createDbClient();
+
+/**
+ * The seven tables Better Auth owns, named explicitly so the adapter never sees
+ * the Drizzle `relations()` helpers exported alongside them.
+ */
+const betterAuthSchema = {
+	account,
+	invitation,
+	member: memberTable,
+	organization: organizationTable,
+	session,
+	user: userTable,
+	verification,
+};
+
+const appleConfig = {
+	appBundleIdentifier: env.APPLE_APP_BUNDLE_IDENTIFIER,
+	clientId: env.APPLE_CLIENT_ID,
+	keyId: env.APPLE_KEY_ID,
+	privateKey: env.APPLE_PRIVATE_KEY,
+	teamId: env.APPLE_TEAM_ID,
+};
+const googleConfig = {
+	clientId: env.GOOGLE_CLIENT_ID,
+	clientSecret: env.GOOGLE_CLIENT_SECRET,
+};
+
+/**
+ * A half-configured provider is silently disabled, which in production looks
+ * exactly like "OAuth is broken". Say so once, at boot.
+ */
+function warnIfPartiallyConfigured(
+	provider: string,
+	state: ProviderConfigState
+): void {
+	if (state === "partial") {
+		getLogger().warn(
+			{ provider },
+			"social provider is partially configured and stays disabled"
+		);
+	}
 }
 
-const googleSocial =
-  env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
-    ? {
-        google: {
-          enabled: true,
-          clientId: env.GOOGLE_CLIENT_ID,
-          clientSecret: env.GOOGLE_CLIENT_SECRET,
-        },
-      }
-    : {}
+warnIfPartiallyConfigured("apple", appleConfigState(appleConfig));
+warnIfPartiallyConfigured("google", googleConfigState(googleConfig));
 
-const appleEnvReady = Boolean(
-  env.APPLE_CLIENT_ID &&
-  env.APPLE_TEAM_ID &&
-  env.APPLE_KEY_ID &&
-  env.APPLE_PRIVATE_KEY,
-)
-
-const applePrivateKeyPem = env.APPLE_PRIVATE_KEY.replaceAll('\\n', '\n')
-
-const appleSocial = appleEnvReady
-  ? {
-      apple: {
-        clientId: env.APPLE_CLIENT_ID,
-        clientSecret: await generateAppleClientSecret(
-          env.APPLE_CLIENT_ID,
-          env.APPLE_TEAM_ID,
-          env.APPLE_KEY_ID,
-          applePrivateKeyPem,
-        ),
-        ...(env.APPLE_APP_BUNDLE_IDENTIFIER
-          ? {
-              audience: [env.APPLE_CLIENT_ID, env.APPLE_APP_BUNDLE_IDENTIFIER],
-            }
-          : {}),
-      },
-    }
-  : {}
+/** Resolved at module load because the Apple client secret is signed asynchronously. */
+const googleSocial = resolveGoogleSocialProvider(googleConfig);
+const appleSocial = await resolveAppleSocialProvider(appleConfig);
 
 export const auth = betterAuth({
-  baseURL: env.BETTER_AUTH_URL,
-  secret: env.BETTER_AUTH_SECRET,
-  database: drizzleAdapter(db, {
-    provider: 'pg',
-    schema: schema,
-  }),
-  trustedOrigins: [
-    env.CORS_ORIGIN,
-    'https://appleid.apple.com',
-    'mybettertapp://',
-    'exp://',
-    'brnit://',
-  ],
-  socialProviders: {
-    ...googleSocial,
-    ...appleSocial,
-  },
+	baseURL: env.BETTER_AUTH_URL,
+	secret: env.BETTER_AUTH_SECRET,
+	database: drizzleAdapter(db, {
+		provider: "pg",
+		schema: betterAuthSchema,
+	}),
 
-  emailAndPassword: {
-    enabled: true,
-    requireEmailVerification: true,
-    sendResetPassword: sendPasswordResetEmail,
-  },
-  emailVerification: {
-    sendVerificationEmail,
-    sendOnSignUp: true,
-    expiresIn: 60 * 60 * 24, // 24 hours
-    autoSignInAfterVerification: true,
-  },
-  user: {
-    additionalFields: {
-      dob: {
-        type: 'date',
-        required: false,
-        input: true,
-      },
-    },
-    deleteUser: {
-      enabled: true,
-      beforeDelete: async (user) => {
-        await db
-          .delete(bodyCompositionAssessment)
-          .where(eq(bodyCompositionAssessment.recordedById, user.id))
-      },
-    },
-  },
-  plugins: [
-    nextCookies(),
-    openAPI(),
+	/**
+	 * The SPA, the Expo app and Apple's OAuth callback all post to this API from
+	 * a different origin than their own. Native schemes need the `://**` form as
+	 * well as the bare scheme; the Expo dev-server origins are development-only
+	 * so a production deployment cannot be driven from a laptop.
+	 */
+	trustedOrigins: [
+		...env.CORS_ORIGIN,
+		"https://appleid.apple.com",
+		"brnit://",
+		"brnit://**",
+		...(env.NODE_ENV === "development"
+			? ["exp://", "exp://**", "http://localhost:8081"]
+			: []),
+	],
 
-    admin({ defaultRole: 'user' }),
-    organization({
-      ac,
-      roles: {
-        owner,
-        client_admin,
-        direct_admin,
-        nutritionist,
-        coach,
-        member,
-      },
-      creatorRole: 'owner',
-      membershipLimit: 100,
-      allowUserToCreateOrganization: async (user) => user.role === 'admin',
-      async sendInvitationEmail(data) {
-        const appOrigin =
-          env.CORS_ORIGIN?.replace(/\/$/, '') ||
-          (env.BETTER_AUTH_URL
-            ? new URL(env.BETTER_AUTH_URL).origin
-            : 'http://localhost:3000')
-        const inviteLink = `${appOrigin}/accept-invitation?invitationId=${data.id}`
-        await sendOrganizationInvitation({
-          email: data.email,
-          invitedByUsername: data.inviter.user.name,
-          invitedByEmail: data.inviter.user.email,
-          organizationName: data.organization.name,
-          inviteLink,
-          invitationRole: data.invitation.role,
-        })
-      },
-      organizationHooks: {
-        beforeCreateInvitation: async ({ invitation, inviter }) => {
-          // App admin can invite with any role
-          if (inviter.role === 'admin') {
-            const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-            return { data: { ...invitation, expiresAt } }
-          }
-          // For non-member roles, check org role: owner or client_admin
-          if (invitation.role !== 'member') {
-            const membership = await db.query.member.findFirst({
-              where: and(
-                eq(schema.member.userId, inviter.id),
-                eq(schema.member.organizationId, invitation.organizationId),
-              ),
-              columns: { role: true },
-            })
-            if (
-              !canInviteWithAnyRole({
-                appRole: null,
-                orgRole: membership?.role ?? null,
-              })
-            ) {
-              throw new APIError('BAD_REQUEST', {
-                message:
-                  'Only org owners, direct admins, or app admins can invite with non-member roles',
-              })
-            }
-          }
-          const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-          return { data: { ...invitation, expiresAt } }
-        },
-        beforeUpdateMemberRole: async ({ user, organization }) => {
-          if (user.role === 'admin') return undefined
-          const membership = await db.query.member.findFirst({
-            where: and(
-              eq(schema.member.userId, user.id),
-              eq(schema.member.organizationId, organization.id),
-            ),
-            columns: { role: true },
-          })
-          if (
-            !canUpdateMemberRole({
-              appRole: null,
-              orgRole: membership?.role ?? null,
-            })
-          ) {
-            throw new APIError('FORBIDDEN', {
-              message:
-                'Only app admins, org owners, or direct admins can change member roles',
-            })
-          }
-          return undefined
-        },
-      },
-    }),
-    expo(),
-  ],
-})
+	/**
+	 * The web app is served from a different origin than this API, so the
+	 * session cookie is cross-site: browsers drop it unless it is
+	 * `SameSite=None; Secure`. That pair also requires HTTPS on both origins.
+	 */
+	advanced: {
+		defaultCookieAttributes: {
+			httpOnly: true,
+			sameSite: "none",
+			secure: true,
+		},
+	},
+
+	socialProviders: {
+		...googleSocial,
+		...appleSocial,
+	},
+
+	emailAndPassword: {
+		enabled: true,
+		requireEmailVerification: true,
+		sendResetPassword: sendPasswordResetEmail,
+	},
+	emailVerification: {
+		autoSignInAfterVerification: true,
+		expiresIn: EMAIL_VERIFICATION_EXPIRY_SECONDS,
+		sendOnSignUp: true,
+		sendVerificationEmail,
+	},
+
+	user: {
+		additionalFields: {
+			/** The only additional field; maps to the real `user.dob` `date` column. */
+			dob: {
+				input: true,
+				required: false,
+				type: "date",
+			},
+		},
+		deleteUser: {
+			enabled: true,
+			/**
+			 * `body_composition_assessment.recorded_by_id` is `NO ACTION`, so the
+			 * user row cannot be removed while any assessment they recorded still
+			 * points at it. Without this the whole delete-account flow fails.
+			 */
+			beforeDelete: async (user) => {
+				await db
+					.delete(bodyCompositionAssessment)
+					.where(eq(bodyCompositionAssessment.recordedById, user.id));
+			},
+		},
+	},
+
+	plugins: [
+		openAPI(),
+		admin({ defaultRole: DEFAULT_APP_ROLE }),
+		organization({
+			ac,
+			roles: {
+				client_admin,
+				coach,
+				direct_admin,
+				member,
+				nutritionist,
+				owner,
+			},
+			creatorRole: ORG_CREATOR_ROLE,
+			membershipLimit: ORG_MEMBERSHIP_LIMIT,
+			allowUserToCreateOrganization: (user) => isAppAdmin(user.role),
+			sendInvitationEmail: async (data) => {
+				// The Vite app serves `/accept-invitation`; native opens the same
+				// query on `brnit://accept-invitation?invitationId=`.
+				const inviteLink = `${resolveWebAppOrigin()}/accept-invitation?invitationId=${encodeURIComponent(data.id)}`;
+				await sendOrganizationInvitation({
+					email: data.email,
+					invitationRole: data.invitation.role,
+					invitedByEmail: data.inviter.user.email,
+					invitedByUsername: data.inviter.user.name,
+					inviteLink,
+					organizationName: data.organization.name,
+				});
+			},
+			organizationHooks: createOrganizationHooks(createOrgRoleLookup(db)),
+		}),
+		expo(),
+	],
+});

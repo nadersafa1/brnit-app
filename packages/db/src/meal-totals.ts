@@ -17,45 +17,38 @@
  * transaction as any `meal_item` mutation, or `meal.total_*` silently drifts.
  */
 
-const MACRO_DECIMAL_PLACES = 2;
-const MACRO_SCALE = 10 ** MACRO_DECIMAL_PLACES;
-
-/** Mirrors the `food_item_unit` pg enum. Kept local so `@brnit/db` has no domain dependency. */
-export type FoodUnitForMealTotals = "100g" | "piece" | "liters" | "cup" | "tbsp";
-
-export type MealLineForTotals = {
-	quantity: number;
-	calories: number;
-	protein: number;
-	carbs: number;
-	fat: number;
-	unit: FoodUnitForMealTotals;
-};
-
-/** Output of {@link computeMealTotalsFromLineItems}; maps 1:1 to `meal` numeric columns. */
-export type MealMacroTotals = {
-	calories: number;
-	protein: number;
-	carbs: number;
-	fat: number;
-};
+import {
+	type FoodUnit,
+	getMacroFactor,
+	roundNutritionMacro,
+} from "@brnit/domain";
 
 /**
- * `100g` stores macros per 100 g and `quantity` in grams, so the factor is
- * `quantity / 100`. Every other unit stores macros per 1 unit and `quantity` as
- * a count of units, so the factor is the quantity itself.
+ * The unit union and the two scaling rules come from `@brnit/domain` rather
+ * than being redeclared here. They were duplicated once, and a divergence
+ * between the copy used to persist `meal.total_*` and the copy used to render
+ * it is exactly the drift this module exists to prevent.
  */
-export function getMacroFactor(
-	quantity: number,
-	unit: FoodUnitForMealTotals
-): number {
-	return unit === "100g" ? quantity / 100 : quantity;
+export type FoodUnitForMealTotals = FoodUnit;
+
+export interface MealLineForTotals {
+	calories: number;
+	carbs: number;
+	fat: number;
+	protein: number;
+	quantity: number;
+	unit: FoodUnitForMealTotals;
 }
 
-/** Rounds to 2 decimals — the precision of the persisted `meal.total_*` columns. */
-export function roundNutritionMacro(value: number): number {
-	return Math.round(value * MACRO_SCALE) / MACRO_SCALE;
+/** Output of {@link computeMealTotalsFromLineItems}; maps 1:1 to `meal` numeric columns. */
+export interface MealMacroTotals {
+	calories: number;
+	carbs: number;
+	fat: number;
+	protein: number;
 }
+
+export { getMacroFactor, roundNutritionMacro };
 
 /**
  * Same algorithm as the meal detail nutrition summary: scale each line by

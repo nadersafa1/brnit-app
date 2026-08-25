@@ -1,0 +1,237 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@brnit/brand/brand.css";
+
+/*
+ * `docs/migration/frontend.md` quotes `@source "../../../apps/**"`, but from
+ * `packages/ui/src/styles/` that resolves to `packages/apps/`, which does not
+ * exist — the repo-root `apps/` directory is four levels up. Corrected here so
+ * Tailwind really does scan the apps from inside the package.
+ */
+@source "../../../../apps/**/*.{ts,tsx}";
+@source "../**/*.{ts,tsx}";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * ---------------------------------------------------------------------------
+ * NEUTRAL DEFAULTS — the consuming app overrides all of these.
+ * ---------------------------------------------------------------------------
+ * This package stays app-agnostic: it ships the stock shadcn neutral palette so
+ * `@brnit/ui` renders sensibly on its own, and `apps/web/src/index.css` remaps
+ * every one of these onto a `--brand-*` variable from `@brnit/brand`.
+ *
+ * The mapping is NOT free-form. `@brnit/brand` encodes measured contrast
+ * guarantees in its token names, and the components below rely on them. The app
+ * MUST wire it up exactly like this:
+ *
+ *   --background            var(--brand-app)
+ *   --foreground            var(--brand-ink)
+ *   --card                  var(--brand-card)
+ *   --card-foreground       var(--brand-ink)
+ *   --card-alt              var(--brand-card-alt)
+ *   --popover               var(--brand-card)
+ *   --popover-foreground    var(--brand-ink)
+ *   --primary               var(--brand-accent)        FILL ONLY (2.42:1 as copy)
+ *   --primary-foreground    var(--brand-on-accent)     NEVER var(--brand-ink):
+ *                                                      identical in light, but
+ *                                                      invisible on orange in dark
+ *   --accent-fg             var(--brand-accent-fg)     accent-coloured COPY
+ *   --accent-soft           var(--brand-accent-soft)   low-opacity accent wash
+ *   --secondary             var(--brand-surface-alt)
+ *   --secondary-foreground  var(--brand-subtle)
+ *   --muted                 var(--brand-surface-alt)
+ *   --muted-foreground      var(--brand-muted)
+ *   --accent                var(--brand-overlay-soft)  hover/press wash
+ *   --accent-foreground     var(--brand-ink)
+ *   --chrome                var(--brand-nav-pill)      dark in BOTH themes
+ *   --chrome-foreground     var(--brand-chrome-fg)     the only copy colour on --chrome
+ *   --chrome-muted          var(--brand-chrome-muted)  inactive copy on --chrome
+ *   --border                var(--brand-border)
+ *   --input                 var(--brand-border)
+ *   --ring                  var(--brand-focus-ring)
+ *   --scrim                 var(--brand-scrim)
+ *
+ * `--destructive` has no brand token. It is defined here as a READABLE red so
+ * `text-destructive` is always safe; `design.json`'s vivid `semantic.danger`
+ * (#FF4D4F) is a status FILL and fails AA as copy — do not map it onto
+ * `--destructive`.
+ */
+:root {
+	--background: oklch(1 0 0);
+	--foreground: oklch(0.145 0 0);
+	--card: oklch(1 0 0);
+	--card-foreground: oklch(0.145 0 0);
+	--card-alt: oklch(0.97 0 0);
+	--popover: oklch(1 0 0);
+	--popover-foreground: oklch(0.145 0 0);
+	--primary: oklch(0.205 0 0);
+	--primary-foreground: oklch(0.985 0 0);
+	/* Accent-coloured COPY. Never a large fill. */
+	--accent-fg: oklch(0.205 0 0);
+	/* Low-opacity accent wash behind selected chips / focus halos. */
+	--accent-soft: oklch(0.97 0 0);
+	--secondary: oklch(0.97 0 0);
+	--secondary-foreground: oklch(0.205 0 0);
+	--muted: oklch(0.97 0 0);
+	--muted-foreground: oklch(0.556 0 0);
+	--accent: oklch(0.97 0 0);
+	--accent-foreground: oklch(0.205 0 0);
+	/* Dark chrome (bottom nav, tooltip bubble, selected chip). */
+	--chrome: oklch(0.145 0 0);
+	--chrome-foreground: oklch(0.985 0 0);
+	--chrome-muted: oklch(0.78 0 0);
+	--destructive: #c0202a;
+	--destructive-foreground: oklch(0.985 0 0);
+	--border: oklch(0.922 0 0);
+	--input: oklch(0.922 0 0);
+	--ring: oklch(0.708 0 0);
+	--scrim: rgba(1, 4, 9, 0.35);
+	--chart-1: oklch(0.72 0.17 44);
+	--chart-2: oklch(0.75 0.14 165);
+	--chart-3: oklch(0.62 0.16 265);
+	--chart-4: oklch(0.82 0.11 300);
+	--chart-5: oklch(0.81 0.15 85);
+	/*
+	 * design.json `shape.radius`: xs 8 / sm 12 / md 16 / lg 20 / xl 28 / pill 999.
+	 * 16px is the base, so the ladder below lands on every value the spec names.
+	 * qpadel uses `--radius: 0` — brnit is the opposite by design.
+	 */
+	--radius: 1rem;
+	--sidebar: oklch(0.985 0 0);
+	--sidebar-foreground: oklch(0.145 0 0);
+	--sidebar-primary: oklch(0.205 0 0);
+	--sidebar-primary-foreground: oklch(0.985 0 0);
+	--sidebar-accent: oklch(0.97 0 0);
+	--sidebar-accent-foreground: oklch(0.205 0 0);
+	--sidebar-border: oklch(0.922 0 0);
+	--sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+	--background: oklch(0.145 0 0);
+	--foreground: oklch(0.985 0 0);
+	--card: oklch(0.205 0 0);
+	--card-foreground: oklch(0.985 0 0);
+	--card-alt: oklch(0.249 0 0);
+	--popover: oklch(0.205 0 0);
+	--popover-foreground: oklch(0.985 0 0);
+	--primary: oklch(0.87 0 0);
+	--primary-foreground: oklch(0.205 0 0);
+	--accent-fg: oklch(0.87 0 0);
+	--accent-soft: oklch(0.269 0 0);
+	--secondary: oklch(0.269 0 0);
+	--secondary-foreground: oklch(0.985 0 0);
+	--muted: oklch(0.269 0 0);
+	--muted-foreground: oklch(0.708 0 0);
+	--accent: oklch(0.371 0 0);
+	--accent-foreground: oklch(0.985 0 0);
+	--chrome: oklch(0.269 0 0);
+	--chrome-foreground: oklch(0.985 0 0);
+	--chrome-muted: oklch(0.78 0 0);
+	--destructive: #ff8a80;
+	--destructive-foreground: oklch(0.145 0 0);
+	--border: oklch(1 0 0 / 10%);
+	--input: oklch(1 0 0 / 15%);
+	--ring: oklch(0.556 0 0);
+	--scrim: rgba(0, 0, 0, 0.6);
+	--chart-1: oklch(0.72 0.17 44);
+	--chart-2: oklch(0.75 0.14 165);
+	--chart-3: oklch(0.62 0.16 265);
+	--chart-4: oklch(0.82 0.11 300);
+	--chart-5: oklch(0.81 0.15 85);
+	--sidebar: oklch(0.205 0 0);
+	--sidebar-foreground: oklch(0.985 0 0);
+	--sidebar-primary: oklch(0.488 0.243 264.376);
+	--sidebar-primary-foreground: oklch(0.985 0 0);
+	--sidebar-accent: oklch(0.269 0 0);
+	--sidebar-accent-foreground: oklch(0.985 0 0);
+	--sidebar-border: oklch(1 0 0 / 10%);
+	--sidebar-ring: oklch(0.556 0 0);
+}
+
+@theme inline {
+	--font-sans: "General Sans", "General Sans Variable", system-ui,
+		-apple-system, "Segoe UI", Roboto, sans-serif;
+
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-card-alt: var(--card-alt);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-accent-fg: var(--accent-fg);
+	--color-accent-soft: var(--accent-soft);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-chrome: var(--chrome);
+	--color-chrome-foreground: var(--chrome-foreground);
+	--color-chrome-muted: var(--chrome-muted);
+	--color-destructive: var(--destructive);
+	--color-destructive-foreground: var(--destructive-foreground);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+	--color-scrim: var(--scrim);
+	--color-chart-1: var(--chart-1);
+	--color-chart-2: var(--chart-2);
+	--color-chart-3: var(--chart-3);
+	--color-chart-4: var(--chart-4);
+	--color-chart-5: var(--chart-5);
+	--color-sidebar: var(--sidebar);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar-primary: var(--sidebar-primary);
+	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-ring: var(--sidebar-ring);
+
+	/* design.json shape.radius, derived from the 16px base. */
+	--radius-xs: calc(var(--radius) - 8px); /*  8px */
+	--radius-sm: calc(var(--radius) - 4px); /* 12px */
+	--radius-md: var(--radius); /* 16px — cards' settingsRow, icon tiles */
+	--radius-lg: calc(var(--radius) + 4px); /* 20px — Card.base, PromoBanner */
+	--radius-xl: calc(var(--radius) + 8px); /* 24px — feature / analytics cards */
+	--radius-2xl: calc(var(--radius) + 12px); /* 28px — dialogs, sheets */
+	--radius-3xl: calc(var(--radius) + 16px); /* 32px */
+	--radius-4xl: calc(var(--radius) + 24px); /* 40px */
+
+	/*
+	 * design.json elevation.shadows. The colour comes from `--brand-shadow`, so
+	 * the tint follows the theme (warm ink at 12% in light, opaque black in
+	 * dark, where a tinted shadow would vanish on charcoal).
+	 */
+	--shadow-soft: 0 6px 18px 0 var(--brand-shadow);
+	--shadow-float: 0 10px 28px 0 var(--brand-shadow);
+
+	/* design.json motion. */
+	--ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+	--ease-emphasized: cubic-bezier(0.2, 0.9, 0.2, 1);
+	--default-transition-duration: 180ms;
+	--default-transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@layer base {
+	* {
+		@apply border-border outline-ring/50;
+	}
+	html {
+		@apply font-sans;
+	}
+	/*
+	 * design.json `typography.typeScale.body` is 14px/20 at weight 500 — brnit's
+	 * comfortable default, where qpadel runs `text-xs`.
+	 */
+	body {
+		@apply bg-background font-sans text-foreground text-sm;
+	}
+}

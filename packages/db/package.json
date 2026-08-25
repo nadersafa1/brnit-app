@@ -32,11 +32,12 @@
     "db:migrate:deploy": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:seed": "bun run src/seed.ts",
-    "db:deploy": "bun run db:migrate:deploy && bun run db:seed",
+    "db:deploy": "bun run db:migrate:deploy",
     "check-types": "tsc --noEmit",
     "test": "bun test"
   },
   "dependencies": {
+    "@brnit/domain": "workspace:*",
     "@brnit/env": "workspace:*",
     "dotenv": "catalog:",
     "drizzle-orm": "catalog:",
