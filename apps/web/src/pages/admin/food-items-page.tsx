@@ -25,7 +25,7 @@ import {
 	TableRow,
 } from "@brnit/ui/components/table";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { PlusIcon, UtensilsCrossedIcon } from "lucide-react";
 import { useState } from "react";
 
@@ -56,6 +56,11 @@ const MACRO_COLUMNS = [
 	{ column: "fat", label: "Fat" },
 ] as const satisfies readonly { column: FoodItemSortBy; label: string }[];
 
+/**
+ * The whole row is clickable for the mouse, but the name is a real `<Link>` so
+ * the row is reachable by keyboard, announced as a link, and middle-clickable
+ * into a new tab. A row that is only an `onClick` is a dead end without a mouse.
+ */
 function FoodItemRow({
 	item,
 	onOpen,
@@ -63,7 +68,13 @@ function FoodItemRow({
 	return (
 		<TableRow className="cursor-pointer" onClick={() => onOpen(item.id)}>
 			<TableCell>
-				<p className="font-medium text-foreground">{item.name}</p>
+				<Link
+					className="font-medium text-foreground outline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-brand-accent"
+					params={{ foodItemId: item.id }}
+					to="/dashboard/admin/food-items/$foodItemId"
+				>
+					{item.name}
+				</Link>
 				<p className="truncate text-muted-foreground text-xs">
 					{item.categories.length > 0
 						? item.categories.map((category) => category.name).join(", ")

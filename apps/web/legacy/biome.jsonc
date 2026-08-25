@@ -1,0 +1,13 @@
+{
+	"$schema": "../../../node_modules/@biomejs/biome/configuration_schema.json",
+	// `apps/web/legacy` is the pre-overhaul Next.js tree, kept only as source
+	// material for the screens still to migrate. Nothing imports it: it is
+	// outside `tsconfig.json`'s `include`, Tailwind is told not to scan it
+	// (`@source not` in `src/index.css`), `bunfig.toml` keeps it out of
+	// `bun test`, and this nested config keeps it out of Biome. Delete the
+	// directory once the last screen has moved into `src/`.
+	"root": false,
+	"formatter": { "enabled": false },
+	"linter": { "enabled": false },
+	"assist": { "enabled": false }
+}

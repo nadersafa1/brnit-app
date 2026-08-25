@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { canAccessDirectAdminSection } from "@/lib/authorization/dashboard-access";
-import { requireSectionAccess } from "@/lib/route-guards";
+import { assertSectionAccess } from "@/lib/route-guards";
 
 /**
  * Was `app/dashboard/direct-admin/layout.tsx` (the `DashboardSegmentGate`).
@@ -11,11 +11,8 @@ import { requireSectionAccess } from "@/lib/route-guards";
  * to scope the writes to.
  */
 export const Route = createFileRoute("/dashboard/direct-admin")({
-	beforeLoad: ({ context, location }) =>
-		requireSectionAccess(
-			context.queryClient,
-			location.href,
-			canAccessDirectAdminSection
-		),
+	beforeLoad: ({ context }) => {
+		assertSectionAccess(context, canAccessDirectAdminSection);
+	},
 	component: Outlet,
 });

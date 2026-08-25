@@ -58,25 +58,32 @@ export function loadOrganizationContext(
 		.catch(() => ANONYMOUS_ORGANIZATION_CONTEXT);
 }
 
+/** What `/dashboard`'s `beforeLoad` adds to the context of every route beneath it. */
+export interface DashboardRouteContext {
+	organizationContext: OrganizationContextDto;
+	session: Session;
+}
+
 /**
- * A section gate: runs `predicate` against the session's app role and the
- * resolved organization context, and bounces to the dashboard when it fails.
+ * A section gate.
  *
- * The dashboard is the landing spot rather than an "access denied" screen
- * because the sidebar only offers a section the predicate already allows —
- * arriving here means a stale link or a role that changed mid-session.
+ * Reads the session and organization scope out of the **parent** context rather
+ * than fetching again: `/dashboard`'s `beforeLoad` has already resolved both by
+ * the time this runs, and re-fetching would put a second session round-trip on
+ * every admin navigation.
+ *
+ * A failure lands on the dashboard rather than an "access denied" screen,
+ * because the sidebar only ever offers a section the same predicate allows —
+ * getting here means a stale link or a role that changed mid-session.
  */
-export async function requireSectionAccess(
-	queryClient: QueryClient,
-	redirectTo: string,
+export function assertSectionAccess(
+	context: DashboardRouteContext,
 	predicate: (
 		appRole: string | null | undefined,
-		context: OrganizationContextDto
+		organizationContext: OrganizationContextDto
 	) => boolean
-): Promise<void> {
-	const session = await requireCompletedProfile(redirectTo);
-	const context = await loadOrganizationContext(queryClient);
-	if (!predicate(session.user.role, context)) {
+): void {
+	if (!predicate(context.session.user.role, context.organizationContext)) {
 		throw redirect({ to: "/dashboard" });
 	}
 }

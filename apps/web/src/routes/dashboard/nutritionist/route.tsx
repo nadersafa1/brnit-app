@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { canAccessNutritionistSection } from "@/lib/authorization/dashboard-access";
-import { requireSectionAccess } from "@/lib/route-guards";
+import { assertSectionAccess } from "@/lib/route-guards";
 
 /**
  * Was `app/dashboard/nutritionist/layout.tsx` (the `DashboardSegmentGate`).
@@ -10,11 +10,8 @@ import { requireSectionAccess } from "@/lib/route-guards";
  * nutritionist, or an org-role nutritionist with an active organization.
  */
 export const Route = createFileRoute("/dashboard/nutritionist")({
-	beforeLoad: ({ context, location }) =>
-		requireSectionAccess(
-			context.queryClient,
-			location.href,
-			canAccessNutritionistSection
-		),
+	beforeLoad: ({ context }) => {
+		assertSectionAccess(context, canAccessNutritionistSection);
+	},
 	component: Outlet,
 });

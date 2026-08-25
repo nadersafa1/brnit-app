@@ -38,11 +38,6 @@
       "types": "./src/*.ts",
       "import": "./src/*.ts",
       "default": "./src/*.ts"
-    },
-    "./*/*": {
-      "types": "./src/*/*.ts",
-      "import": "./src/*/*.ts",
-      "default": "./src/*/*.ts"
     }
   },
   "scripts": {

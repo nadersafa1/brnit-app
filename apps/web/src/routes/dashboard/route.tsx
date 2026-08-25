@@ -29,9 +29,14 @@ import {
  * is already in cache when the layout mounts instead of popping in a beat later.
  */
 export const Route = createFileRoute("/dashboard")({
+	// The return value is merged into the context of every route below this one,
+	// so the section gates can check a role without a second session round-trip.
 	beforeLoad: async ({ context, location }) => {
-		await requireCompletedProfile(location.href);
-		await loadOrganizationContext(context.queryClient);
+		const session = await requireCompletedProfile(location.href);
+		const organizationContext = await loadOrganizationContext(
+			context.queryClient
+		);
+		return { organizationContext, session };
 	},
 	component: DashboardLayout,
 });

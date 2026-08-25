@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "check-types": "tsc --noEmit",
-    "test": "bun test --preload ../../test-setup.ts src"
+    "test": "bun test --preload ../../test-setup.ts --preload ./test-setup.ts src"
   },
   "dependencies": {
     "@brnit/api": "workspace:*",
