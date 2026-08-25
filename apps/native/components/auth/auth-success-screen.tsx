@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Link, type Href } from 'expo-router'
 import { ScrollView, TouchableOpacity, View, StyleSheet, ScrollViewProps } from 'react-native'
-import { Text } from '@/components/ui'
+import { Text } from "@/components/ui/text";
 import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'

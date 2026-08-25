@@ -8,7 +8,7 @@ import { BottomNav } from '@/components/bottom-nav'
 import { EditProfileSheet, type EditProfileSheetRef } from '@/components/edit-profile-sheet'
 import { ProfileAppearanceCard } from '@/components/profile/profile-appearance-card'
 import { SettingsRow } from '@/components/profile/settings-row'
-import { Text } from '@/components/ui'
+import { Text } from "@/components/ui/text";
 import { authClient } from '@/lib/auth-client'
 import {
   alertDeleteAccountError,

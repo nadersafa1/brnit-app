@@ -1,5 +1,0 @@
-export { Colors, type ColorScheme, type ColorName } from './colors'
-export { spacing, type SpacingKey } from './spacing'
-export { fontSize, fontWeight, lineHeight, type FontSizeKey, type FontWeightKey } from './typography'
-export { radii, type RadiiKey } from './radii'
-export { shadows, shadowsLight, shadowsDark, type ShadowKey } from './shadows'

@@ -1,7 +1,7 @@
 import { Redirect } from 'expo-router'
 import { View, StyleSheet } from 'react-native'
 
-import { Spinner } from '@/components/ui'
+import { Spinner } from "@/components/ui/spinner";
 import { useColors } from '@/hooks/use-theme-color'
 import { authClient } from '@/lib/auth-client'
 import { useIsOnboarded } from '@/store/app-settings-store'

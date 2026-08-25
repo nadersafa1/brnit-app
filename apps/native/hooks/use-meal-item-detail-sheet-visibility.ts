@@ -1,6 +1,6 @@
 import { type RefObject, useEffect } from 'react'
 
-import type { AppBottomSheetRef } from '@/components/bottom-sheet'
+import type { AppBottomSheetRef } from "@/components/bottom-sheet/app-bottom-sheet";
 import type { MealItemDetailPayload } from '@/components/meal-item-detail-sheet/types'
 
 /**

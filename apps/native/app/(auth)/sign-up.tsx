@@ -4,8 +4,15 @@ import { useState } from 'react'
 import { Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { AuthSocialIconButtons, AuthSuccessScreen, DobPicker, PasswordInput, PrimaryButton, TextInput } from '@/components'
-import { FieldError, Spinner, Text } from '@/components/ui'
+import { AuthSocialIconButtons } from "@/components/auth/auth-social-icon-buttons";
+import { AuthSuccessScreen } from "@/components/auth/auth-success-screen";
+import { DobPicker } from "@/components/dob-picker";
+import { PasswordInput } from "@/components/password-input";
+import { TextInput } from "@/components/text-input";
+import { PrimaryButton } from "@/components/ui/primary-button";
+import { FieldError } from "@/components/ui/field-error";
+import { Spinner } from "@/components/ui/spinner";
+import { Text } from "@/components/ui/text";
 import { BETTER_AUTH_SOCIAL_CALLBACK_PATH } from '@/constants/better-auth-social'
 import { DEEP_LINKS } from '@/constants/deep-links'
 import { useColors, useShadows } from '@/hooks/use-theme-color'

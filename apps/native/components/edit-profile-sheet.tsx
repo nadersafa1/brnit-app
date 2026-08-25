@@ -3,9 +3,12 @@ import { View, StyleSheet, Pressable, Image, TextInput } from 'react-native'
 import type { BottomSheetFooterProps } from '@gorhom/bottom-sheet'
 import { Ionicons } from '@expo/vector-icons'
 
-import { AppBottomSheet, SheetFooter } from '@/components/bottom-sheet'
+import { AppBottomSheet } from "@/components/bottom-sheet/app-bottom-sheet";
+import { SheetFooter } from "@/components/bottom-sheet/sheet-footer";
 import { DobPicker } from '@/components/dob-picker'
-import { Button, Text, Spinner } from '@/components/ui'
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { Text } from "@/components/ui/text";
 import { useColors } from '@/hooks/use-theme-color'
 import { useEditProfileForm } from '@/hooks/use-edit-profile-form'
 import { spacing } from '@/theme/spacing'

@@ -9,7 +9,7 @@ import {
 } from 'react-native'
 
 import { CalendarWeekRow } from './calendar-week-row'
-import { Text } from '@/components/ui'
+import { Text } from "@/components/ui/text";
 import {
   CALENDAR_STRIP_VIEWABILITY_CONFIG,
   useCalendarStrip,

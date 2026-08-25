@@ -8,8 +8,9 @@ import dayjs from 'dayjs'
 import { Pressable, StyleSheet, View } from 'react-native'
 
 import { MealCard } from '@/components/meal-card'
-import { Spinner, Text } from '@/components/ui'
-import type { MealItemDetailPayload } from '@/components/meal-item-detail-sheet'
+import { Spinner } from "@/components/ui/spinner";
+import { Text } from "@/components/ui/text";
+import type { MealItemDetailPayload } from "@/components/meal-item-detail-sheet/types";
 import { useColors } from '@/hooks/use-theme-color'
 import { useUndoSwapsForSelectedDay } from '@/hooks/use-undo-swaps-for-selected-day'
 import type { CurrentDietPlanMeal, CurrentDietPlanMealItem } from '@/lib/api/member-types'

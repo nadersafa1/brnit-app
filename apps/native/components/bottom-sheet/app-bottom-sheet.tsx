@@ -3,7 +3,7 @@ import { View, StyleSheet } from 'react-native'
 import { BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import type { BottomSheetFooterProps } from '@gorhom/bottom-sheet'
 
-import { Text } from '@/components/ui'
+import { Text } from "@/components/ui/text";
 import { useColors } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
 

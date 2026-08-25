@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Pressable, View, StyleSheet } from 'react-native'
 
-import { Text } from '@/components/ui'
+import { Text } from "@/components/ui/text";
 import { useAppTheme } from '@/hooks/use-app-theme'
 import { useColors, useShadows } from '@/hooks/use-theme-color'
 import type { ThemePreference } from '@/store/theme-preference-store'

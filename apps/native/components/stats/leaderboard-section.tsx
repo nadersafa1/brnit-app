@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { View, StyleSheet } from 'react-native'
-import { Spinner, Text } from '@/components/ui'
+import { Spinner } from "@/components/ui/spinner";
+import { Text } from "@/components/ui/text";
 import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'

@@ -5,7 +5,9 @@
  */
 
 import { View, StyleSheet } from 'react-native'
-import { FlameIcon, Spinner, Text } from '@/components/ui'
+import { FlameIcon } from "@/components/ui/flame-icon";
+import { Spinner } from "@/components/ui/spinner";
+import { Text } from "@/components/ui/text";
 import { useColors } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
 

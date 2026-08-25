@@ -9,7 +9,8 @@ import { CalendarStrip } from '@/components/calendar-strip'
 import { HomeHeader } from '@/components/home-header'
 import { HomeMealsSection } from '@/components/home-meals-section'
 import { HomeProgressCard } from '@/components/home-progress-card'
-import { MealItemDetailSheet, type MealItemDetailPayload } from '@/components/meal-item-detail-sheet'
+import { MealItemDetailSheet } from "@/components/meal-item-detail-sheet/meal-item-detail-sheet";
+import { type MealItemDetailPayload } from "@/components/meal-item-detail-sheet/types";
 import { useConsumptionStreak } from '@/hooks/use-consumption-streak'
 import { useCurrentDietPlan } from '@/hooks/use-current-diet-plan'
 import { useSurfaceQueryErrorToast } from '@/hooks/use-surface-query-error-toast'

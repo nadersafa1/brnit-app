@@ -2,8 +2,9 @@ import { router } from 'expo-router'
 import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { PrimaryButton } from '@/components'
-import { FlameIcon, Text } from '@/components/ui'
+import { PrimaryButton } from "@/components/ui/primary-button";
+import { FlameIcon } from "@/components/ui/flame-icon";
+import { Text } from "@/components/ui/text";
 import { useColors } from '@/hooks/use-theme-color'
 import { useAppSettingsStore } from '@/store/app-settings-store'
 import { radii } from '@/theme/radii'

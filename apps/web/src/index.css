@@ -1,0 +1,113 @@
+@import "@brnit/ui/globals.css";
+
+/*
+ * `@brnit/ui/globals.css` scans `apps/**` for class names. `apps/web/legacy/**`
+ * is the pre-overhaul Next.js tree, kept only as source material for the
+ * remaining page migrations — it must not contribute utilities to the bundle.
+ */
+@source not "../legacy/**";
+
+/**
+ * Brnit app shell — brand tokens live in @brnit/brand/brand.css (via ui globals).
+ *
+ * Remaps every shadcn semantic var onto a `--brand-*` role, exactly as the
+ * contract at the top of `@brnit/ui/globals.css` prescribes. Both palettes are
+ * declared on the same selector list because `brand.css` already scopes the
+ * values by `:root` / `html.dark` — switching the theme is purely a `--brand-*`
+ * swap, so no component ever branches on the theme in JS.
+ *
+ * Copy-colour rules the token names encode:
+ *   - `bg-primary` is a FILL; its only legal copy colour is `text-primary-foreground`.
+ *   - accent-coloured COPY is `text-accent-fg` (`text-brand-accent-fg`), never `text-primary`.
+ *   - on `bg-chrome` (dark in both themes) use `text-chrome-foreground` / `text-chrome-muted`.
+ */
+:root,
+html.light,
+html.dark {
+	--background: var(--brand-app);
+	--foreground: var(--brand-ink);
+	--card: var(--brand-card);
+	--card-foreground: var(--brand-ink);
+	--card-alt: var(--brand-card-alt);
+	--popover: var(--brand-card);
+	--popover-foreground: var(--brand-ink);
+	--primary: var(--brand-accent);
+	--primary-foreground: var(--brand-on-accent);
+	--accent-fg: var(--brand-accent-fg);
+	--accent-soft: var(--brand-accent-soft);
+	--secondary: var(--brand-surface-alt);
+	--secondary-foreground: var(--brand-subtle);
+	--muted: var(--brand-surface-alt);
+	--muted-foreground: var(--brand-muted);
+	--accent: var(--brand-overlay-soft);
+	--accent-foreground: var(--brand-ink);
+	--chrome: var(--brand-nav-pill);
+	--chrome-foreground: var(--brand-chrome-fg);
+	--chrome-muted: var(--brand-chrome-muted);
+	--border: var(--brand-border);
+	--input: var(--brand-border);
+	--ring: var(--brand-focus-ring);
+	--scrim: var(--brand-scrim);
+	--sidebar: var(--brand-card);
+	--sidebar-foreground: var(--brand-ink);
+	--sidebar-primary: var(--brand-accent);
+	--sidebar-primary-foreground: var(--brand-on-accent);
+	--sidebar-accent: var(--brand-overlay-soft);
+	--sidebar-accent-foreground: var(--brand-ink);
+	--sidebar-border: var(--brand-border);
+	--sidebar-ring: var(--brand-focus-ring);
+}
+
+/**
+ * Re-exposes the brand palette as Tailwind utilities, so app chrome can name a
+ * role explicitly (`bg-brand-card`, `text-brand-muted`) while `@brnit/ui`
+ * internals keep using the shadcn vocabulary above. Both resolve to the same
+ * values — this is deliberate, not duplication.
+ */
+@theme inline {
+	--color-brand-accent: var(--brand-accent);
+	--color-brand-accent-fg: var(--brand-accent-fg);
+	--color-brand-accent-light: var(--brand-accent-light);
+	--color-brand-accent-soft: var(--brand-accent-soft);
+	--color-brand-on-accent: var(--brand-on-accent);
+	--color-brand-ink: var(--brand-ink);
+	--color-brand-muted: var(--brand-muted);
+	--color-brand-subtle: var(--brand-subtle);
+	--color-brand-border: var(--brand-border);
+	--color-brand-surface-alt: var(--brand-surface-alt);
+	--color-brand-app: var(--brand-app);
+	--color-brand-card: var(--brand-card);
+	--color-brand-card-alt: var(--brand-card-alt);
+	--color-brand-card-on-brand: var(--brand-card-on-brand);
+	--color-brand-nav-pill: var(--brand-nav-pill);
+	--color-brand-nav-pill-muted: var(--brand-nav-pill-muted);
+	--color-brand-chrome-fg: var(--brand-chrome-fg);
+	--color-brand-chrome-muted: var(--brand-chrome-muted);
+	--color-brand-chrome-hover: var(--brand-chrome-hover);
+	--color-brand-chrome-overlay: var(--brand-chrome-overlay);
+	--color-brand-decorative: var(--brand-decorative);
+	--color-brand-overlay-soft: var(--brand-overlay-soft);
+	--color-brand-overlay-strong: var(--brand-overlay-strong);
+	--color-brand-scrim: var(--brand-scrim);
+}
+
+@layer base {
+	html,
+	body,
+	#app {
+		width: 100%;
+		max-width: 100%;
+	}
+
+	#app {
+		display: flex;
+		min-height: 100svh;
+		flex-direction: column;
+	}
+
+	body {
+		transition:
+			background-color 0.3s ease,
+			color 0.3s ease;
+	}
+}

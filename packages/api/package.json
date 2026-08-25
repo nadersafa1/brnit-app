@@ -57,6 +57,7 @@
     "@brnit/domain": "workspace:*",
     "@brnit/env": "workspace:*",
     "@brnit/logger": "workspace:*",
+    "@brnit/push": "workspace:*",
     "cloudinary": "^2.8.0",
     "drizzle-orm": "catalog:",
     "zod": "catalog:"

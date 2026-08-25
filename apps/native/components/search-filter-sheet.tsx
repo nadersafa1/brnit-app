@@ -2,8 +2,11 @@ import { forwardRef, useCallback } from 'react'
 import { View, StyleSheet, ScrollView, Pressable } from 'react-native'
 import type { BottomSheetFooterProps } from '@gorhom/bottom-sheet'
 
-import { AppBottomSheet, SheetFooter, type AppBottomSheetRef } from '@/components/bottom-sheet'
-import { Button, Spinner, Text } from '@/components/ui'
+import { AppBottomSheet, type AppBottomSheetRef } from "@/components/bottom-sheet/app-bottom-sheet";
+import { SheetFooter } from "@/components/bottom-sheet/sheet-footer";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { Text } from "@/components/ui/text";
 import { useFoodCategories } from '@/hooks/use-food-categories'
 import { useSearchFilterStore } from '@/store/search-filter-store'
 import { useColors } from '@/hooks/use-theme-color'

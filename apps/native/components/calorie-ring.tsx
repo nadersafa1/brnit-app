@@ -1,6 +1,6 @@
 import { View, StyleSheet } from 'react-native'
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg'
-import { Text } from '@/components/ui'
+import { Text } from "@/components/ui/text";
 import { useColors } from '@/hooks/use-theme-color'
 
 interface CalorieRingProps {

@@ -5,8 +5,8 @@
 import { useEffect, useRef } from 'react'
 import dayjs from 'dayjs'
 import { View, StyleSheet, Image } from 'react-native'
-import { AppBottomSheet, type AppBottomSheetRef } from '@/components/bottom-sheet'
-import { Text } from '@/components/ui'
+import { AppBottomSheet, type AppBottomSheetRef } from "@/components/bottom-sheet/app-bottom-sheet";
+import { Text } from "@/components/ui/text";
 import { useColors } from '@/hooks/use-theme-color'
 import type { RecentAssessmentItem } from '@/lib/api/recent-assessments'
 import { spacing } from '@/theme/spacing'

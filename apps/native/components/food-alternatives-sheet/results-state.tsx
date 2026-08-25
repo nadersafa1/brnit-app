@@ -1,5 +1,6 @@
 import { View, StyleSheet } from "react-native";
-import { Spinner, Text } from "@/components/ui";
+import { Spinner } from "@/components/ui/spinner";
+import { Text } from "@/components/ui/text";
 import { spacing } from "@/theme/spacing";
 import type { FoodItemAlternative } from "@/lib/api/member-food-types";
 import type { FoodUnit } from "@/lib/utils/numbers";

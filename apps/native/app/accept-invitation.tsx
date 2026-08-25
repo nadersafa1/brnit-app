@@ -4,7 +4,8 @@ import { Redirect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { View, StyleSheet } from 'react-native'
 
-import { Spinner, Text } from '@/components/ui'
+import { Spinner } from "@/components/ui/spinner";
+import { Text } from "@/components/ui/text";
 import { authClient } from '@/lib/auth-client'
 import { useColors } from '@/hooks/use-theme-color'
 import { showError } from '@/lib/feedback'

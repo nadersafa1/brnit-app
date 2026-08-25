@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native'
 
-import { Button } from '@/components/ui'
+import { Button } from "@/components/ui/button";
 import { spacing } from '@/theme/spacing'
 
 import type { MealItemDetailActionsProps } from './types'

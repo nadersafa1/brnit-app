@@ -5,8 +5,11 @@ import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { z } from 'zod'
 
-import { DobPicker, PrimaryButton } from '@/components'
-import { FieldError, Spinner, Text } from '@/components/ui'
+import { DobPicker } from "@/components/dob-picker";
+import { PrimaryButton } from "@/components/ui/primary-button";
+import { FieldError } from "@/components/ui/field-error";
+import { Spinner } from "@/components/ui/spinner";
+import { Text } from "@/components/ui/text";
 import { useColors } from '@/hooks/use-theme-color'
 import { authClient } from '@/lib/auth-client'
 import { isValidPastDob } from '@/lib/date-utils'

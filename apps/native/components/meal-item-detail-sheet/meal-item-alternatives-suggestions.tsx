@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native'
 
-import { Spinner, Text } from '@/components/ui'
+import { Spinner } from "@/components/ui/spinner";
+import { Text } from "@/components/ui/text";
 import type { FoodItemAlternative } from '@/lib/api/member-food-types'
 import { spacing } from '@/theme/spacing'
 

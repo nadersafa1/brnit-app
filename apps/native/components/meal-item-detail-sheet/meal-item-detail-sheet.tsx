@@ -1,11 +1,8 @@
 import type { BottomSheetFooterProps } from '@gorhom/bottom-sheet'
 import { useCallback, useRef, useState } from 'react'
 
-import {
-  AppBottomSheet,
-  SheetFooter,
-  type AppBottomSheetRef,
-} from '@/components/bottom-sheet'
+import { AppBottomSheet, type AppBottomSheetRef } from "@/components/bottom-sheet/app-bottom-sheet";
+import { SheetFooter } from "@/components/bottom-sheet/sheet-footer";
 import { useMealItemAlternatives } from '@/hooks/use-meal-item-alternatives'
 import { useMealItemDetailOverrideActions } from '@/hooks/use-meal-item-detail-override-actions'
 import { useMealItemDetailSheetVisibility } from '@/hooks/use-meal-item-detail-sheet-visibility'

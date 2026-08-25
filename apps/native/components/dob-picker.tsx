@@ -13,7 +13,7 @@ import {
 import { radii } from '@/theme/radii'
 import { spacing } from '@/theme/spacing'
 import { fontSize } from '@/theme/typography'
-import { Text } from '@/components/ui'
+import { Text } from "@/components/ui/text";
 
 export { formatDobForApi, formatDobForDisplay } from '@/lib/date-utils'
 

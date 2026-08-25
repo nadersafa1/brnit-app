@@ -1,6 +1,6 @@
 import { View, StyleSheet } from 'react-native'
 import { StreakBadge } from '@/components/streak-badge'
-import { Text } from '@/components/ui'
+import { Text } from "@/components/ui/text";
 import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'

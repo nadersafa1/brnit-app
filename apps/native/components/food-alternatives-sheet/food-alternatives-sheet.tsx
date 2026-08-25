@@ -6,7 +6,8 @@ import * as Clipboard from 'expo-clipboard'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
-import { Button, Text } from '@/components/ui'
+import { Button } from "@/components/ui/button";
+import { Text } from "@/components/ui/text";
 import { showError, showSuccess } from '@/lib/feedback'
 import { useColors } from '@/hooks/use-theme-color'
 import { useFoodItemAlternatives } from '@/hooks/use-food-item-alternatives'
@@ -18,7 +19,8 @@ import { quantitySchema, type QuantityFormValues } from './schema'
 import { InputState } from './input-state'
 import { ResultsState } from './results-state'
 import type { FoodAlternativesSheetProps, SheetState } from './types'
-import { AppBottomSheet, SheetFooter, type AppBottomSheetRef } from '@/components/bottom-sheet'
+import { AppBottomSheet, type AppBottomSheetRef } from "@/components/bottom-sheet/app-bottom-sheet";
+import { SheetFooter } from "@/components/bottom-sheet/sheet-footer";
 
 export function FoodAlternativesSheet({ foodItem, onClose }: Readonly<FoodAlternativesSheetProps>) {
   const colors = useColors()

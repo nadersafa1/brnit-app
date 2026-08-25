@@ -3,7 +3,9 @@ import { router } from 'expo-router'
 import { View, StyleSheet } from 'react-native'
 
 import { Container } from '@/components/container'
-import { Button, Surface, Text } from '@/components/ui'
+import { Button } from "@/components/ui/button";
+import { Surface } from "@/components/ui/surface";
+import { Text } from "@/components/ui/text";
 import { useColors } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'

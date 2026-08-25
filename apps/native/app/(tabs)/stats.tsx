@@ -4,7 +4,8 @@ import { View, StyleSheet, ScrollView, Pressable } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BottomNav } from '@/components/bottom-nav'
-import { Spinner, Text } from '@/components/ui'
+import { Spinner } from "@/components/ui/spinner";
+import { Text } from "@/components/ui/text";
 import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { authClient } from '@/lib/auth-client'
 import { useConsumptionStreak } from '@/hooks/use-consumption-streak'

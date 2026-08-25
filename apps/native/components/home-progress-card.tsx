@@ -9,7 +9,8 @@ import { View, StyleSheet } from 'react-native'
 import { CalorieRing } from '@/components/calorie-ring'
 import { MacroBar } from '@/components/macro-bar'
 import { StreakBadge } from '@/components/streak-badge'
-import { Spinner, Text } from '@/components/ui'
+import { Spinner } from "@/components/ui/spinner";
+import { Text } from "@/components/ui/text";
 import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'

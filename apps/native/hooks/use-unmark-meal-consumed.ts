@@ -3,7 +3,7 @@ import dayjs from 'dayjs'
 import { deleteMealConsumption } from '@/lib/api/delete-meal-consumption'
 import type { ConsumptionSlot } from '@/lib/api/consumption-slot'
 import { getApiErrorMessage } from '@/lib/api/error-message'
-import { ApiError } from '@/lib/api'
+import { ApiError } from "@/lib/api/types";
 import { ConsumptionDateOutOfAllowedWindowError, isWithinConsumptionDateWindow } from '@/lib/consumption-date-window'
 import { memberKeys } from '@/lib/queries/keys'
 import { showError, showSuccess } from '@/lib/feedback'

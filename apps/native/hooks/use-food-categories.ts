@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiFetch, API_ENDPOINTS } from "@/lib/api";
+import { apiFetch } from "@/lib/api/client";
+import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import { memberKeys } from "@/lib/queries/keys";
 import type { FoodCategoriesResponse } from "@/lib/api/member-food-types";
 

@@ -1,4 +1,5 @@
-import { Spinner, Text } from '@/components/ui'
+import { Spinner } from "@/components/ui/spinner";
+import { Text } from "@/components/ui/text";
 import { useMarkMealConsumed } from '@/hooks/use-mark-meal-consumed'
 import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { useUnmarkMealConsumed } from '@/hooks/use-unmark-meal-consumed'

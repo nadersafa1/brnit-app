@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native'
 
-import { Text } from '@/components/ui'
+import { Text } from "@/components/ui/text";
 import { formatQuantityWithUnit } from '@/lib/utils/numbers'
 import { spacing } from '@/theme/spacing'
 

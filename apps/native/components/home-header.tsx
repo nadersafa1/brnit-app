@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useState } from 'react'
 import { Image, Pressable, StyleSheet, View } from 'react-native'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { Text } from '@/components/ui'
+import { Text } from "@/components/ui/text";
 import { useColors, useShadows } from '@/hooks/use-theme-color'
 import { getGreetingMeta } from '@/lib/greeting'
 import { radii } from '@/theme/radii'

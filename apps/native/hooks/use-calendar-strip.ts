@@ -6,7 +6,7 @@ import {
   type ViewToken,
 } from 'react-native'
 
-import { generateWeeks } from '@/utils'
+import { generateWeeks } from "@/utils/horizontal-calendar";
 
 const INITIAL_WEEKS_COUNT = 104
 const LOAD_MORE_WEEKS_COUNT = 10

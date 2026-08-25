@@ -6,11 +6,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BottomNav } from '@/components/bottom-nav'
 import { FoodItemCard } from '@/components/food-item-card'
-import { FoodAlternativesSheet } from '@/components/food-alternatives-sheet'
+import { FoodAlternativesSheet } from "@/components/food-alternatives-sheet/food-alternatives-sheet";
 import { SearchFilterSheet } from '@/components/search-filter-sheet'
-import type { AppBottomSheetRef } from '@/components/bottom-sheet'
+import type { AppBottomSheetRef } from "@/components/bottom-sheet/app-bottom-sheet";
 import type { FoodItem } from '@/lib/api/member-food-types'
-import { Input, Spinner, Text } from '@/components/ui'
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
+import { Text } from "@/components/ui/text";
 import { useFoodCategories } from '@/hooks/use-food-categories'
 import { useFoodItems } from '@/hooks/use-food-items'
 import { useColors, useShadows } from '@/hooks/use-theme-color'

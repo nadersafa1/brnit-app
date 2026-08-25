@@ -4,8 +4,10 @@ import { useState } from 'react'
 import { ScrollView, TouchableOpacity, View, StyleSheet } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { PasswordInput, PrimaryButton } from '@/components'
-import { FieldError, Text } from '@/components/ui'
+import { PasswordInput } from "@/components/password-input";
+import { PrimaryButton } from "@/components/ui/primary-button";
+import { FieldError } from "@/components/ui/field-error";
+import { Text } from "@/components/ui/text";
 import { authClient } from '@/lib/auth-client'
 import { showError, showSuccess } from '@/lib/feedback'
 import { useColors, useShadows } from '@/hooks/use-theme-color'

@@ -1,6 +1,8 @@
 import { View, StyleSheet } from 'react-native'
 import { Controller, UseFormReturn } from 'react-hook-form'
-import { Input, Text, FieldError } from '@/components/ui'
+import { FieldError } from "@/components/ui/field-error";
+import { Input } from "@/components/ui/input";
+import { Text } from "@/components/ui/text";
 import { spacing } from '@/theme/spacing'
 import type { FoodItem } from '@/lib/api/member-food-types'
 import type { QuantityFormValues } from './schema'

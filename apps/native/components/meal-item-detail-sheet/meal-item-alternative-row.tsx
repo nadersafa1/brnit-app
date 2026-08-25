@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, View } from "react-native";
-import { Text } from "@/components/ui";
+import { Text } from "@/components/ui/text";
 import { useColors } from "@/hooks/use-theme-color";
 import type { FoodItemAlternative } from "@/lib/api/member-food-types";
 import { formatQuantityWithUnit } from "@/lib/utils/numbers";

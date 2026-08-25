@@ -1,5 +1,5 @@
 import { StyleSheet, Pressable, View } from 'react-native'
-import { Text } from '@/components/ui'
+import { Text } from "@/components/ui/text";
 import type { CurrentDietPlanMealItem } from '@/lib/api/member-types'
 import { formatCalorieDisplay, formatQuantityWithUnit, roundUpToTenth } from '@/lib/utils/numbers'
 import { spacing } from '@/theme/spacing'

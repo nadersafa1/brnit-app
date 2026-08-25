@@ -2,8 +2,12 @@ import { useState } from 'react'
 import { View, StyleSheet } from 'react-native'
 
 import { authClient } from '@/lib/auth-client'
-import { PasswordInput, TextInput } from '@/components'
-import { Button, Surface, FieldError, Text } from '@/components/ui'
+import { PasswordInput } from "@/components/password-input";
+import { TextInput } from "@/components/text-input";
+import { Button } from "@/components/ui/button";
+import { FieldError } from "@/components/ui/field-error";
+import { Surface } from "@/components/ui/surface";
+import { Text } from "@/components/ui/text";
 import { showError, showSuccess } from '@/lib/feedback'
 import { spacing } from '@/theme/spacing'
 

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
 import { useCallback } from 'react'
 import { View, StyleSheet, Modal, FlatList, Pressable } from 'react-native'
-import { Text } from '@/components/ui'
+import { Text } from "@/components/ui/text";
 import { useColors } from '@/hooks/use-theme-color'
 import { spacing } from '@/theme/spacing'
 import { radii } from '@/theme/radii'
