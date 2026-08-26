@@ -149,6 +149,7 @@ nginx. PostgreSQL is not in the compose file — it comes from
 
 | Where | What |
 | --- | --- |
+| `docs/handoff/README.md` | what the stack overhaul changed, with screenshots — start here |
 | `docs/migration/architecture.md` | the target architecture and the decisions behind it |
 | `docs/migration/api-surface.md` | every endpoint, guard and business rule |
 | `docs/migration/data-layer.md` | the schema, and why the project stays on Drizzle |
