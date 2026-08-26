@@ -1,48 +1,47 @@
-import dayjs, { Dayjs } from 'dayjs'
-import { View, StyleSheet } from 'react-native'
+import { StyleSheet, View } from "react-native";
 
-import { DayPill } from './day-pill'
+import { isSameLocalDay, toLocalDateString } from "@/lib/date/calendar-date";
+import { formatWeekdayShort } from "@/lib/date/format-date";
+import { expandWeekDays } from "@/utils/horizontal-calendar";
+
+import { DayPill } from "./day-pill";
 
 export interface CalendarWeekRowProps {
-  weekStart: Dayjs
-  selectedDate: Date
-  weekWidth: number
-  dayPillWidth: number
-  onDayPress: (date: Date) => void
+	dayPillWidth: number;
+	onDayPress: (date: Date) => void;
+	selectedDate: Date;
+	weekStart: Date;
+	weekWidth: number;
 }
 
 /** Renders a single week row: 7 day pills. */
 export function CalendarWeekRow({
-  weekStart,
-  selectedDate,
-  weekWidth,
-  dayPillWidth,
-  onDayPress,
+	weekStart,
+	selectedDate,
+	weekWidth,
+	dayPillWidth,
+	onDayPress,
 }: Readonly<CalendarWeekRowProps>) {
-  const days = Array.from({ length: 7 }, (_, i) => weekStart.add(i, 'day'))
+	const days = expandWeekDays(weekStart);
 
-  return (
-    <View style={[styles.row, { width: weekWidth }]}>
-      {days.map((day) => {
-        const date = day.toDate()
-        const isSelected = dayjs(selectedDate).isSame(day, 'day')
-        return (
-          <View key={day.format('YYYY-MM-DD')} style={{ width: dayPillWidth }}>
-            <DayPill
-              date={date}
-              day={day.format('ddd')}
-              isSelected={isSelected}
-              onPress={() => onDayPress(date)}
-            />
-          </View>
-        )
-      })}
-    </View>
-  )
+	return (
+		<View style={[styles.row, { width: weekWidth }]}>
+			{days.map((day) => (
+				<View key={toLocalDateString(day)} style={{ width: dayPillWidth }}>
+					<DayPill
+						date={day}
+						day={formatWeekdayShort(day)}
+						isSelected={isSameLocalDay(selectedDate, day)}
+						onPress={() => onDayPress(day)}
+					/>
+				</View>
+			))}
+		</View>
+	);
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-  },
-})
+	row: {
+		flexDirection: "row",
+	},
+});

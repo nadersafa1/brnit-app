@@ -1,29 +1,36 @@
+import type { DietPlanMealConsumptionDto } from "@brnit/api";
+
 import { apiFetch } from "./client";
 import { API_ENDPOINTS } from "./endpoints";
 import type { ApiFetchOptions } from "./types";
 
-export type MarkMealConsumedParams = {
-  dietPlanAssignmentId: string;
-  dietPlanMealId: string;
-  /** ISO datetime for the consumed day so backend consumedDate matches the selected date. */
-  consumedAt: string;
-};
+export interface MarkMealConsumedParams {
+	/**
+	 * The instant the meal was eaten, sent as **12:00 device-local** so the
+	 * server's UTC `consumedAt.slice(0, 10)` lands on the day the member picked.
+	 * Build it with `localDateStringToNoonInstant`.
+	 */
+	consumedAt: string;
+	dietPlanAssignmentId: string;
+	dietPlanMealId: string;
+}
 
-type CreateConsumptionResponse = { data: { id: string } };
-
-/** POST to create a meal consumption (mark as consumed). Uses usePlannedItems so backend fills items from plan. */
-export async function markMealConsumed(
-  params: MarkMealConsumedParams,
-  options?: Pick<ApiFetchOptions, "signal">
-): Promise<CreateConsumptionResponse> {
-  const body = {
-    dietPlanAssignmentId: params.dietPlanAssignmentId,
-    dietPlanMealId: params.dietPlanMealId,
-    consumedAt: params.consumedAt,
-    usePlannedItems: true,
-  };
-  return apiFetch<CreateConsumptionResponse>(
-    API_ENDPOINTS.member.dietPlanMealConsumptions,
-    { method: "POST", body, signal: options?.signal }
-  );
+/**
+ * Marks a meal eaten. `usePlannedItems` lets the server snapshot the slot's
+ * planned items (override-aware) instead of the client re-sending them.
+ */
+export function markMealConsumed(
+	params: MarkMealConsumedParams,
+	options?: Pick<ApiFetchOptions, "signal">
+): Promise<{ data: DietPlanMealConsumptionDto }> {
+	const body = {
+		consumedAt: params.consumedAt,
+		dietPlanAssignmentId: params.dietPlanAssignmentId,
+		dietPlanMealId: params.dietPlanMealId,
+		usePlannedItems: true,
+	};
+	return apiFetch<{ data: DietPlanMealConsumptionDto }>(
+		API_ENDPOINTS.member.dietPlanMealConsumptions,
+		{ method: "POST", body, signal: options?.signal }
+	);
 }

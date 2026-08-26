@@ -1,33 +1,33 @@
-import { Redirect } from 'expo-router'
-import { View, StyleSheet } from 'react-native'
+import { Redirect } from "expo-router";
+import { StyleSheet, View } from "react-native";
 
-import { Spinner } from '@/components/ui'
-import { authClient } from '@/lib/auth-client'
-import { useColors } from '@/hooks/use-theme-color'
+import { Spinner } from "@/components/ui/spinner";
+import { useColors } from "@/hooks/use-theme-color";
+import { authClient } from "@/lib/auth-client";
 
 export default function AuthScreen() {
-  const colors = useColors()
-  const { data: session, isPending } = authClient.useSession()
+	const colors = useColors();
+	const { data: session, isPending } = authClient.useSession();
 
-  if (isPending) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.appBg }]}>
-        <Spinner size='lg' />
-      </View>
-    )
-  }
+	if (isPending) {
+		return (
+			<View style={[styles.container, { backgroundColor: colors.appBg }]}>
+				<Spinner size="lg" />
+			</View>
+		);
+	}
 
-  if (session?.user) {
-    return <Redirect href='/(tabs)' />
-  }
+	if (session?.user) {
+		return <Redirect href="/(tabs)" />;
+	}
 
-  return <Redirect href='/(auth)/login' />
+	return <Redirect href="/(auth)/login" />;
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-})
+	container: {
+		flex: 1,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+});

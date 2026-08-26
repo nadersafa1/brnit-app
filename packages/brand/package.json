@@ -1,0 +1,23 @@
+{
+  "name": "@brnit/brand",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/tokens.ts"
+    },
+    "./tokens": {
+      "default": "./src/tokens.ts"
+    },
+    "./brand.css": "./src/brand.css",
+    "./assets/*": "./assets/*"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@brnit/config": "workspace:*",
+    "typescript": "^6.0.3"
+  }
+}

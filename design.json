@@ -3,11 +3,7 @@
   "meta": {
     "name": "Burn App — Pastel Soft UI Design System",
     "purpose": "High-level creative-direction design guidelines + component recipes so an AI can reliably replicate the look across this repo (web + native).",
-    "platforms": [
-      "mobile-first",
-      "web",
-      "native"
-    ],
+    "platforms": ["mobile-first", "web", "native"],
     "aestheticSummary": [
       "Soft, airy, pastel UI with high-contrast black typography and a vivid orange accent.",
       "Rounded, friendly shapes (large radii, pills, capsules).",
@@ -53,21 +49,7 @@
     },
     "globalSpacing": {
       "unitPx": 4,
-      "scalePx": [
-        0,
-        4,
-        8,
-        12,
-        16,
-        20,
-        24,
-        28,
-        32,
-        40,
-        48,
-        56,
-        64
-      ],
+      "scalePx": [0, 4, 8, 12, 16, 20, 24, 28, 32, 40, 48, 56, 64],
       "sectionGaps": {
         "betweenSectionsPx": 24,
         "betweenCardsPx": 16,
@@ -144,12 +126,7 @@
   "typography": {
     "fontFamily": {
       "primary": "General Sans",
-      "fallback": [
-        "system-ui",
-        "-apple-system",
-        "Segoe UI",
-        "Roboto"
-      ]
+      "fallback": ["system-ui", "-apple-system", "Segoe UI", "Roboto"]
     },
     "weights": {
       "regular": 400,
@@ -576,4 +553,3 @@
     ]
   }
 }
-

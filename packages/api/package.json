@@ -1,0 +1,65 @@
+{
+  "name": "@brnit/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./http-error": {
+      "types": "./src/http-error.ts",
+      "import": "./src/http-error.ts",
+      "default": "./src/http-error.ts"
+    },
+    "./pagination/offset": {
+      "types": "./src/pagination/offset.ts",
+      "import": "./src/pagination/offset.ts",
+      "default": "./src/pagination/offset.ts"
+    },
+    "./pagination/query-params": {
+      "types": "./src/pagination/query-params.ts",
+      "import": "./src/pagination/query-params.ts",
+      "default": "./src/pagination/query-params.ts"
+    },
+    "./context": {
+      "types": "./src/context.ts",
+      "import": "./src/context.ts",
+      "default": "./src/context.ts"
+    },
+    "./organization/context": {
+      "types": "./src/organization/context.ts",
+      "import": "./src/organization/context.ts",
+      "default": "./src/organization/context.ts"
+    },
+    "./*": {
+      "types": "./src/*.ts",
+      "import": "./src/*.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "test": "bun test --preload ../../test-setup.ts src"
+  },
+  "dependencies": {
+    "@brnit/audit": "workspace:*",
+    "@brnit/auth": "workspace:*",
+    "@brnit/datetime": "workspace:*",
+    "@brnit/db": "workspace:*",
+    "@brnit/domain": "workspace:*",
+    "@brnit/env": "workspace:*",
+    "@brnit/logger": "workspace:*",
+    "@brnit/push": "workspace:*",
+    "cloudinary": "^2.8.0",
+    "drizzle-orm": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@brnit/config": "workspace:*",
+    "@types/bun": "catalog:",
+    "typescript": "^6.0.3"
+  }
+}

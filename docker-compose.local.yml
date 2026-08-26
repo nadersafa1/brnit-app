@@ -1,0 +1,71 @@
+# Local override: publish the API on localhost and run Postgres in-stack.
+# The `migrate` service runs `db:deploy` (drizzle migrate → seed) before
+# api/worker start.
+#
+# Not used on Dokploy — Traefik reaches container port 3000 directly and
+# Postgres is a separate Dokploy service.
+#
+# Usage:
+#   cp .env.compose.example .env
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+#
+# Optional env (with defaults):
+#   POSTGRES_USER=brnit
+#   POSTGRES_PASSWORD=brnit
+#   POSTGRES_DB=brnit
+#   POSTGRES_HOST_PORT=55432  # change if 55432 is already taken on your host
+#   API_PORT=13000
+
+x-database-url: &database-url
+  DATABASE_URL: postgresql://${POSTGRES_USER:-brnit}:${POSTGRES_PASSWORD:-brnit}@postgres:5432/${POSTGRES_DB:-brnit}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-brnit}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-brnit}
+      POSTGRES_DB: ${POSTGRES_DB:-brnit}
+    ports:
+      - "${POSTGRES_HOST_PORT:-55432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-brnit} -d ${POSTGRES_DB:-brnit}",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - internal
+    restart: unless-stopped
+
+  migrate:
+    environment:
+      <<: *database-url
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    ports:
+      - "${API_PORT:-13000}:3000"
+    environment:
+      <<: *database-url
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    environment:
+      <<: *database-url
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

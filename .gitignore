@@ -49,3 +49,12 @@ coverage
 .cache
 tmp
 temp
+
+# Bun
+bun.lockb
+
+# Vite
+.vite
+
+# Expo
+.expo
