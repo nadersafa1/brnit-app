@@ -1,67 +1,81 @@
+import {
+	type BrandColorScheme,
+	brandColors,
+	brandCore,
+} from "@brnit/brand/tokens";
+
+/**
+ * The native palette: `@brnit/brand` roles plus the semantics that have no
+ * brand token.
+ *
+ * The values are **not** forked here — `brandColors` is the shipped palette and
+ * this file only adds what it deliberately leaves out. Three invariants travel
+ * with those roles and are enforced by name at every call site:
+ *
+ * 1. `accent` is a **fill**. It measures 2.42:1 on `appBg` and never carries copy.
+ * 2. `accentFg` is the accent colour for **copy and icons** on light or dark surfaces.
+ * 3. `onAccent` is the **only** legal copy colour on an accent fill (7.26:1 light,
+ *    7.90:1 dark). `design.json` asks for white there; white is 2.83:1 and was rejected.
+ *
+ * A fourth comes from the chrome roles: `navPill` is dark in both themes, so copy
+ * on it is `chromeFg` / `chromeMuted`, never `ink` / `muted`.
+ */
+
+/** Re-exported for the few places that need a raw designer value. */
+export const brand = brandCore;
+
+/**
+ * Status colours and absolutes. None of these has a brand token — the brand
+ * palette covers surfaces, copy and the accent, and stops there.
+ *
+ * Each status role comes in two flavours for the same reason `accent` does:
+ * the plain name is a **fill** (`design.json`'s `semantic.*`, which fails AA as
+ * copy), and `*Fg` is the readable version for text and icons. Web makes the
+ * same split — its `--destructive` is the readable red, never `#FF4D4F`.
+ */
+const nativeSemantic = {
+	light: {
+		/** Status fill: chips, dots, bar segments. Not a copy colour. */
+		success: "#35C48B",
+		/** Success copy and icons. 5.36:1 on `card`, 4.58:1 on `appBg`. */
+		successFg: "#0F7A4F",
+		/** Low-opacity green wash behind a success chip. Not for copy. */
+		successSoft: "rgba(53, 196, 139, 0.15)",
+		/** Status fill. Not a copy colour. */
+		warning: "#FFB020",
+		/** Status fill. Not a copy colour. */
+		danger: "#FF4D4F",
+		/** Error copy and icons. 6.03:1 on `card`, 5.16:1 on `appBg`. */
+		dangerFg: "#C0202A",
+		/** Status fill. Not a copy colour. */
+		info: "#2F80ED",
+		white: "#FFFFFF",
+		black: "#000000",
+		transparent: "transparent",
+	},
+	dark: {
+		success: "#3DD69A",
+		/** 11.40:1 on `appBg`. */
+		successFg: "#5FE0A8",
+		/** Low-opacity green wash behind a success chip. Not for copy. */
+		successSoft: "rgba(61, 214, 154, 0.22)",
+		warning: "#FFC14D",
+		danger: "#FF6B6E",
+		/** 8.29:1 on `appBg`. Matches web's dark `--destructive`. */
+		dangerFg: "#FF8A80",
+		info: "#5B9EF5",
+		white: "#FFFFFF",
+		black: "#000000",
+		transparent: "transparent",
+	},
+} as const;
+
 export const Colors = {
-  light: {
-    // Brand Colors
-    accent: '#FD6E20',
-    accentLight: '#FF8F50',
-    pastelPurple: '#C9BEFA',
+	light: { ...brandColors.light, ...nativeSemantic.light },
+	dark: { ...brandColors.dark, ...nativeSemantic.dark },
+} as const;
 
-    // Neutral Colors
-    ink: '#111111',
-    muted: '#6B6B6B',
-    subtle: '#3A3A3A',
-    border: '#E8E8E8',
-    surfaceAlt: '#F2F2F2',
-    offWhite: '#F7F7F7',
-
-    // Surface Colors
-    appBg: '#FCE9E7',
-    card: '#FFFFFF',
-    navPill: '#0B0B0B',
-
-    // Semantic Colors
-    success: '#35C48B',
-    warning: '#FFB020',
-    danger: '#FF4D4F',
-    info: '#2F80ED',
-
-    // Base Colors
-    white: '#FFFFFF',
-    black: '#000000',
-    transparent: 'transparent',
-  },
-  dark: {
-    // Brand (slightly tuned for contrast on charcoal)
-    accent: '#FF7A2E',
-    accentLight: '#FF9A5C',
-    pastelPurple: '#B8A9F0',
-
-    // Neutrals — warm charcoal stack (matches light peach/coral family)
-    ink: '#F4F2EF',
-    muted: '#9A958F',
-    subtle: '#6E6963',
-    border: '#35312E',
-    surfaceAlt: '#1B1A18',
-    offWhite: '#0E0D0C',
-
-    // Surfaces — clear steps: canvas → inset → raised card → floating nav
-    appBg: '#121110',
-    card: '#1E1D1B',
-    navPill: '#2C2926',
-
-    // Semantic — a bit brighter on dark for legibility
-    success: '#3DD69A',
-    warning: '#FFC14D',
-    danger: '#FF6B6E',
-    info: '#5B9EF5',
-
-    // Base Colors
-    white: '#FFFFFF',
-    black: '#000000',
-    transparent: 'transparent',
-  },
-} as const
-
-export type ColorScheme = keyof typeof Colors
-export type ColorName = keyof typeof Colors.light
-/** Token map for one scheme; use with `useColors()` at runtime. */
-export type ThemeColors = (typeof Colors)[ColorScheme]
+export type ColorScheme = BrandColorScheme;
+export type ColorName = keyof typeof Colors.light;
+/** Token map for one scheme; resolve at runtime via `useColors()`. */
+export type ThemeColors = (typeof Colors)[ColorScheme];

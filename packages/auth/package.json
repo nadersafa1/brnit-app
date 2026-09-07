@@ -1,24 +1,55 @@
 {
-  "name": "@burn-app/auth",
+  "name": "@brnit/auth",
+  "version": "0.0.0",
+  "private": true,
   "type": "module",
   "exports": {
-    ".": { "default": "./src/index.ts" },
-    "./*": { "default": "./src/*.ts" }
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./permissions": {
+      "types": "./src/permissions.ts",
+      "import": "./src/permissions.ts",
+      "default": "./src/permissions.ts"
+    },
+    "./role-ranks": {
+      "types": "./src/role-ranks.ts",
+      "import": "./src/role-ranks.ts",
+      "default": "./src/role-ranks.ts"
+    },
+    "./authorization": {
+      "types": "./src/authorization.ts",
+      "import": "./src/authorization.ts",
+      "default": "./src/authorization.ts"
+    },
+    "./*": {
+      "types": "./src/*.ts",
+      "import": "./src/*.ts",
+      "default": "./src/*.ts"
+    }
   },
-  "scripts": {},
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "test": "bun test --preload ../../test-setup.ts src"
+  },
   "dependencies": {
-    "@better-auth/expo": "^1.4.9",
-    "@burn-app/db": "*",
-    "@burn-app/env": "*",
-    "better-auth": "^1.4.9",
-    "dotenv": "^17.2.2",
+    "@better-auth/expo": "catalog:",
+    "@brnit/brand": "workspace:*",
+    "@brnit/db": "workspace:*",
+    "@brnit/domain": "workspace:*",
+    "@brnit/env": "workspace:*",
+    "@brnit/logger": "workspace:*",
+    "better-auth": "catalog:",
+    "drizzle-orm": "catalog:",
     "jose": "^6.2.2",
-    "nodemailer": "^7.0.10",
-    "zod": "^4.1.13"
+    "nodemailer": "^7.0.10"
   },
   "devDependencies": {
-    "@burn-app/config": "*",
+    "@brnit/config": "workspace:*",
+    "@types/bun": "catalog:",
     "@types/nodemailer": "^7.0.3",
-    "typescript": "^5"
+    "typescript": "^6.0.3"
   }
 }

@@ -1,36 +1,38 @@
-import type { CurrentDietPlanMealItem } from "@/lib/api/member-types";
-import type { FoodItemAlternative } from "@/lib/api/member-food-types";
+import type {
+	CurrentDietPlanMealItemDto,
+	FoodItemAlternativeDto,
+} from "@brnit/api";
 
-export type MealItemDetailContentProps = {
-  item: CurrentDietPlanMealItem;
-  alternatives: FoodItemAlternative[];
-  isLoading: boolean;
-  isError: boolean;
-  selectedAlternative: FoodItemAlternative | null;
-  onSelectAlternative: (alternative: FoodItemAlternative) => void;
-};
+export interface MealItemDetailContentProps {
+	alternatives: FoodItemAlternativeDto[];
+	isError: boolean;
+	isLoading: boolean;
+	item: CurrentDietPlanMealItemDto;
+	onSelectAlternative: (alternative: FoodItemAlternativeDto) => void;
+	selectedAlternative: FoodItemAlternativeDto | null;
+}
 
-export type MealItemDetailPayload = {
-  item: CurrentDietPlanMealItem;
-  dietPlanAssignmentId: string;
-  dietPlanMealId: string;
-  consumedDate: string;
-};
+export interface MealItemDetailPayload {
+	consumedDate: string;
+	dietPlanAssignmentId: string;
+	dietPlanMealId: string;
+	item: CurrentDietPlanMealItemDto;
+}
 
 export type OverrideScope = "day" | "plan";
 
-export type MealItemDetailSheetProps = {
-  payload: MealItemDetailPayload | null;
-  onClose: () => void;
-};
+export interface MealItemDetailSheetProps {
+	onClose: () => void;
+	payload: MealItemDetailPayload | null;
+}
 
-export type MealItemDetailActionsProps = {
-  itemIsOverridden: boolean;
-  selectedAlternative: FoodItemAlternative | null;
-  isSubmittingDay: boolean;
-  isSubmittingPlan: boolean;
-  isRestoringForDay: boolean;
-  onReplaceDay: () => void;
-  onReplacePlan: () => void;
-  onRestoreOriginalForDay: () => void;
-};
+export interface MealItemDetailActionsProps {
+	isRestoringForDay: boolean;
+	isSubmittingDay: boolean;
+	isSubmittingPlan: boolean;
+	itemIsOverridden: boolean;
+	onReplaceDay: () => void;
+	onReplacePlan: () => void;
+	onRestoreOriginalForDay: () => void;
+	selectedAlternative: FoodItemAlternativeDto | null;
+}

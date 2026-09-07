@@ -1,0 +1,33 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreWorkspaces": ["packages/ui"],
+  "ignoreDependencies": ["@biomejs/biome", "@brnit/config", "tailwindcss"],
+  "workspaces": {
+    ".": {
+      "ignoreDependencies": ["@brnit/env", "dotenv", "zod"]
+    },
+    "apps/native": {
+      "expo": true,
+      "metro": true
+    },
+    "apps/web": {
+      "vite": true,
+      "entry": ["src/**/*.{test,spec}.{ts,tsx}"]
+    },
+    "apps/server": {
+      "entry": ["src/**/*.test.ts"]
+    },
+    "packages/api": {
+      "entry": ["src/**/*.test.ts"]
+    },
+    "packages/domain": {
+      "entry": ["src/**/*.test.ts"]
+    },
+    "packages/datetime": {
+      "entry": ["src/**/*.test.ts"]
+    },
+    "packages/db": {
+      "ignoreDependencies": ["zod"]
+    }
+  }
+}

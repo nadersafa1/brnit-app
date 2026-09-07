@@ -1,0 +1,91 @@
+/**
+ * Brnit brand CSS variables — shared across web apps via @brnit/ui.
+ *
+ * This file declares the SAME semantic roles, in the SAME order, as
+ * `./tokens.ts`, and is hand-kept in sync with it. There is no codegen between
+ * the two: change a value here and you must change it there (and vice versa).
+ * Names map 1:1 by kebab-case (`accentFg` -> `--brand-accent-fg`), with one
+ * deliberate exception: `appBg` is `--brand-app`.
+ *
+ * Brnit is LIGHT-FIRST. `:root` is the complete light palette; `html.dark`
+ * overrides it when next-themes sets `class="dark"`.
+ *
+ * Rules the token names encode (ratios measured with WCAG 2.1 relative
+ * luminance — see `./tokens.ts` for the per-token numbers):
+ *   - `--brand-accent` is a FILL. It is 2.42:1 on `--brand-app` — never copy.
+ *   - `--brand-accent-fg` is the readable accent for copy and icons.
+ *   - `--brand-on-accent` is the only legal copy colour on an accent fill.
+ *   - `--brand-nav-pill` is dark in BOTH themes: use `--brand-chrome-fg` /
+ *     `--brand-chrome-muted` on it, never `--brand-ink` / `--brand-muted`.
+ */
+:root {
+	--brand-accent: #fd6e20;
+	/* Readable accent copy: 5.11:1 on --brand-app, 5.97:1 on --brand-card. */
+	--brand-accent-fg: #ae3f0a;
+	--brand-accent-light: #ff8f50;
+	--brand-accent-soft: rgba(253, 110, 32, 0.14);
+	/* 7.26:1 on --brand-accent. design.json says white here; white is 2.83:1. */
+	--brand-on-accent: #010409;
+	--brand-ink: #010409;
+	/* 4.55:1 on --brand-app; do not use on dark chrome — use --brand-chrome-muted. */
+	--brand-muted: #6b6b6b;
+	--brand-subtle: #3a3a3a;
+	/* Hairline + progress track. Borders are the exception here — prefer shadow. */
+	--brand-border: #e8e8e8;
+	--brand-surface-alt: #f2f2f2;
+	--brand-app: #fce9e7;
+	--brand-card: #ffffff;
+	--brand-card-alt: #f7f7f7;
+	--brand-card-on-brand: rgba(1, 4, 9, 0.06);
+	--brand-nav-pill: #0b0b0b;
+	--brand-nav-pill-muted: #1a1a1a;
+	/* Always light — for text/icons sitting on dark chrome. */
+	--brand-chrome-fg: #faf7f4;
+	--brand-chrome-muted: #b8b2ac;
+	/* Solid lift for chrome *buttons* (never a translucent white swap). */
+	--brand-chrome-hover: #1a1a1a;
+	/* Soft white wash for a segment sitting *inside* a dark chrome track. */
+	--brand-chrome-overlay: rgba(255, 255, 255, 0.12);
+	/* Corner blob / illustration accent only. 1.47:1 on --brand-app — never copy. */
+	--brand-decorative: #c9befa;
+	--brand-overlay-soft: rgba(1, 4, 9, 0.06);
+	--brand-overlay-strong: rgba(1, 4, 9, 0.12);
+	--brand-scrim: rgba(1, 4, 9, 0.35);
+	--brand-shadow: rgba(1, 4, 9, 0.12);
+	--brand-focus-ring: rgba(253, 110, 32, 0.4);
+	color-scheme: light;
+}
+
+html.dark {
+	--brand-accent: #ff7a2e;
+	/* Readable accent copy: 9.01:1 on --brand-app, 8.04:1 on --brand-card. */
+	--brand-accent-fg: #ff9a5c;
+	--brand-accent-light: #ff9a5c;
+	--brand-accent-soft: rgba(255, 122, 46, 0.22);
+	/* 7.90:1 on --brand-accent. */
+	--brand-on-accent: #010409;
+	--brand-ink: #f4f2ef;
+	/* 6.35:1 on --brand-app; do not use on dark chrome — use --brand-chrome-muted. */
+	--brand-muted: #9a958f;
+	--brand-subtle: #cfc9c1;
+	--brand-border: #35312e;
+	--brand-surface-alt: #1b1a18;
+	--brand-app: #121110;
+	--brand-card: #1e1d1b;
+	--brand-card-alt: #252320;
+	--brand-card-on-brand: rgba(255, 255, 255, 0.1);
+	--brand-nav-pill: #2c2926;
+	--brand-nav-pill-muted: #3a3733;
+	--brand-chrome-fg: #faf7f4;
+	--brand-chrome-muted: #b8b2ac;
+	--brand-chrome-hover: #3a3733;
+	--brand-chrome-overlay: rgba(255, 255, 255, 0.1);
+	--brand-decorative: #b8a9f0;
+	--brand-overlay-soft: rgba(255, 255, 255, 0.08);
+	--brand-overlay-strong: rgba(255, 255, 255, 0.14);
+	--brand-scrim: rgba(0, 0, 0, 0.6);
+	/* Opaque black — a tinted shadow disappears on charcoal. */
+	--brand-shadow: rgba(0, 0, 0, 0.55);
+	--brand-focus-ring: rgba(255, 122, 46, 0.45);
+	color-scheme: dark;
+}

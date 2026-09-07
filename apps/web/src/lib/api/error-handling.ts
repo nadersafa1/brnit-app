@@ -1,33 +1,43 @@
+import { readApiErrorCode, readApiErrorMessage } from "./api-error";
+import { ApiRequestError } from "./api-request-error";
+
 /**
- * Shared helpers for normalizing API error responses across hooks and query fetchers.
- *
- * Server contract: `ApiErrorBody` (`@/lib/api/api-error`). Display **`error`** in UI; `details` is optional structured data.
+ * Parses `{ error, code?, details? }` off a failed response into a thrown
+ * {@link ApiRequestError}. Everything the app shows a user comes through here,
+ * so the server's wording always wins over the caller's fallback.
  */
+async function throwForFailedResponse(
+	response: Response,
+	fallbackMessage: string
+): Promise<never> {
+	const payload: unknown = await response.json().catch(() => null);
+	const details =
+		typeof payload === "object" && payload !== null && "details" in payload
+			? (payload as { details?: unknown }).details
+			: undefined;
 
-import { isApiErrorPayload } from '@/lib/api/api-error'
-
-export async function getApiErrorMessage(
-  response: Response,
-  fallbackMessage: string
-): Promise<string> {
-  const errorPayload = await response.json().catch(() => null)
-  if (isApiErrorPayload(errorPayload)) return errorPayload.error
-  return fallbackMessage
+	throw new ApiRequestError(readApiErrorMessage(payload) ?? fallbackMessage, {
+		apiCode: readApiErrorCode(payload),
+		code: "http",
+		details,
+		status: response.status,
+	});
 }
 
 export async function requireSuccess(
-  response: Response,
-  fallbackMessage: string
+	response: Response,
+	fallbackMessage: string
 ): Promise<void> {
-  if (response.ok) return
-  throw new Error(await getApiErrorMessage(response, fallbackMessage))
+	if (response.ok) {
+		return;
+	}
+	await throwForFailedResponse(response, fallbackMessage);
 }
 
-/** After a successful response, parse JSON (same as `requireSuccess` then `response.json()`). */
 export async function requireJsonSuccess<T = unknown>(
-  response: Response,
-  fallbackMessage: string
+	response: Response,
+	fallbackMessage: string
 ): Promise<T> {
-  await requireSuccess(response, fallbackMessage)
-  return response.json() as Promise<T>
+	await requireSuccess(response, fallbackMessage);
+	return response.json() as Promise<T>;
 }

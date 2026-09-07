@@ -1,0 +1,13 @@
+{
+  "extends": "@brnit/config/tsconfig.base.json",
+  "include": ["./src/**/*.ts", "./src/**/*.d.ts"],
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "strictNullChecks": true
+  }
+}

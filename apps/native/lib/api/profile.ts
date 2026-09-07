@@ -1,61 +1,59 @@
-import { apiFetch } from './client'
-import { ApiError } from './types'
+import type { ProfileDto } from "@brnit/api";
 
-export type ProfileResponse = {
-  name: string
-  email: string
-  image: string | null
-  dob: string | null
+import { apiFetch } from "./client";
+import { ApiError } from "./types";
+
+export interface UpdateProfileOptions {
+	clearImage?: boolean;
+	dob?: string | null;
+	imageUri?: string | null;
+	name?: string;
 }
 
 /**
- * Update current user profile. Sends multipart/form-data: name, dob, file (image), and/or clearImage.
- * Only includes fields that are defined and non-empty; server validates DOB is a valid past date.
- * On success, call session refetch so session.user reflects new data.
+ * `PATCH /me/profile`, multipart because the avatar rides along with the text
+ * fields. Only defined, non-empty values are appended; the server validates
+ * that `dob` is a real past date and that at least one field changed.
+ *
+ * Refetch the better-auth session afterwards so `session.user` catches up.
  */
-export async function updateProfile(options: {
-  name?: string
-  dob?: string | null
-  imageUri?: string | null
-  clearImage?: boolean
-}): Promise<ProfileResponse> {
-  const formData = new FormData()
+export function updateProfile(
+	options: UpdateProfileOptions
+): Promise<ProfileDto> {
+	const formData = new FormData();
 
-  if (options.name !== undefined && options.name.trim() !== '') {
-    formData.append('name', options.name.trim())
-  }
+	const name = options.name?.trim();
+	if (name) {
+		formData.append("name", name);
+	}
 
-  if (options.dob !== undefined && options.dob !== null && options.dob.trim() !== '') {
-    formData.append('dob', options.dob.trim())
-  }
+	const dob = options.dob?.trim();
+	if (dob) {
+		formData.append("dob", dob);
+	}
 
-  if (options.imageUri && typeof options.imageUri === 'string') {
-    formData.append('file', {
-      uri: options.imageUri,
-      name: 'photo.jpg',
-      type: 'image/jpeg',
-    } as unknown as Blob)
-  }
+	if (options.imageUri) {
+		formData.append("file", {
+			name: "photo.jpg",
+			type: "image/jpeg",
+			uri: options.imageUri,
+		} as unknown as Blob);
+	}
 
-  if (options.clearImage === true) {
-    formData.append('clearImage', 'true')
-  }
+	if (options.clearImage === true) {
+		formData.append("clearImage", "true");
+	}
 
-  return apiFetch<ProfileResponse>('/api/me/profile', {
-    method: 'PATCH',
-    body: formData,
-  })
+	return apiFetch<ProfileDto>("/api/me/profile", {
+		method: "PATCH",
+		body: formData,
+	});
 }
 
-/**
- * Map API error to a short user-facing message for toasts.
- */
+/** Short, user-facing message for a profile toast. */
 export function getProfileErrorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message
-  }
-  if (error instanceof Error) {
-    return error.message
-  }
-  return 'Something went wrong'
+	if (error instanceof ApiError || error instanceof Error) {
+		return error.message;
+	}
+	return "Something went wrong";
 }

@@ -1,9 +1,12 @@
 /**
- * Identifies a meal slot for consumption APIs (mark/unmark).
- * Used by both mark and delete consumption flows.
+ * One meal slot on one day, as the mark and unmark flows identify it.
+ *
+ * `consumedDate` is a `'YYYY-MM-DD'` calendar date in the **device's** timezone
+ * — see `lib/date/calendar-date.ts` for why that differs from the server's UTC
+ * reckoning, and how the gap is bridged.
  */
-export type ConsumptionSlot = {
-  dietPlanAssignmentId: string;
-  dietPlanMealId: string;
-  consumedDate: string;
-};
+export interface ConsumptionSlot {
+	consumedDate: string;
+	dietPlanAssignmentId: string;
+	dietPlanMealId: string;
+}

@@ -6,4 +6,4 @@
  * For OAuth id-token flows the app does not follow this URL as a redirect; navigation after
  * session is handled in-screen (e.g. `<Redirect href="/(tabs)" />`).
  */
-export const BETTER_AUTH_SOCIAL_CALLBACK_PATH = '/'
+export const BETTER_AUTH_SOCIAL_CALLBACK_PATH = "/";

@@ -1,46 +1,38 @@
+import type {
+	MealItemOverrideDto,
+	MealItemOverrideParams,
+	SetMealItemOverrideBody,
+} from "@brnit/api";
+
 import { apiFetch } from "./client";
 import { API_ENDPOINTS } from "./endpoints";
 import type { ApiFetchOptions } from "./types";
 
-export type SetMealItemOverrideParams = {
-  assignmentId: string;
-  dietPlanMealId: string;
-  mealItemId: string;
-  overrideId?: string;
-  foodItemId: string;
-  quantity: number;
-  scope: "single_day" | "rest_of_plan";
-  startDate: string;
-};
+/**
+ * The slot to swap plus the swap itself, taken straight from the server's own
+ * input types — `scope` and the `startDate`-only window are the contract, and
+ * the endpoint rejects the retired `endDate` / `scope: "period"` payloads.
+ */
+export type SetMealItemOverrideParams = MealItemOverrideParams &
+	SetMealItemOverrideBody;
 
-type SetMealItemOverrideResponse = {
-  data: {
-    id: string;
-    dietPlanAssignmentId: string;
-    dietPlanMealId: string;
-    mealItemId: string;
-    foodItemId: string;
-    quantity: number;
-    effectiveDates: string[];
-    effectiveDateCount: number;
-    coverageStartDate: string | null;
-    coverageEndDate: string | null;
-    createdAt: string;
-    updatedAt: string;
-  };
-};
+interface SetMealItemOverrideResponse {
+	/** False when an existing override row for the slot was updated in place. */
+	created: boolean;
+	data: MealItemOverrideDto;
+}
 
-export async function setMealItemOverride(
-  params: SetMealItemOverrideParams,
-  options?: Pick<ApiFetchOptions, "signal">
+export function setMealItemOverride(
+	params: SetMealItemOverrideParams,
+	options?: Pick<ApiFetchOptions, "signal">
 ): Promise<SetMealItemOverrideResponse> {
-  const { assignmentId, dietPlanMealId, mealItemId, ...body } = params;
-  return apiFetch<SetMealItemOverrideResponse>(
-    API_ENDPOINTS.member.mealItemOverride(assignmentId, dietPlanMealId, mealItemId),
-    {
-      method: "PUT",
-      body,
-      signal: options?.signal,
-    }
-  );
+	const { assignmentId, dietPlanMealId, mealItemId, ...body } = params;
+	return apiFetch<SetMealItemOverrideResponse>(
+		API_ENDPOINTS.member.mealItemOverride(
+			assignmentId,
+			dietPlanMealId,
+			mealItemId
+		),
+		{ method: "PUT", body, signal: options?.signal }
+	);
 }
