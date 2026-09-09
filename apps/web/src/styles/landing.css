@@ -1,0 +1,170 @@
+/*
+ * Landing-page motion and texture.
+ *
+ * Loaded from `pages/landing-page.tsx`, so it ships in the landing chunk and
+ * never reaches the signed-in app. Everything Tailwind can express stays in the
+ * components; this file is only for what it cannot — keyframes, the grain
+ * texture, the direction-aware marquee, and the Arabic letter-spacing reset.
+ *
+ * Every animation here is wrapped by the reduced-motion block at the bottom.
+ */
+
+/* Anchor scrolling, scoped to the landing page so the app shell is untouched. */
+:root:has(.brnit-landing) {
+	scroll-padding-top: 5.5rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	:root:has(.brnit-landing) {
+		scroll-behavior: smooth;
+	}
+}
+
+/*
+ * Letter-spaced small caps read well in Latin and break the connected Arabic
+ * script, so the tracking is applied here and removed under `dir="rtl"`.
+ */
+.brnit-eyebrow {
+	letter-spacing: 0.16em;
+}
+
+[dir="rtl"] .brnit-eyebrow {
+	letter-spacing: normal;
+}
+
+/* --- Background: slow-drifting colour fields behind the hero and the CTA --- */
+
+@keyframes brnit-drift {
+	from {
+		transform: translate3d(0, 0, 0) scale(1);
+	}
+	to {
+		transform: translate3d(4%, -7%, 0) scale(1.14);
+	}
+}
+
+@keyframes brnit-drift-alt {
+	from {
+		transform: translate3d(0, 0, 0) scale(1.08);
+	}
+	to {
+		transform: translate3d(-6%, 6%, 0) scale(0.94);
+	}
+}
+
+.brnit-blob {
+	animation: brnit-drift 19s cubic-bezier(0.4, 0, 0.4, 1) infinite alternate;
+	will-change: transform;
+}
+
+.brnit-blob-alt {
+	animation: brnit-drift-alt 23s cubic-bezier(0.4, 0, 0.4, 1) infinite alternate;
+}
+
+/* --- Floating product cards ------------------------------------------------ */
+
+@keyframes brnit-float {
+	0%,
+	100% {
+		transform: translate3d(0, 0, 0);
+	}
+	50% {
+		transform: translate3d(0, -12px, 0);
+	}
+}
+
+.brnit-float {
+	animation: brnit-float 7s ease-in-out infinite;
+	will-change: transform;
+}
+
+.brnit-float-slow {
+	animation-duration: 9.5s;
+	animation-delay: -2.5s;
+}
+
+.brnit-float-fast {
+	animation-duration: 5.5s;
+	animation-delay: -1.2s;
+}
+
+/* --- Marquee ---------------------------------------------------------------- */
+
+@keyframes brnit-marquee {
+	from {
+		transform: translate3d(0, 0, 0);
+	}
+	to {
+		transform: translate3d(-50%, 0, 0);
+	}
+}
+
+@keyframes brnit-marquee-rtl {
+	from {
+		transform: translate3d(0, 0, 0);
+	}
+	to {
+		transform: translate3d(50%, 0, 0);
+	}
+}
+
+/*
+ * The track holds the item list twice, so translating exactly -50% lands on an
+ * identical frame and the loop is seamless.
+ */
+.brnit-marquee-track {
+	width: max-content;
+	animation: brnit-marquee 38s linear infinite;
+	will-change: transform;
+}
+
+[dir="rtl"] .brnit-marquee-track {
+	animation-name: brnit-marquee-rtl;
+}
+
+.brnit-marquee-mask {
+	mask-image: linear-gradient(
+		to right,
+		transparent,
+		#000 8%,
+		#000 92%,
+		transparent
+	);
+}
+
+/* --- Texture ---------------------------------------------------------------- */
+
+/*
+ * A single tiling turbulence tile. It sits above the colour fields and below
+ * the content, and stops the large gradients from banding on wide displays.
+ */
+.brnit-grain {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.42'/%3E%3C/svg%3E");
+	mix-blend-mode: soft-light;
+}
+
+/* --- Sticky step rail ------------------------------------------------------- */
+
+/*
+ * `--progress` is written by `useScrollProgress` on the sticky section, so the
+ * rail fills as the steps advance without a single React render.
+ */
+.brnit-rail-fill {
+	transform-origin: top;
+	scale: 1 var(--progress, 0);
+}
+
+/* --- Reduced motion --------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+	.brnit-blob,
+	.brnit-blob-alt,
+	.brnit-float,
+	.brnit-marquee-track {
+		animation: none !important;
+	}
+
+	.brnit-rail-fill {
+		scale: 1 1;
+	}
+}

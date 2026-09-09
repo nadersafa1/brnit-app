@@ -8,6 +8,7 @@ import {
 
 import { OfflineBanner } from "@/components/offline-banner";
 import { THEME_STORAGE_KEY, ThemeProvider } from "@/components/theme-provider";
+import { I18nProvider } from "@/lib/i18n/i18n-provider";
 import { createRootPageHead } from "@/lib/page-head";
 
 import "../index.css";
@@ -40,9 +41,16 @@ function RootComponent() {
 				storageKey={THEME_STORAGE_KEY}
 				themes={["light", "dark"]}
 			>
-				<OfflineBanner />
-				<Outlet />
-				<Toaster position="top-right" richColors />
+				{/*
+				 * Owns `<html lang|dir>` the way ThemeProvider owns `<html class>`.
+				 * The first value is written by the blocking script in `index.html`,
+				 * so an Arabic visitor never sees a left-to-right first paint.
+				 */}
+				<I18nProvider>
+					<OfflineBanner />
+					<Outlet />
+					<Toaster position="top-right" richColors />
+				</I18nProvider>
 			</ThemeProvider>
 		</>
 	);

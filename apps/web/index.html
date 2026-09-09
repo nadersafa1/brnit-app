@@ -32,6 +32,38 @@
 			}
 		})();
 		</script>
+		<!--
+			Blocking locale script, twinned with the theme script above. Without it an
+			Arabic visitor gets one left-to-right paint before React hydrates and
+			flips the document. It must mirror `src/lib/i18n/locales.ts`: same
+			storage key, same supported list, same navigator fallback.
+		-->
+		<script>
+		"use strict";
+		(() => {
+			const locales = ["en", "ar"];
+			const dirs = { ar: "rtl", en: "ltr" };
+			const apply = (locale) => {
+				document.documentElement.lang = locale;
+				document.documentElement.dir = dirs[locale] || "ltr";
+			};
+			try {
+				const stored = localStorage.getItem("brnit-locale");
+				if (locales.includes(stored)) {
+					apply(stored);
+					return;
+				}
+			} catch {}
+			for (const preference of navigator.languages || []) {
+				const base = String(preference).split("-")[0];
+				if (locales.includes(base)) {
+					apply(base);
+					return;
+				}
+			}
+			apply("en");
+		})();
+		</script>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta name="description" content="Brnit — healthy life challenges, diet plans and body composition tracking.">
@@ -49,6 +81,14 @@
 		-->
 		<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
 		<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap">
+		<!--
+			General Sans has no Arabic glyphs. IBM Plex Sans Arabic is the companion
+			face for `lang="ar"` (wired up in `src/index.css`); its proportions and
+			weights line up with the Latin scale, so a language switch does not
+			resize the page.
+		-->
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
 		<title>Brnit</title>
 	</head>
 

@@ -51,6 +51,16 @@ html.dark {
 	--sidebar-ring: var(--brand-focus-ring);
 }
 
+/*
+ * One breakpoint below Tailwind's `sm`. 320-360px phones are still in the
+ * wild, and the landing page's hero card sheds its garnish there rather than
+ * truncating every label to an ellipsis. It has to live in this file: `@theme`
+ * only reaches the utility generator from Tailwind's entry stylesheet.
+ */
+@theme {
+	--breakpoint-xs: 22.5rem;
+}
+
 /**
  * Re-exposes the brand palette as Tailwind utilities, so app chrome can name a
  * role explicitly (`bg-brand-card`, `text-brand-muted`) while `@brnit/ui`
@@ -102,5 +112,21 @@ html.dark {
 		transition:
 			background-color 0.3s ease,
 			color 0.3s ease;
+	}
+}
+
+/*
+ * Arabic typography. `--font-sans` (General Sans) carries no Arabic glyphs, so
+ * `lang="ar"` swaps in IBM Plex Sans Arabic and keeps the Latin face behind it
+ * for brand names and numerals. The line-height bump is not decoration: Arabic
+ * ascenders and descenders need the extra room at the same optical size.
+ */
+@layer base {
+	:root:lang(ar),
+	:lang(ar) body {
+		font-family:
+			"IBM Plex Sans Arabic", "General Sans", "Noto Sans Arabic", system-ui,
+			sans-serif;
+		line-height: 1.7;
 	}
 }
