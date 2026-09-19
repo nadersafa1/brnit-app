@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "build:staging": "vite build --mode staging",
+    "build:staging": "VITE_SERVER_URL=https://api-staging.brnit.app vite build",
     "deploy:staging": "wrangler deploy",
     "preview": "vite preview",
     "check-types": "tsc --noEmit",
