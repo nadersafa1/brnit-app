@@ -14,6 +14,7 @@ This project was created with [Better-T-Stack](https://github.com/AmanVarshney01
 - **PostgreSQL** - Database engine
 - **Authentication** - Better-Auth
 - **Turborepo** - Optimized monorepo build system
+- **BullMQ + Redis** - Background jobs and scheduled tasks ([docs](docs/BACKGROUND_JOBS.md))
 
 ## Getting Started
 
@@ -30,6 +31,8 @@ For the web app (`apps/web/.env`), configure:
 - **Database**: `DATABASE_URL` – PostgreSQL connection string
 - **Auth**: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `CORS_ORIGIN`
 - **Email (verification & password reset)**: `NODEMAILER_HOST`, `NODEMAILER_USER`, `NODEMAILER_APP_PASSWORD`; optionally `NODEMAILER_PORT` (default 465). Required for email verification and forgot-password flows.
+
+- **Background jobs**: `REDIS_URL` – optional locally (jobs run inline), required in production. See [docs/BACKGROUND_JOBS.md](docs/BACKGROUND_JOBS.md).
 
 For the native app (`apps/native/.env`), set `EXPO_PUBLIC_SERVER_URL` to your web API URL.
 
@@ -60,12 +63,15 @@ Use the Expo Go app to run the mobile application.
 ```
 burn-app/
 ├── apps/
-│   └── web/         # Fullstack application (Next.js)
+│   ├── web/         # Fullstack application (Next.js)
 │   ├── native/      # Mobile application (React Native, Expo)
+│   └── worker/      # Background job process (BullMQ)
 ├── packages/
-│   ├── api/         # API layer / business logic
 │   ├── auth/        # Authentication configuration & logic
-│   └── db/          # Database schema & queries
+│   ├── db/          # Database schema & queries
+│   ├── email/       # Transactional email templates & transport
+│   ├── env/         # Environment variable access
+│   └── queue/       # Job definitions, producers & worker runtime
 ```
 
 ## Available Scripts
@@ -74,5 +80,6 @@ burn-app/
 - `npm run build`: Build all applications
 - `npm run check-types`: Check TypeScript types across all apps
 - `npm run dev:native`: Start the React Native/Expo development server
+- `npm run dev:worker`: Start the background job worker (needs Redis: `docker compose up -d`)
 - `npm run db:push`: Push schema changes to database
 - `npm run db:studio`: Open database studio UI
