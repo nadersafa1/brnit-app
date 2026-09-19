@@ -1,0 +1,16 @@
+// Staging deploy of the SPA as a static-assets Worker (no Worker script).
+// Built and deployed by Cloudflare Workers Builds from the `staging` branch;
+// the `name` must match the Worker connected in the dashboard.
+{
+	"$schema": "../../node_modules/wrangler/config-schema.json",
+	"name": "brnit",
+	"compatibility_date": "2026-09-01",
+	"assets": {
+		"directory": "./dist",
+		// History-API fallback — TanStack Router owns every path.
+		"not_found_handling": "single-page-application"
+	},
+	"routes": [{ "pattern": "staging.brnit.app", "custom_domain": true }],
+	"workers_dev": false,
+	"preview_urls": false
+}

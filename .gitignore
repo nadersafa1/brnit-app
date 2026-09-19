@@ -58,3 +58,6 @@ bun.lockb
 
 # Expo
 .expo
+
+# Wrangler
+.wrangler
