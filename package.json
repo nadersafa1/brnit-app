@@ -36,6 +36,7 @@
     "db:generate": "turbo -F @brnit/db db:generate",
     "db:migrate": "turbo -F @brnit/db db:migrate",
     "db:seed": "turbo -F @brnit/db db:seed",
+    "db:seed:demo": "turbo -F @brnit/db db:seed:demo",
     "db:deploy": "turbo -F @brnit/db db:deploy",
     "auth:generate-schema": "bunx @better-auth/cli@latest generate --config ./packages/auth/src/index.ts --output ./packages/db/src/schema/auth-better-auth-generated.ts --yes",
     "compose:up": "docker compose -f docker-compose.yml -f docker-compose.local.yml up --build",

@@ -3,16 +3,24 @@ import { z } from "zod";
 const UTC_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
- * Why the member's plan data went stale. All three are *staff* actions — a
- * member's own writes already update their own client optimistically, so
- * echoing them back would only cause redundant refetches.
+ * Why the member's plan data went stale.
+ *
+ * Mostly *staff* actions, on the principle that a member's own write already
+ * updates the client that made it, so echoing it back is a redundant refetch.
+ * `meal_time_changed` is the deliberate exception: swaps and time overrides are
+ * member self-writes at `/member/me/…`, and the event exists there to reach the
+ * member's *other* signed-in devices, which have no other way to learn of the
+ * change. The originating client re-fetching once is the accepted cost.
  */
 export const planChangedReasonSchema = z.enum([
-	/** An assignment was created, its date range edited, or it was deleted. */
+	/** An assignment was created, its date range edited, or it was deleted. Staff. */
 	"assignment_changed",
-	/** A meal-time override was written or cleared for one of the plan's slots. */
+	/**
+	 * A meal-item or meal-time override was written or cleared for one of the
+	 * plan's slots. Member self-write — see the note above on why it is emitted.
+	 */
 	"meal_time_changed",
-	/** A consumption was logged or removed on the member's behalf. */
+	/** A consumption was logged or removed on the member's behalf. Staff. */
 	"consumption_changed",
 ]);
 

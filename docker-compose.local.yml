@@ -1,6 +1,6 @@
-# Local override: publish the API on localhost and run Postgres in-stack.
-# The `migrate` service runs `db:deploy` (drizzle migrate → seed) before
-# api/worker start.
+# Local override: publish the API, Postgres and Redis on localhost and run
+# Postgres in-stack. The `migrate` service runs `db:deploy` (drizzle migrate)
+# before api/worker start.
 #
 # Not used on Dokploy — Traefik reaches container port 3000 directly and
 # Postgres is a separate Dokploy service.
@@ -9,12 +9,18 @@
 #   cp .env.compose.example .env
 #   docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
 #
+# Host ports are brnit's own block, chosen so the stack can run alongside
+# qpadel (13000 / 55432) and speedballhub (3001 / 5173 / 55432) at the same
+# time. Nothing here overlaps either project.
+#
 # Optional env (with defaults):
 #   POSTGRES_USER=brnit
 #   POSTGRES_PASSWORD=brnit
 #   POSTGRES_DB=brnit
-#   POSTGRES_HOST_PORT=55432  # change if 55432 is already taken on your host
-#   API_PORT=13000
+#   POSTGRES_HOST_PORT=15432  # brnit's Postgres  (qpadel/speedballhub use 55432)
+#   REDIS_HOST_PORT=16379     # brnit's Redis
+#   API_PORT=14000            # brnit's API       (qpadel uses 13000)
+#   WEB_PORT=14001            # brnit's web SPA   (speedballhub uses 5173)
 
 x-database-url: &database-url
   DATABASE_URL: postgresql://${POSTGRES_USER:-brnit}:${POSTGRES_PASSWORD:-brnit}@postgres:5432/${POSTGRES_DB:-brnit}
@@ -27,7 +33,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-brnit}
       POSTGRES_DB: ${POSTGRES_DB:-brnit}
     ports:
-      - "${POSTGRES_HOST_PORT:-55432}:5432"
+      - "${POSTGRES_HOST_PORT:-15432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -44,6 +50,12 @@ services:
       - internal
     restart: unless-stopped
 
+  # Published so a host-side `bun run dev:server` can share the stack's Redis
+  # (BullMQ queues and the Socket.IO adapter) instead of needing its own.
+  redis:
+    ports:
+      - "${REDIS_HOST_PORT:-16379}:6379"
+
   migrate:
     environment:
       <<: *database-url
@@ -53,7 +65,7 @@ services:
 
   api:
     ports:
-      - "${API_PORT:-13000}:3000"
+      - "${API_PORT:-14000}:3000"
     environment:
       <<: *database-url
     depends_on:
@@ -66,6 +78,30 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+
+  # Local only. On Dokploy the SPA is a separate application built from
+  # Dockerfile.web, so it deliberately does not appear in docker-compose.yml —
+  # adding it here keeps `compose:up` a full-product run without changing the
+  # deployed topology.
+  #
+  # Vite inlines VITE_* at build time, so the API URL is a build arg, not
+  # runtime env. It points at the published API port on the host because the
+  # browser resolves it, not the container.
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        VITE_SERVER_URL: http://localhost:${API_PORT:-14000}
+        VITE_API_VERSION: '1'
+    ports:
+      - "${WEB_PORT:-14001}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - internal
+    restart: unless-stopped
 
 volumes:
   postgres_data:

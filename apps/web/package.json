@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite dev --port 3001",
+    "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
     "check-types": "tsc --noEmit",
@@ -17,6 +17,7 @@
     "@brnit/datetime": "workspace:*",
     "@brnit/domain": "workspace:*",
     "@brnit/env": "workspace:*",
+    "@brnit/realtime": "workspace:*",
     "@brnit/ui": "workspace:*",
     "@hookform/resolvers": "^5.2.2",
     "@tailwindcss/vite": "^4.1.18",

@@ -1,3 +1,4 @@
+export * from "./app-version-config";
 export * from "./audit-log";
 export * from "./auth";
 export * from "./body-composition-assessment";

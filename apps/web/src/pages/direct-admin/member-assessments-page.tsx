@@ -25,6 +25,7 @@ import {
 	type OrganizationMemberRow,
 	useAssessableMember,
 } from "@/hooks/use-assessment-members";
+import { useOrganizationRealtime } from "@/hooks/use-organization-realtime";
 import { memberAssessmentsQueryOptions } from "@/lib/api/queries/assessments";
 import { organizationContextQueryOptions } from "@/lib/api/queries/organization-context";
 import { getUserFacingErrorMessage } from "@/lib/get-error-message";
@@ -55,6 +56,11 @@ export function MemberAssessmentsPage() {
 		organizationContextQueryOptions()
 	);
 	const activeOrgId = organizationContext?.activeOrgId ?? "";
+
+	// More than one direct admin can be recording for the same organization, and
+	// the same admin can have this open in two tabs. The organization's room is
+	// what keeps the second one from showing a history that is a row short.
+	useOrganizationRealtime(activeOrgId === "" ? null : activeOrgId);
 
 	const memberQuery = useAssessableMember(activeOrgId, memberId);
 	const assessmentsQuery = useQuery(

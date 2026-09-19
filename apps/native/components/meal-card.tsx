@@ -123,11 +123,11 @@ export function MealCard({
 					>
 						<Ionicons color={colors.accentFg} name={icon} size={20} />
 					</View>
-					<View>
-						<Text size="base" weight="semibold">
+					<View style={styles.headerText}>
+						<Text numberOfLines={2} size="base" weight="semibold">
 							{title}
 						</Text>
-						<Text muted size="xs" weight="medium">
+						<Text muted numberOfLines={1} size="xs" weight="medium">
 							{time}
 						</Text>
 					</View>
@@ -231,11 +231,28 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
+		// Guarantees a gutter between the name and the calorie figure. Real meal
+		// names run long ("Cod with Bulgur & Roasted Vegetables"), and without it
+		// the two are free to sit flush against each other and read as one word.
+		gap: spacing[3],
 		marginBottom: spacing[3],
 	},
 	headerLeft: {
 		flexDirection: "row",
 		alignItems: "center",
+		/**
+		 * `flex: 1` lets this side yield the row, and `minWidth: 0` is what
+		 * actually permits it to shrink below its content width — a flex item's
+		 * default `min-width: auto` is why a long title otherwise grows the row
+		 * and pushes the calories and the consumed control off the card.
+		 */
+		flex: 1,
+		minWidth: 0,
+	},
+	/** Same pair again: the text column must be allowed to be narrower than the title. */
+	headerText: {
+		flex: 1,
+		minWidth: 0,
 	},
 	iconContainer: {
 		width: 40,
@@ -244,11 +261,16 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		marginRight: spacing[3],
+		// Fixed 40×40: it is a circle, and a squashed one looks broken.
+		flexShrink: 0,
 	},
 	headerRight: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: spacing[2],
+		// Never compressed. The calorie figure and the consumed control are the
+		// two things in this row that must stay readable and tappable.
+		flexShrink: 0,
 	},
 	caloriesContainer: {
 		flexDirection: "row",

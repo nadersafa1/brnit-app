@@ -27,6 +27,7 @@ import { MemberAssignmentsTable } from "@/components/organizations/member-assign
 import { ShellPage } from "@/components/shell/shell-page";
 import { ShellPageHeader } from "@/components/shell/shell-page-header";
 import { useOrganizationActiveSync } from "@/hooks/use-organization-active-sync";
+import { useOrganizationRealtime } from "@/hooks/use-organization-realtime";
 import { memberAssessmentsQueryOptions } from "@/lib/api/queries/organization-assessments";
 import { dietPlanAssignmentsQueryOptions } from "@/lib/api/queries/organization-diet-plan-assignments";
 import { dietPlanPickerQueryOptions } from "@/lib/api/queries/organization-diet-plans";
@@ -47,6 +48,13 @@ const ORGANIZATION_ROUTE = "/dashboard/organizations/$organizationId";
 export function OrganizationMemberDetailPage() {
 	const { memberId, organizationId } = useParams({ from: ROUTE_ID });
 	const { isActive } = useOrganizationActiveSync(organizationId);
+
+	// Assessments here are recorded elsewhere — by a direct admin, on the
+	// `/dashboard/direct-admin` tree or from the native app — so this table is
+	// stale the moment it renders unless the organization's room tells it
+	// otherwise. Gated on `isActive` for the same reason the queries are: until
+	// the session has moved, the reads this would refresh are not running.
+	useOrganizationRealtime(organizationId, isActive);
 
 	const [isAssignOpen, setAssignOpen] = useState(false);
 	const [isCreatePlanOpen, setCreatePlanOpen] = useState(false);

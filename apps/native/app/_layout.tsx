@@ -7,7 +7,9 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import Toast from "react-native-toast-message";
 
+import { RealtimeProvider } from "@/components/realtime/realtime-provider";
 import { ThemedStatusBar } from "@/components/themed-status-bar";
+import { VersionGateProvider } from "@/components/version-gate/version-gate-provider";
 import { queryClient } from "@/lib/query-client";
 
 function RootNavigator() {
@@ -30,7 +32,11 @@ export default function Layout() {
 				<KeyboardProvider>
 					<QueryClientProvider client={queryClient}>
 						<ThemedStatusBar />
-						<RootNavigator />
+						<RealtimeProvider>
+							<VersionGateProvider>
+								<RootNavigator />
+							</VersionGateProvider>
+						</RealtimeProvider>
 						<Toast />
 					</QueryClientProvider>
 				</KeyboardProvider>

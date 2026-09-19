@@ -22,6 +22,7 @@ import { Route as DashboardAdminRouteRouteImport } from './routes/dashboard/admi
 import { Route as DashboardDirectAdminRouteRouteImport } from './routes/dashboard/direct-admin/route'
 import { Route as DashboardNutritionistRouteRouteImport } from './routes/dashboard/nutritionist/route'
 import { Route as DashboardAdminIndexRouteImport } from './routes/dashboard/admin/index'
+import { Route as DashboardAdminVersionGateRouteImport } from './routes/dashboard/admin/version-gate'
 import { Route as DashboardOrganizationsIndexRouteImport } from './routes/dashboard/organizations/index'
 import { Route as DashboardAdminCategoriesIndexRouteImport } from './routes/dashboard/admin/categories/index'
 import { Route as DashboardAdminCategoriesFoodCategoryIdRouteImport } from './routes/dashboard/admin/categories/$foodCategoryId'
@@ -111,6 +112,12 @@ const DashboardAdminIndexRoute = DashboardAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardAdminRouteRoute,
 } as any)
+const DashboardAdminVersionGateRoute =
+  DashboardAdminVersionGateRouteImport.update({
+    id: '/version-gate',
+    path: '/version-gate',
+    getParentRoute: () => DashboardAdminRouteRoute,
+  } as any)
 const DashboardOrganizationsIndexRoute =
   DashboardOrganizationsIndexRouteImport.update({
     id: '/organizations/',
@@ -251,6 +258,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/direct-admin': typeof DashboardDirectAdminRouteRouteWithChildren
   '/dashboard/nutritionist': typeof DashboardNutritionistRouteRouteWithChildren
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/admin/version-gate': typeof DashboardAdminVersionGateRoute
   '/dashboard/admin/': typeof DashboardAdminIndexRoute
   '/dashboard/organizations/': typeof DashboardOrganizationsIndexRoute
   '/dashboard/admin/categories/$foodCategoryId': typeof DashboardAdminCategoriesFoodCategoryIdRoute
@@ -285,6 +293,7 @@ export interface FileRoutesByTo {
   '/dashboard/direct-admin': typeof DashboardDirectAdminRouteRouteWithChildren
   '/dashboard/nutritionist': typeof DashboardNutritionistRouteRouteWithChildren
   '/dashboard': typeof DashboardIndexRoute
+  '/dashboard/admin/version-gate': typeof DashboardAdminVersionGateRoute
   '/dashboard/admin': typeof DashboardAdminIndexRoute
   '/dashboard/organizations': typeof DashboardOrganizationsIndexRoute
   '/dashboard/admin/categories/$foodCategoryId': typeof DashboardAdminCategoriesFoodCategoryIdRoute
@@ -322,6 +331,7 @@ export interface FileRoutesById {
   '/dashboard/direct-admin': typeof DashboardDirectAdminRouteRouteWithChildren
   '/dashboard/nutritionist': typeof DashboardNutritionistRouteRouteWithChildren
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/admin/version-gate': typeof DashboardAdminVersionGateRoute
   '/dashboard/admin/': typeof DashboardAdminIndexRoute
   '/dashboard/organizations/': typeof DashboardOrganizationsIndexRoute
   '/dashboard/admin/categories/$foodCategoryId': typeof DashboardAdminCategoriesFoodCategoryIdRoute
@@ -360,6 +370,7 @@ export interface FileRouteTypes {
     | '/dashboard/direct-admin'
     | '/dashboard/nutritionist'
     | '/dashboard/'
+    | '/dashboard/admin/version-gate'
     | '/dashboard/admin/'
     | '/dashboard/organizations/'
     | '/dashboard/admin/categories/$foodCategoryId'
@@ -394,6 +405,7 @@ export interface FileRouteTypes {
     | '/dashboard/direct-admin'
     | '/dashboard/nutritionist'
     | '/dashboard'
+    | '/dashboard/admin/version-gate'
     | '/dashboard/admin'
     | '/dashboard/organizations'
     | '/dashboard/admin/categories/$foodCategoryId'
@@ -430,6 +442,7 @@ export interface FileRouteTypes {
     | '/dashboard/direct-admin'
     | '/dashboard/nutritionist'
     | '/dashboard/'
+    | '/dashboard/admin/version-gate'
     | '/dashboard/admin/'
     | '/dashboard/organizations/'
     | '/dashboard/admin/categories/$foodCategoryId'
@@ -556,6 +569,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/dashboard/admin/'
       preLoaderRoute: typeof DashboardAdminIndexRouteImport
+      parentRoute: typeof DashboardAdminRouteRoute
+    }
+    '/dashboard/admin/version-gate': {
+      id: '/dashboard/admin/version-gate'
+      path: '/version-gate'
+      fullPath: '/dashboard/admin/version-gate'
+      preLoaderRoute: typeof DashboardAdminVersionGateRouteImport
       parentRoute: typeof DashboardAdminRouteRoute
     }
     '/dashboard/organizations/': {
@@ -709,6 +729,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface DashboardAdminRouteRouteChildren {
+  DashboardAdminVersionGateRoute: typeof DashboardAdminVersionGateRoute
   DashboardAdminIndexRoute: typeof DashboardAdminIndexRoute
   DashboardAdminCategoriesFoodCategoryIdRoute: typeof DashboardAdminCategoriesFoodCategoryIdRoute
   DashboardAdminDietPlansDietPlanIdRoute: typeof DashboardAdminDietPlansDietPlanIdRoute
@@ -721,6 +742,7 @@ interface DashboardAdminRouteRouteChildren {
 }
 
 const DashboardAdminRouteRouteChildren: DashboardAdminRouteRouteChildren = {
+  DashboardAdminVersionGateRoute: DashboardAdminVersionGateRoute,
   DashboardAdminIndexRoute: DashboardAdminIndexRoute,
   DashboardAdminCategoriesFoodCategoryIdRoute:
     DashboardAdminCategoriesFoodCategoryIdRoute,

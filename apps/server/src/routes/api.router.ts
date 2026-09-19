@@ -11,6 +11,7 @@ import { createMealRouter } from "./meal.routes.js";
 import { createMemberRouter } from "./member.routes.js";
 import { createProfileRouter } from "./profile.routes.js";
 import { createUsersRouter } from "./users.routes.js";
+import { createVersionGateRouter } from "./version-gate.routes.js";
 
 /**
  * The `/api/v1` router. Mounted once by `startup/setup-app.ts`.
@@ -54,6 +55,11 @@ export function createApiRouter(): Router {
 
 	// Push delivery addresses for the native app: /me/device-tokens.
 	api.use(createDeviceTokenRouter());
+
+	// Native app version gate: the public /app-version read plus
+	// /admin/version-gate. The public route is the one endpoint on this router
+	// with no session guard — see the factory for why.
+	api.use(createVersionGateRouter());
 
 	// Note: the old `/api/cloudinary/sign` signed-direct-upload endpoint is
 	// deliberately not ported. Every entity path uploads server-side through

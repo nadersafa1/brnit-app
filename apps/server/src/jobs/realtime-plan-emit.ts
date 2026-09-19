@@ -30,6 +30,17 @@ function runBestEffort(task: () => Promise<void>, context: object): void {
 	});
 }
 
+/** `member` outlives the assignments pointing at it, so this survives a delete. */
+async function resolveMemberUserId(memberId: string): Promise<string | null> {
+	const rows = await db
+		.select({ userId: member.userId })
+		.from(member)
+		.where(eq(member.id, memberId))
+		.limit(1);
+
+	return rows[0]?.userId ?? null;
+}
+
 /**
  * An assignment names either a `user` directly or a `member` row, never both
  * (`diet_plan_assignment_assignee_check`), so the member join is a LEFT JOIN
@@ -56,13 +67,43 @@ export interface PlanChangedDispatch {
 	/** UTC calendar date, when the change is scoped to a single day. */
 	readonly dateYmd?: string;
 	readonly dietPlanAssignmentId: string;
+	/**
+	 * The assignment's `member.id`, the second half of the same escape hatch as
+	 * {@link PlanChangedDispatch.userId} — and the half a delete actually needs.
+	 * `createDietPlanAssignmentNutritionistInputSchema` makes `memberId`
+	 * mandatory and does not accept `userId`, so every assignment a nutritionist
+	 * can delete is member-scoped and its `userId` column is null; resolving one
+	 * from the deleted DTO alone would always fail. The `member` row is not
+	 * touched by the delete, so it still resolves afterwards.
+	 *
+	 * Nullable so a controller can forward a DTO field verbatim.
+	 */
+	readonly memberId?: string | null;
 	readonly reason: PlanChangedReason;
 	/**
 	 * Skips the assignee lookup. Pass it when the assignment row is about to be
 	 * deleted — after a `DELETE` there is nothing left to resolve, so a delete
 	 * controller must either emit before deleting or supply this.
 	 */
-	readonly userId?: string;
+	readonly userId?: string | null;
+}
+
+/**
+ * Resolution order is cheapest-first: an explicit `userId`, then the member the
+ * assignment names, then the assignment row itself. The last step is the only
+ * one available to callers that hold nothing but an assignment id (a
+ * consumption write, a meal-item override), and the only one a delete cannot use.
+ */
+async function resolvePlanChangedUserId(
+	dispatch: PlanChangedDispatch
+): Promise<string | null> {
+	if (dispatch.userId) {
+		return dispatch.userId;
+	}
+	if (dispatch.memberId) {
+		return await resolveMemberUserId(dispatch.memberId);
+	}
+	return await resolveAssignmentUserId(dispatch.dietPlanAssignmentId);
 }
 
 /** Tells the assigned member their Home screen is stale. */
@@ -71,9 +112,7 @@ export function emitPlanChangedForAssignmentBestEffort(
 ): void {
 	runBestEffort(
 		async () => {
-			const userId =
-				dispatch.userId ??
-				(await resolveAssignmentUserId(dispatch.dietPlanAssignmentId));
+			const userId = await resolvePlanChangedUserId(dispatch);
 			if (!userId) {
 				log.warn(
 					{ dietPlanAssignmentId: dispatch.dietPlanAssignmentId },

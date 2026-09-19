@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { useMemo } from "react";
 
+import { RealtimeProvider } from "@/components/realtime/realtime-provider";
 import { AppSidebarShell } from "@/components/shell/app-sidebar-shell";
 import {
 	resolveActiveNavPath,
@@ -66,20 +67,28 @@ function DashboardLayout() {
 		.find((link) => link.to === activePath)?.label;
 
 	return (
-		<AppSidebarShell
-			ariaLabel="Dashboard"
-			mainId="dashboard-main"
-			navLinks={({ onNavigate }) => (
-				<ShellNavGroupsList
-					groups={navGroups}
-					isActive={(to) => to === activePath}
-					onNavigate={onNavigate}
-				/>
-			)}
-			topBarSubtitle={organizationContext?.organization?.name}
-			topBarTitle={activeLabel ?? "Dashboard"}
-		>
-			<Outlet />
-		</AppSidebarShell>
+		// The socket lives exactly as long as the authenticated shell does. It
+		// cannot move up to `__root` — that route also renders sign-in, and the
+		// handlers need the React Query provider `main.tsx` wraps the router in.
+		// `enabled` gates on the session rather than on the `beforeLoad` guard
+		// because `useSession` is briefly pending on a cold load, and connecting
+		// before it resolves means a handshake the server refuses.
+		<RealtimeProvider enabled={Boolean(session?.user.id)}>
+			<AppSidebarShell
+				ariaLabel="Dashboard"
+				mainId="dashboard-main"
+				navLinks={({ onNavigate }) => (
+					<ShellNavGroupsList
+						groups={navGroups}
+						isActive={(to) => to === activePath}
+						onNavigate={onNavigate}
+					/>
+				)}
+				topBarSubtitle={organizationContext?.organization?.name}
+				topBarTitle={activeLabel ?? "Dashboard"}
+			>
+				<Outlet />
+			</AppSidebarShell>
+		</RealtimeProvider>
 	);
 }

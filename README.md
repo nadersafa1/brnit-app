@@ -83,16 +83,37 @@ At minimum you need `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` and
 rather than crashing — see `packages/env/src/server.ts`, where every variable is
 declared with a comment explaining its purpose.
 
-Apply migrations, then start everything:
+Start Postgres and Redis, apply migrations, then start everything:
 
 ```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d postgres redis
 bun run db:migrate
 bun run dev
 ```
 
-- API — http://localhost:3000
-- Web — http://localhost:3001
-- Native — the Expo dev server; open it in Expo Go
+### Ports
+
+brnit owns its own port block so the stack can run alongside the sibling
+projects — qpadel (13000 / 55432) and speedballhub (3001 / 5173 / 55432) —
+without a collision. Nothing below overlaps either of them.
+
+| | Development (`bun run dev`) | Docker (`compose:up`) |
+| --- | --- | --- |
+| API | http://localhost:3100 | http://localhost:14000 |
+| Web | http://localhost:3101 | 14001 |
+| Postgres | localhost:15432 (the compose one) | localhost:15432 |
+| Redis | localhost:16379 (the compose one) | localhost:16379 |
+
+Native runs against the dev API — `EXPO_PUBLIC_SERVER_URL` in
+`apps/native/.env`.
+
+The docker host ports are overridable: `API_PORT`, `POSTGRES_HOST_PORT` and
+`REDIS_HOST_PORT` in the root `.env`. The dev ports live in `apps/server/.env`
+(`PORT`) and `apps/web/vite.config.ts`.
+
+Development mode shares the compose Postgres and Redis rather than running its
+own, so `docker compose up -d postgres redis` is a prerequisite for
+`bun run dev`.
 
 ## Scripts
 
@@ -116,11 +137,27 @@ bun run dev
 | `bun run db:migrate` | apply migrations |
 | `bun run db:deploy` | apply migrations only — **does not seed** |
 | `bun run db:studio` | open Drizzle Studio |
-| `bun run db:seed` | **destructive** — see below |
+| `bun run db:seed:demo` | the demo dataset — safe, idempotent |
+| `bun run db:seed` | **destructive** USDA import — see below |
 
-> `db:seed` resets the food catalogue and cascades into meals, diet plans and
-> their consumption and override rows. It is deliberately not part of
-> `db:deploy` and refuses to run without an explicit path:
+### Demo data
+
+`bun run db:seed:demo` fills an empty database with a runnable product: a real
+food catalogue sourced from USDA FoodData Central, two organisations, one user
+per access level, authored meals, diet plans, assignments that cover *today*,
+consumption history, food swaps and body-composition assessments. It is
+self-contained — no external file, no API key, no network — and **idempotent**:
+every row has a deterministic id and every write is an upsert, so re-running
+refreshes in place rather than duplicating.
+
+Every seeded account uses the password `Passw0rd!23`. See
+`packages/db/src/seed-demo.ts` for the full account list and the provenance of
+the nutrition figures.
+
+> `db:seed` is a different thing: the raw USDA FoodData Central importer. It
+> resets the food catalogue and cascades into meals, diet plans and their
+> consumption and override rows. It is deliberately not part of `db:deploy` and
+> refuses to run without an explicit path:
 > `bun run --cwd packages/db db:seed -- /path/to/FoodData_Central_foundation_food.json`.
 
 ## Testing

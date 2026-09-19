@@ -5,6 +5,7 @@ import {
 	CalendarRangeIcon,
 	LayoutDashboardIcon,
 	SaladIcon,
+	SmartphoneIcon,
 	TagsIcon,
 	UsersIcon,
 	UtensilsCrossedIcon,
@@ -58,6 +59,11 @@ const adminGroup: ShellNavGroupConfig = {
 			icon: CalendarRangeIcon,
 			label: "Diet plans",
 			to: "/dashboard/admin/diet-plans",
+		},
+		{
+			icon: SmartphoneIcon,
+			label: "App version",
+			to: "/dashboard/admin/version-gate",
 		},
 	],
 };

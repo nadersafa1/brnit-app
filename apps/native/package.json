@@ -19,6 +19,7 @@
     "@brnit/datetime": "workspace:*",
     "@brnit/domain": "workspace:*",
     "@brnit/env": "workspace:*",
+    "@brnit/realtime": "workspace:*",
     "@expo/metro-runtime": "~55.0.6",
     "@expo/vector-icons": "^15.0.3",
     "@gorhom/bottom-sheet": "^5",
@@ -60,6 +61,7 @@
     "react-native-toast-message": "^2.3.3",
     "react-native-web": "^0.21.0",
     "react-native-worklets": "0.7.2",
+    "socket.io-client": "^4.8.1",
     "zod": "^4.1.13",
     "zustand": "^5.0.11"
   },
