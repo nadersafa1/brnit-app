@@ -21,6 +21,8 @@ export default defineConfig({
 		],
 	},
 	server: {
-		port: 3001,
+		// brnit's dev block (3100 API / 3101 web). 3000-3001 are deliberately
+		// avoided: they collide with the sibling projects' running containers.
+		port: 3101,
 	},
 });

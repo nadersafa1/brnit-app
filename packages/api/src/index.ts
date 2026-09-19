@@ -621,3 +621,24 @@ export {
 	dispatchPushNotificationBestEffort,
 	setPushNotificationHandler,
 } from "./push/push-notification.registry";
+export type {
+	AdminVersionGateDto,
+	AppVersionAction,
+	AppVersionConfigDto,
+	AppVersionResponse,
+} from "./version-gate/dto";
+export {
+	getAdminVersionGate,
+	getAppVersion,
+	putAdminVersionGate,
+} from "./version-gate/handlers";
+export type {
+	AdminVersionGatePutBody,
+	AppVersionConfigInput,
+	AppVersionQuery,
+} from "./version-gate/schemas";
+export {
+	adminVersionGatePutBodySchema,
+	appVersionConfigSchema,
+	appVersionQuerySchema,
+} from "./version-gate/schemas";

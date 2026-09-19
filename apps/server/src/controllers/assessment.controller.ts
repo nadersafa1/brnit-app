@@ -19,6 +19,7 @@ import {
 import type { NextFunction, Request, Response } from "express";
 import { flattenError } from "zod";
 
+import { emitAssessmentRecordedForMemberBestEffort } from "../jobs/realtime-plan-emit.js";
 import { contextFromExpressRequest } from "../utils/context-from-express-request.js";
 import { handleHandlerError, jsonApiError } from "../utils/http.js";
 import { parseMultipartFields } from "../utils/multipart-fields.js";
@@ -89,6 +90,14 @@ export class AssessmentController {
 				...(req.file?.buffer ? { file: req.file.buffer } : {}),
 			});
 			res.status(CREATED_STATUS).json(result);
+
+			// The row is committed and the 201 is already on the wire; the member's
+			// Stats screen and their organization's staff screens are now stale.
+			emitAssessmentRecordedForMemberBestEffort({
+				assessmentId: result.data.id,
+				memberId: result.data.memberId,
+				assessedAt: result.data.assessedAt,
+			});
 		} catch (err) {
 			handleHandlerError(err, res, next);
 		}

@@ -40,7 +40,15 @@ export async function recomputeMealTotals(
 		})
 		.from(mealItem)
 		.innerJoin(foodItem, eq(mealItem.foodItemId, foodItem.id))
-		.where(eq(mealItem.mealId, mealId));
+		.where(eq(mealItem.mealId, mealId))
+		// Deterministic order, and it is load-bearing. Float addition is not
+		// associative, and `computeMealTotalsFromLineItems` rounds the raw sum
+		// exactly once at the end — so for a meal whose total lands on a `.xx5`
+		// boundary, the order Postgres happens to return the lines in decides
+		// whether the stored value rounds up or down. Without an ORDER BY that
+		// order is unspecified, which makes the persisted total non-deterministic
+		// across otherwise identical recomputes.
+		.orderBy(mealItem.id);
 
 	const totals = computeMealTotalsFromLineItems(
 		mealTotalsLinesFromDbRows(rows)

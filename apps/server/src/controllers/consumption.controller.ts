@@ -15,6 +15,7 @@ import {
 import type { NextFunction, Request, Response } from "express";
 import { flattenError } from "zod";
 
+import { emitPlanChangedForAssignmentBestEffort } from "../jobs/realtime-plan-emit.js";
 import { contextFromExpressRequest } from "../utils/context-from-express-request.js";
 import {
 	handleHandlerError,
@@ -79,9 +80,19 @@ export class ConsumptionController {
 				return;
 			}
 			const ctx = contextFromExpressRequest(req);
-			res
-				.status(HTTP_CREATED)
-				.json(await createNutritionistDietPlanMealConsumption(ctx, input));
+			const created = await createNutritionistDietPlanMealConsumption(
+				ctx,
+				input
+			);
+			res.status(HTTP_CREATED).json(created);
+
+			// A nutritionist logged a meal on the member's behalf; only that day's
+			// Home view is stale, so the event carries the consumed date.
+			emitPlanChangedForAssignmentBestEffort({
+				dateYmd: created.data.consumedDate,
+				dietPlanAssignmentId: created.data.dietPlanAssignmentId,
+				reason: "consumption_changed",
+			});
 		} catch (err) {
 			handleHandlerError(err, res, next);
 		}
@@ -106,9 +117,19 @@ export class ConsumptionController {
 				return;
 			}
 			const ctx = contextFromExpressRequest(req);
-			res.json(
-				await deleteNutritionistDietPlanMealConsumption(ctx, params.data)
+			const deleted = await deleteNutritionistDietPlanMealConsumption(
+				ctx,
+				params.data
 			);
+			res.json(deleted);
+
+			// The consumption row is gone but the assignment is not, so the
+			// dispatcher can still resolve the assignee from it.
+			emitPlanChangedForAssignmentBestEffort({
+				dateYmd: deleted.data.consumedDate,
+				dietPlanAssignmentId: deleted.data.dietPlanAssignmentId,
+				reason: "consumption_changed",
+			});
 		} catch (err) {
 			handleHandlerError(err, res, next);
 		}
@@ -158,6 +179,12 @@ export class ConsumptionController {
 			res
 				.status(HTTP_CREATED)
 				.json(await createMemberDietPlanMealConsumption(ctx, input));
+
+			// No `plan:changed` here, deliberately. `consumption_changed` is
+			// documented in `packages/realtime/src/payloads/plan-changed.ts` as a
+			// *staff* action: the member's own client just made this write and has
+			// already invalidated itself, so echoing it back only buys a redundant
+			// refetch. The nutritionist mirror above is the one that emits.
 		} catch (err) {
 			handleHandlerError(err, res, next);
 		}
@@ -180,6 +207,9 @@ export class ConsumptionController {
 			}
 			const ctx = contextFromExpressRequest(req);
 			res.json(await deleteMemberDietPlanMealConsumptionBySlot(ctx, input));
+
+			// Same reasoning as `createForMember`: a member unmarking their own
+			// meal is not a staff action, so nothing is emitted.
 		} catch (err) {
 			handleHandlerError(err, res, next);
 		}

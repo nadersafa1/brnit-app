@@ -49,3 +49,4 @@ export {
 	type OrgRoleCanUpdateMemberRole,
 	type RoleActor,
 } from "./roles";
+export { isVersionBelow } from "./version-compare";

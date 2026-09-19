@@ -375,3 +375,17 @@ export function organizationMembersQueries(): readonly [
 ] {
 	return ["organization-members"];
 }
+
+// ---------------------------------------------------------------------------
+// App version gate
+// ---------------------------------------------------------------------------
+
+/**
+ * Not a factory: `GET /admin/version-gate` answers with **both** platforms in
+ * one payload, so there is exactly one entry and nothing to key it on. The
+ * single key is therefore also its own invalidation prefix — no `…Queries`
+ * companion, because there is no family to fan out to.
+ */
+export function adminVersionGateQueryKey(): readonly ["admin-version-gate"] {
+	return ["admin-version-gate"];
+}

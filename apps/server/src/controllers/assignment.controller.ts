@@ -22,6 +22,7 @@ import {
 import type { NextFunction, Request, Response } from "express";
 import { flattenError } from "zod";
 
+import { emitPlanChangedForAssignmentBestEffort } from "../jobs/realtime-plan-emit.js";
 import {
 	findPostgresErrorCode,
 	PG_UNIQUE_VIOLATION,
@@ -100,9 +101,18 @@ export class AssignmentController {
 				return;
 			}
 			const ctx = contextFromExpressRequest(req);
-			res
-				.status(HTTP_CREATED)
-				.json(await createNutritionistDietPlanAssignment(ctx, input));
+			const created = await createNutritionistDietPlanAssignment(ctx, input);
+			res.status(HTTP_CREATED).json(created);
+
+			// Staff write, response already sent: tell the assignee their Home
+			// screen has a plan it does not know about. The DTO carries both
+			// assignee columns, so the dispatcher needs no lookup of its own.
+			emitPlanChangedForAssignmentBestEffort({
+				dietPlanAssignmentId: created.data.id,
+				memberId: created.data.memberId,
+				reason: "assignment_changed",
+				userId: created.data.userId,
+			});
 		} catch (err) {
 			handleHandlerError(err, res, next);
 		}
@@ -157,12 +167,20 @@ export class AssignmentController {
 				return;
 			}
 			const ctx = contextFromExpressRequest(req);
-			res.json(
-				await updateNutritionistDietPlanAssignment(ctx, {
-					...body,
-					...params.data,
-				})
-			);
+			const updated = await updateNutritionistDietPlanAssignment(ctx, {
+				...body,
+				...params.data,
+			});
+			res.json(updated);
+
+			// The window and/or the meal times moved. No `dateYmd`: an edited range
+			// invalidates every day the member can currently see, not one of them.
+			emitPlanChangedForAssignmentBestEffort({
+				dietPlanAssignmentId: updated.data.id,
+				memberId: updated.data.memberId,
+				reason: "assignment_changed",
+				userId: updated.data.userId,
+			});
 		} catch (err) {
 			handleHandlerError(err, res, next);
 		}
@@ -187,7 +205,21 @@ export class AssignmentController {
 				return;
 			}
 			const ctx = contextFromExpressRequest(req);
-			res.json(await deleteNutritionistDietPlanAssignment(ctx, params.data));
+			const deleted = await deleteNutritionistDietPlanAssignment(
+				ctx,
+				params.data
+			);
+			res.json(deleted);
+
+			// The assignment row is gone, so the dispatcher cannot look its assignee
+			// up any more — the deleted DTO's own assignee columns are the only
+			// remaining source, and `member` is untouched by the delete.
+			emitPlanChangedForAssignmentBestEffort({
+				dietPlanAssignmentId: deleted.data.id,
+				memberId: deleted.data.memberId,
+				reason: "assignment_changed",
+				userId: deleted.data.userId,
+			});
 		} catch (err) {
 			handleHandlerError(err, res, next);
 		}
@@ -237,6 +269,18 @@ export class AssignmentController {
 			res
 				.status(result.created ? HTTP_CREATED : HTTP_OK)
 				.json({ data: result.data });
+
+			// A swap is written by the member, so the assignee is the caller and no
+			// lookup is needed — `setMemberMealItemOverride` has already asserted
+			// the assignment is theirs. The emit is for their *other* sessions
+			// (native and web on one account); the originating client updated
+			// itself. `single_day` is the only scope narrow enough for `dateYmd`.
+			emitPlanChangedForAssignmentBestEffort({
+				...(body.scope === "single_day" ? { dateYmd: body.startDate } : {}),
+				dietPlanAssignmentId: result.data.dietPlanAssignmentId,
+				reason: "meal_time_changed",
+				userId: ctx.user?.id,
+			});
 		} catch (err) {
 			if (findPostgresErrorCode(err) === PG_UNIQUE_VIOLATION) {
 				jsonApiError(res, 400, OVERRIDE_CONFLICT_MESSAGE);
@@ -330,6 +374,16 @@ export class AssignmentController {
 			res.json(
 				await deleteMemberMealItemOverride(ctx, { ...params.data, date })
 			);
+
+			// Same shape as the write: the caller owns the assignment, so pass the
+			// assignee straight through. `?date=` is what makes the clear
+			// day-scoped; without it the whole slot went back to the plan's food.
+			emitPlanChangedForAssignmentBestEffort({
+				...(date ? { dateYmd: date } : {}),
+				dietPlanAssignmentId: params.data.assignmentId,
+				reason: "meal_time_changed",
+				userId: ctx.user?.id,
+			});
 		} catch (err) {
 			handleHandlerError(err, res, next);
 		}

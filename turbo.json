@@ -41,6 +41,9 @@
     "db:seed": {
       "cache": false
     },
+    "db:seed:demo": {
+      "cache": false
+    },
     "db:deploy": {
       "cache": false
     },
