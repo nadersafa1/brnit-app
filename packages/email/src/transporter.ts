@@ -1,5 +1,5 @@
-import nodemailer from "nodemailer";
-import { env } from "@burn-app/env/server";
+import { env } from '@burn-app/env/server'
+import nodemailer from 'nodemailer'
 
 const transporter = nodemailer.createTransport({
   host: env.NODEMAILER_HOST,
@@ -9,6 +9,6 @@ const transporter = nodemailer.createTransport({
     user: env.NODEMAILER_USER,
     pass: env.NODEMAILER_APP_PASSWORD,
   },
-});
+})
 
-export default transporter;
+export default transporter

@@ -1,20 +1,7 @@
-import type { User } from "better-auth";
-import { sendEmail } from "../send-email";
+import { enqueueVerificationEmail } from '@burn-app/queue'
+import type { User } from 'better-auth'
 
-export async function sendVerificationEmail({
-  user,
-  url,
-}: {
-  user: User;
-  url: string;
-}) {
-  await sendEmail({
-    to: user.email,
-    subject: "Email Verification",
-    meta: {
-      description: "Click the link below to verify your email address",
-      link: url,
-      linkText: "Verify Email",
-    },
-  });
+/** Adapts better-auth's hook signature to the transactional email queue. */
+export async function sendVerificationEmail({ user, url }: { user: User; url: string }) {
+  await enqueueVerificationEmail({ to: user.email, url })
 }

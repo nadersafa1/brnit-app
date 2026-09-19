@@ -1,20 +1,7 @@
-import type { User } from "better-auth";
-import { sendEmail } from "../send-email";
+import { enqueuePasswordResetEmail } from '@burn-app/queue'
+import type { User } from 'better-auth'
 
-export async function sendPasswordResetEmail({
-  user,
-  url,
-}: {
-  user: User;
-  url: string;
-}) {
-  await sendEmail({
-    to: user.email,
-    subject: "Password Reset",
-    meta: {
-      description: "Click the link below to reset your password",
-      link: url,
-      linkText: "Reset Password",
-    },
-  });
+/** Adapts better-auth's hook signature to the transactional email queue. */
+export async function sendPasswordResetEmail({ user, url }: { user: User; url: string }) {
+  await enqueuePasswordResetEmail({ to: user.email, url })
 }

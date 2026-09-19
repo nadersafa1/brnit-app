@@ -1,0 +1,24 @@
+{
+  "name": "@burn-app/queue",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": { "default": "./src/index.ts" },
+    "./worker-runtime": { "default": "./src/worker-runtime.ts" },
+    "./*": { "default": "./src/*.ts" }
+  },
+  "dependencies": {
+    "@burn-app/db": "*",
+    "@burn-app/email": "*",
+    "@burn-app/env": "*",
+    "bullmq": "^5.66.0",
+    "drizzle-orm": "^0.45.1",
+    "ioredis": "^5.9.0",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@burn-app/config": "*",
+    "@types/node": "^22.13.14",
+    "typescript": "^5"
+  }
+}

@@ -1,5 +1,6 @@
-import { sendEmail } from '../send-email'
+import { enqueueOrganizationInvitation } from '@burn-app/queue'
 
+/** Adapts better-auth's organization hook to the transactional email queue. */
 export async function sendOrganizationInvitation({
   email,
   invitedByUsername,
@@ -15,13 +16,12 @@ export async function sendOrganizationInvitation({
   inviteLink: string
   invitationRole: string
 }) {
-  await sendEmail({
+  await enqueueOrganizationInvitation({
+    invitationRole,
+    invitedByEmail,
+    invitedByUsername,
+    inviteLink,
+    organizationName,
     to: email,
-    subject: `You're invited to join ${organizationName}`,
-    meta: {
-      description: `${invitedByUsername} (${invitedByEmail}) has invited you to join ${organizationName} on Brnit as ${invitationRole}. Accept to join the group and start your health challenge.`,
-      link: inviteLink,
-      linkText: 'Accept invitation',
-    },
   })
 }

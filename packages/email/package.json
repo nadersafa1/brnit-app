@@ -1,0 +1,18 @@
+{
+  "name": "@burn-app/email",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": { "default": "./src/index.ts" },
+    "./*": { "default": "./src/*.ts" }
+  },
+  "dependencies": {
+    "@burn-app/env": "*",
+    "nodemailer": "^7.0.10"
+  },
+  "devDependencies": {
+    "@burn-app/config": "*",
+    "@types/nodemailer": "^7.0.3",
+    "typescript": "^5"
+  }
+}
